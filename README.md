@@ -1,4 +1,4 @@
-# Laboratórios de Informática III (2024/2025)
+# Laboratórios de Informática III (2025/2026)
 
 * Marta Alexandra Rodrigues Araújo - A110317 - marta1611mra
 * Sara Vieira Marques - A111182 - svmarques
