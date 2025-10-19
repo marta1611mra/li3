@@ -11,6 +11,6 @@ struct passenger{
     char email[50];
     char phone[15];
     char address[50];
-    char photo[100];
+    char photo[1000];
 
 };
