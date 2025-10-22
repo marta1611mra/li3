@@ -1,8 +1,9 @@
 #include <stdio.h>
 
+
 typedef enum {
     OnTime,
-    Delayded,
+    Delayed,
     Cancelled
 } flight_status;
 
@@ -16,7 +17,7 @@ struct flight{
     char gate[3];
     flight_status status;
     char origin[4];
-    char destiny[4];
+    char destination[4];
     char aircraft_id[15];
     char airline[40];
     char tracking_url[100];
