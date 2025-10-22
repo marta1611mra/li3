@@ -1,8 +1,8 @@
 #include <stdio.h>
 
 struct reservation{
-    int reservation_id[50]; // number of the reservation
-    int flight_id[50]; // number of the flight
+    char reservation_id[50]; // number of the reservation
+    char flight_ids[100]; // number of the flight
     int document_number[50]; // number of the document of identification of the passanger
     int seat[5]; // reserved seat number 
     double price [20]; // price of the reservation
