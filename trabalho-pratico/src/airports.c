@@ -1,4 +1,7 @@
+#include "airports.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 struct airport {
     char code[4]; // 3 letters IATA
@@ -12,7 +15,7 @@ struct airport {
 };
 
 Airport create_airport(const char *code, const char *name, const char *city, const char *country, double latitude, double longitude, const char *icao, const char *type){
-    Airport a = malloc(sizeof(*a));
+    Airport a = malloc(sizeof(struct airport));
     if (!a) return NULL;
 
     strcpy(a->code, code);
