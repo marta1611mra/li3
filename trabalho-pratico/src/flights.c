@@ -3,12 +3,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-typedef enum {
-    OnTime,
-    Delayed,
-    Cancelled
-} flight_status;
-
 struct flight{
     
     char flight_id[8];
@@ -24,6 +18,7 @@ struct flight{
     char airline[40];
     char tracking_url[100];
 };
+
 
 Flight create_flight(const char *flight_id, const char *departure, const char *actual_departure, const char *arrival, const char *actual_arrival, const char *gate, flight_status status, const char *origin, const char *destination, const char *aircraft_id, const char *airline, const char *tracking_url) {
     Flight f = malloc(sizeof(struct flight));
@@ -48,3 +43,8 @@ Flight create_flight(const char *flight_id, const char *departure, const char *a
 void destroy_flight(Flight f) {
     if (f) free(f);
 }
+
+const char *get_orig(Flight f) {return f->origin; }
+const char *get_dest(Flight f) {return f->destination; }
+flight_status get_stat(Flight f) {return f->status; }
+

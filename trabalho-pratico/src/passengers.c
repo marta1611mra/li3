@@ -10,7 +10,7 @@ struct passenger{
     char last_name[30];
     char dob[11];
     char nationality[20];
-    char gender;
+    char gender[10];
     char email[50];
     char phone[15];
     char address[50];
@@ -39,4 +39,3 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
 void destroy_passenger(Passenger p) {
     if (p) free(p);
 }
-

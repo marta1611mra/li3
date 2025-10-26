@@ -11,9 +11,6 @@ bool validate_destination (struct flight f){
     return strcmp(f.destination,f.origin);
 }
 
-
-
-
 //Os campos arrival e actual arrival não poderão ser anteriores aos respetivos campos departure e actual departure. Para alem disso se o status for Delayed
 bool validate_arrival(struct flight f){
     int d1,m1,y1,h1,min1;
@@ -56,7 +53,7 @@ bool validate_arrival(struct flight f){
 // O campo aircraft de um voo, deverá corresponder a uma aeronave existente.
 bool validate_aircraft(struct flight f, struct aircraft a[], int N) {
     for (int i = 0; i < N; i++) {
-        if (strcmp(f.aircraft_id, (a[i]).id) == 0) {
+        if (strcmp(f.aircraft_id, a[i].id) == 0) {
             return true;
         }
     }
@@ -64,7 +61,7 @@ bool validate_aircraft(struct flight f, struct aircraft a[], int N) {
 }
 
 // Caso o campo status de um voo tome o valor Cancelled, os campos actual departure e actual arrival deverão conter o valor "N/A".
-bool validade_status(struct flight f){
+bool validate_status(struct flight f){
     if (f.status== Cancelled) return (strcmp(f.actual_departure,"N/A")==0 && strcmp(f.actual_arrival,"N/A")==0);
     return false;
 }
@@ -76,7 +73,7 @@ bool validade_status(struct flight f){
 
 
 //O campo document number de uma reserva, deverá corresponder a um passageiro existente.
-bool validate_document_number(struct reservation r, struct passenger p[], int N) {
+bool logical_validate_document_number(struct reservation r, struct passenger p[], int N) {
     for (int i = 0; i < N; i++) {
         if (strcmp(r.document_number, p[i].document_id) == 0) {
             return true; 
