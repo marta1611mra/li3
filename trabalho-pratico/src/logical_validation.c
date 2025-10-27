@@ -67,9 +67,19 @@ bool validate_status(struct flight f){
 }
 
 //O campo flight ids de uma reserva, deverá corresponder a uma lista de um ou dois voos existentes.
-
-
-
+bool validate_reservation_flights(struct reservation r, struct flight flights[], int num_flights, int num_flights_in_reservation) {
+    for (int i = 0; i < num_flights_in_reservation; i++) {
+        bool found = false;
+        for (int j = 0; j < num_flights && !found; j++) {
+            if (strcmp(r.flight_id[i], flights[j].flight_id) == 0) {
+                found = true;
+            }
+        }
+        if (!found)
+            return false; 
+    }
+    return true; 
+}
 
 
 //O campo document number de uma reserva, deverá corresponder a um passageiro existente.
@@ -83,6 +93,27 @@ bool logical_validate_document_number(struct reservation r, struct passenger p[]
 }
 
 // O campo flight ids de uma reserva deverá conter identificadores de voos em que o campo destination do primeiro voo seja igual ao campo origin do segundo voo
+bool validate_reservation_connection(struct reservation r, struct flight flights[], int num_flights, int num_flights_in_reservation) {
+
+    if (num_flights_in_reservation != 2) 
+        return true;
+
+    struct flight *first = NULL;
+    struct flight *second = NULL;
+
+    for (int i = 0; i < num_flights; i++) {
+        if (strcmp(flights[i].flight_id, r.flight_id[0]) == 0)
+            first = &flights[i];
+        else if (strcmp(flights[i].flight_id, r.flight_id[1]) == 0)
+            second = &flights[i];
+    }
+
+
+    if (!first || !second)
+        return false;
+
+    return strcmp(first->destination, second->origin) == 0;
+}
 
 
 
