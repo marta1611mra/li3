@@ -1,0 +1,34 @@
+#include "reservations_manager.h"
+#include "reservations.h"
+#include <glib.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct reservations_manager {
+    GHashTable *reservations; // chave = reservation_id
+};
+
+ReservationsManager create_reservations_manager() {
+    ReservationsManager m = malloc(sizeof(*m));
+    if (!m) return NULL;
+    m->reservations = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_reservation);
+    return m;
+}
+
+void destroy_reservations_manager(ReservationsManager m) {
+    if (!m) return;
+    g_hash_table_destroy(m->reservations);
+    free(m);
+}
+
+void reservations_manager_add(ReservationsManager m, Reservation r) {
+    g_hash_table_insert(m->reservations, strdup(get_reservation_id), r);
+}
+
+Reservation reservations_manager_get(ReservationsManager m, const char *id) {
+    return g_hash_table_lookup(m->reservations, id);
+}
+
+int reservations_manager_count(ReservationsManager m) {
+    return g_hash_table_size(m->reservations);
+}

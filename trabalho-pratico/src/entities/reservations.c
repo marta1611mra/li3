@@ -33,3 +33,12 @@ Reservation create_reservation(const char *reservation_id, const char flight_id[
 
     return r;
 }
+
+
+void destroy_reservation(Reservation r) {
+    if (r) free(r);
+}
+
+const char *get_reservation_id(Reservation r) { 
+    return r->reservation_id; 
+}

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <glib.h>
 #include "flights.c"
 #include "aircrafts.c"
 #include "reservations.c"
@@ -51,13 +52,13 @@ bool validate_arrival(struct flight f){
 }
 
 // O campo aircraft de um voo, deverá corresponder a uma aeronave existente.
-bool validate_aircraft(struct flight f, struct aircraft a[], int N) {
-    for (int i = 0; i < N; i++) {
-        if (strcmp(f.aircraft_id, a[i].id) == 0) {
-            return true;
-        }
-    }
-    return false; 
+bool validate_aircraft(struct flight f, GHashTable *aircrafts) {
+    if (!aircrafts) return false;
+    if (strlen(f.aircraft_id) == 0) return false;
+
+    // Verifica se o aircraft_id do voo existe na hash table
+    gpointer found = g_hash_table_lookup(aircrafts, f.aircraft_id);
+    return (found != NULL);
 }
 
 // Caso o campo status de um voo tome o valor Cancelled, os campos actual departure e actual arrival deverão conter o valor "N/A".

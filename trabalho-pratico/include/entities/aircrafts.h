@@ -7,4 +7,6 @@ Aircraft create_aircraft(const char *id, const char *manufacturer, const char *m
 
 void destroy_aircraft(Aircraft a);
 
+const char *get_aircraft_id(Aircraft a);
+
 #endif

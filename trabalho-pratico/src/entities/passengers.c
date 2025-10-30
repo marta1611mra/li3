@@ -39,3 +39,7 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
 void destroy_passenger(Passenger p) {
     if (p) free(p);
 }
+
+const char *get_passenger_document_id(Passenger p) { 
+    return p->document_id; 
+}

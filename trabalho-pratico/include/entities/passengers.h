@@ -7,4 +7,6 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
 
 void destroy_passenger(Passenger p);
 
+const char *get_passenger_document_id(Passenger p);
+
 #endif

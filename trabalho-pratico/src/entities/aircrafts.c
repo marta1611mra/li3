@@ -27,3 +27,7 @@ Aircraft create_aircraft(const char *id, const char *manufacturer, const char *m
 void destroy_aircraft (Aircraft a){
     if (a) free(a);
 }
+
+const char *get_aircraft_id(Aircraft a) {
+    return a->id;
+}

@@ -44,7 +44,20 @@ void destroy_flight(Flight f) {
     if (f) free(f);
 }
 
-const char *get_orig(Flight f) {return f->origin; }
-const char *get_dest(Flight f) {return f->destination; }
-flight_status get_stat(Flight f) {return f->status; }
+const char *get_orig(Flight f) {
+    return f->origin; 
+}
+
+const char *get_dest(Flight f) {
+    return f->destination; 
+}
+
+flight_status get_stat(Flight f) {
+    return f->status; 
+
+}
+
+const char *get_flight_id(Flight f) { 
+    return f->flight_id; 
+}
 
