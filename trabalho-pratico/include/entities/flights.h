@@ -13,9 +13,12 @@ Flight create_flight(const char *flight_id, const char *departure, const char *a
 
 void destroy_flight(Flight f);
 
-// Public getters to access attributes of the struct
 const char *get_orig(Flight f);
+
 const char *get_dest(Flight f);
+
 flight_status get_stat(Flight f);
+
+const char *get_flight_id(Flight f);
 
 #endif

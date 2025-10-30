@@ -7,4 +7,6 @@ Reservation create_reservation(const char *reservation_id, const char flight_id[
 
 void destroy_reservation(Reservation r);
 
+const char *get_reservation_id(Reservation r);
+
 #endif

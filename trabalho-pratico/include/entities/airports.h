@@ -7,4 +7,7 @@ Airport create_airport(const char *code, const char *name, const char *city, con
 
 void destroy_airport(Airport a);
 
+const char *get_airport_code(Airport a);
+
+
 #endif
