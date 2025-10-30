@@ -133,7 +133,7 @@ bool validate_document_number(const char *doc_num){
 }
 
 // validates the airport type 
-bool validar_tipo_aeroporto(const char *type) {
+bool validate_tipo_aeroporto(const char *type) {
     const char *valid[] = {"small_airport", "medium_airport", "large_airport", "heliport", "seaplane_base"};
     // array with valid airport types
     for (int i = 0; i < 5; i++)
@@ -142,7 +142,7 @@ bool validar_tipo_aeroporto(const char *type) {
 }
 
 // validates the csv lists: starts with '[' and ends with ']'
-bool validar_lista_csv(const char *list) {
+bool validate_lista_csv(const char *list) {
     if (!list) return false;
     int length = strlen(list);
     if (length < 2) return false; // Must be at least 2 because of "[]"
