@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "dataset.h"
 #include "syntactic_validation.h"
 #include "logical_validation.h"
 #include "flights.c"
@@ -9,82 +10,70 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <glib.h>
-
-struct dataset {
-    GHashTable *airports;
-    GHashTable *flights;
-    GHashTable *aircrafts;
-    GHashTable *passengers;
-    GHashTable *reservations;
-};
-
-Dataset create_dataset() {
-    Dataset d = malloc(sizeof(*d));
-    if (!d) {
-        fprintf(stderr, "ERROR: INSUFFICIENT MEMORY TO CREATE Dataset.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    d->airports     = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_airport);
-    d->flights      = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_flight);
-    d->aircrafts    = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_aircraft);
-    d->passengers   = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_passenger);
-    d->reservations = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_reservation);
-
-    return d;
-}
-
-void destroy_dataset(Dataset d) {
-    if (!d) return;
-    g_hash_table_destroy(d->airports);
-    g_hash_table_destroy(d->flights);
-    g_hash_table_destroy(d->aircrafts);
-    g_hash_table_destroy(d->passengers);
-    g_hash_table_destroy(d->reservations);
-    free(d);
-}
-
-
 
 // Removes quotation marks 
 static void remove_quotes(char *str) {
+    if(!str) return;
     size_t len = strlen(str);
     if (len == 0) return;
-
     if (str[0] == '"') memmove(str, str + 1, len);
     len = strlen(str);
     if (len > 0 && str[len - 1] == '"') str[len - 1] = '\0';
 }
 
 static void remove_spc(char *str) {
-    int len = strlen(str);
-    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == ' ' || str[len - 1] == '\r'))
+    if (!str) return;
+    int len = (int)strlen(str);
+    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\t' || str[len - 1] == ' ' || str[len - 1] == '\r')) {
         str[--len] = '\0';
+    }
 }
 
-void parse_airports(Dataset d, const char *dataset_path) {
-    char filepath[256];
-    snprintf(filepath, sizeof(filepath), "%s/airports.csv", dataset_path);
+// duplicates string for manager keys where needed
+static char *dupnull(const char *s){
+    if (!s) return NULL;
+    return strdup(s);
+}
+
+// creates the directory resultados if it doesn't exists
+static void exist_result(void) {
+    system ("mkdir -p resultados");
+}
+
+// helps writting header line to error file
+static void wcsv_header(FILE *csv, FILE *ferror) {
+    char header[2048];
+    if(fgets(header, sizeof(header), csv)) {
+        fprintf(ferror, "%s", header);
+    }
+}
+
+void parse_airports(Dataset d, const char *data_path) {
+    char filepath[512];
+    snprintf(filepath, sizeof(filepath), "%s/airports.csv", data_path);
 
     FILE *f = fopen(filepath, "r");
-    if (!f) { perror("airports.csv"); return; }
+    if (!f) { perror(filepath); return; }
 
-    system("mkdir -p resultados");
-    FILE *ferr = fopen("resultados/airports_errors.csv", "w");
-    if (!ferr) { perror("airports_errors.csv"); fclose(f); return; }
+    exist_result();
+    FILE *ferror = fopen("resultados/airports_errors.csv", "w");
+    if (!ferror) { perror("resultados/airports_errors.csv"); fclose(f); return; }
 
-    char line[512], header[512];
-    fgets(header, sizeof(header), f);
-    fprintf(ferr, "%s", header);
+    wcsv_header(f, ferror);
 
+    char line[2048];
     while (fgets(line, sizeof(line), f)) {
-        char code[10], name[100], city[100], country[50];
-        char lat_str[30], long_str[30], icao[10], type[30];
+        char code[4] = "", name[101] = "", city[101] = "", country[51] = "";
+        char lat_str[16] = "", long_str[16] = "", icao[5] = "", type[31] = "";
 
-        int n = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+        int n = sscanf(line, "%3[^,],%100[^,],%100[^,],%50[^,],%16[^,],%16[^,],%4[^,],%30[^\n]",
                        code, name, city, country, lat_str, long_str, icao, type);
-        if (n != 8) { fprintf(ferr, "%s", line); continue; }
+        if (n != 8) { 
+            fprintf(ferror, "%s", line); 
+            continue; 
+        }
 
         remove_quotes(code); remove_spc(code);
         remove_quotes(name); remove_spc(name);
@@ -96,8 +85,9 @@ void parse_airports(Dataset d, const char *dataset_path) {
         remove_quotes(type); remove_spc(type);
 
         if (!validate_airport_code(code) ||
-            !validate_latitude_longitude(lat_str, long_str)) {
-            fprintf(ferr, "%s", line);
+            !validate_latitude_longitude(lat_str, long_str) ||
+            strlen(name) == 0) {
+            fprintf(ferror, "%s", line);
             continue;
         }
 
@@ -105,38 +95,40 @@ void parse_airports(Dataset d, const char *dataset_path) {
         double longitude = strtod(long_str, NULL);
 
         Airport a = create_airport(code, name, city, country, latitude, longitude, icao, type);
-        g_hash_table_insert(d->airports, strdup(a->code), a);
+        if (!a) {fprintf(stderr, "create_airport failed\n"); fprintf(ferror, "%s", line); continue; } 
+    
+        AirportsManager am = dataset_get_airports(d);
+        airports_manager_add(am, a);
     }
 
     fclose(f);
-    fclose(ferr);
+    fclose(ferror);
 }
 
 
 
 
-void parse_aircrafts(Dataset d, const char *dataset_path) {
-    char path[256];
-    snprintf(path, sizeof(path), "%s/aircrafts.csv", dataset_path);
+void parse_aircrafts(Dataset d, const char *data_path) {
+    char path[512];
+    snprintf(path, sizeof(path), "%s/aircrafts.csv", data_path);
 
     FILE *f = fopen(path, "r");
-    if (!f) { perror("aircrafts.csv"); return; }
+    if (!f) { perror(path); return; }
 
-    system("mkdir -p resultados");
-    FILE *ferr = fopen("resultados/aircrafts_errors.csv", "w");
-    if (!ferr) { perror("aircrafts_errors.csv"); fclose(f); return; }
+    exist_result();
+    FILE *ferror = fopen("resultados/aircrafts_errors.csv", "w");
+    if (!ferror) { perror("resultados/aircrafts_errors.csv"); fclose(f); return; }
 
-    char line[512], header[512];
-    fgets(header, sizeof(header), f);
-    fprintf(ferr, "%s", header);
+    wcsv_header(f, ferror);
 
+    char line[2048];
     while (fgets(line, sizeof(line), f)) {
-        char id[15], manufacturer[50], model[50];
-        char year_str[10], capacity_str[10], range_str[10];
+        char id[16] = "", manufacturer[51] = "", model[51] = "";
+        char year_str[8] = "", capacity_str[8] = "", range_str[10] = "";
 
-        int n = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+        int n = sscanf(line, "%15[^,],%50[^,],%50[^,],%7[^,],%7[^,],%9[^\n]",
                        id, manufacturer, model, year_str, capacity_str, range_str);
-        if (n != 6) { fprintf(ferr, "%s", line); continue; }
+        if (n != 6) { fprintf(ferror, "%s", line); continue; }
 
         remove_quotes(id); remove_spc(id);
         remove_quotes(manufacturer); remove_spc(manufacturer);
@@ -150,42 +142,44 @@ void parse_aircrafts(Dataset d, const char *dataset_path) {
         int range = atoi(range_str);
 
         if (strlen(id) == 0 || year <= 0 || capacity <= 0 || range <= 0) {
-            fprintf(ferr, "%s", line);
+            fprintf(ferror, "%s", line);
             continue;
         }
 
         Aircraft a = create_aircraft(id, manufacturer, model, year, capacity, range);
-        g_hash_table_insert(d->aircrafts, strdup(a->id), a);
+        if (!a) {fprintf(stderr, "create_aircraft failed\n"); fprintf(ferror, "%s", line); continue; }
+
+        AircraftsManager am = dataset_get_aircrafts(d);
+        aircrafts_manager_add(am, a);
     }
 
     fclose(f);
-    fclose(ferr);
+    fclose(ferror);
 }
 
-void parse_flights(Dataset d, const char *dataset_path) {
-    char path[256];
-    snprintf(path, sizeof(path), "%s/flights.csv", dataset_path);
+void parse_flights(Dataset d, const char *data_path) {
+    char path[512];
+    snprintf(path, sizeof(path), "%s/flights.csv", data_path);
 
     FILE *f = fopen(path, "r");
-    if (!f) { perror("flights.csv"); return; }
+    if (!f) { perror(path); return; }
 
-    system("mkdir -p resultados");
-    FILE *ferr = fopen("resultados/flights_errors.csv", "w");
-    if (!ferr) { perror("flights_errors.csv"); fclose(f); return; }
+    exist_result();
+    FILE *ferror = fopen("resultados/flights_errors.csv", "w");
+    if (!ferror) { perror("resultados/flights_errors.csv"); fclose(f); return; }
 
-    char line[512], header[512];
-    fgets(header, sizeof(header), f);
-    fprintf(ferr, "%s", header);
+    wcsv_header(f, ferror);
 
+    char line[2048];
     while (fgets(line, sizeof(line), f)) {
-        char flight_id[8], departure[19], actual_departure[19], arrival[19], actual_arrival[19];
-        char gate[3], origin[4], destination[4], aircraft_id[15], airline[40], tracking_url[100], status_str[15];
+        char flight_id[9] = "", departure[20] = "", actual_departure[20] = "", arrival[20] = "", actual_arrival[20] = "";
+        char gate[4] = "", origin[5] = "", destination[5] = "", aircraft_id[16] = "", airline[41] = "", tracking_url[101] = "", status_str[16] = "";
 
-        int n = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+        int n = sscanf(line, "%9[^,],%20[^,],%20[^,],%20[^,],%20[^,],%4[^,],%5[^,],%5[^,],%16[^,],%41[^,],%101[^,],%16[^\n]",
                        flight_id, departure, actual_departure, arrival, actual_arrival,
-                       gate, status_str, origin, destination, aircraft_id, airline, tracking_url);
+                       gate, origin, destination, aircraft_id, airline, tracking_url, status_str);
 
-        if (n != 12) { fprintf(ferr, "%s", line); continue; }
+        if (n != 12) { fprintf(ferror, "%s", line); continue; }
 
         remove_quotes(flight_id); remove_spc(flight_id);
         remove_quotes(aircraft_id); remove_spc(aircraft_id);
@@ -197,115 +191,125 @@ void parse_flights(Dataset d, const char *dataset_path) {
         if (strcmp(status_str, "OnTime") == 0) status = OnTime;
         else if (strcmp(status_str, "Delayed") == 0) status = Delayed;
         else if (strcmp(status_str, "Cancelled") == 0) status = Cancelled;
-        else { fprintf(ferr, "%s", line); continue; }
+        else { fprintf(ferror, "%s", line); continue; }
 
-        struct flight ftmp;
-        strcpy(ftmp.flight_id, flight_id);
-        strcpy(ftmp.aircraft_id, aircraft_id);
-        strcpy(ftmp.origin, origin);
-        strcpy(ftmp.destination, destination);
-        ftmp.status = status;
-
-        if (!validate_aircraft(ftmp, d->aircrafts)) {
-            fprintf(ferr, "%s", line);
+        if (!validate_aircraft_id(aircraft_id, dataset_get_aircrafts(d))) {
+            fprintf(ferror, "%s", line);
             continue;
         }
-
+        
         Flight fv = create_flight(flight_id, departure, actual_departure, arrival,
                                   actual_arrival, gate, status, origin,
                                   destination, aircraft_id, airline, tracking_url);
+        if (!fv) {fprintf(stderr, "create_flight failed\n"); fprintf(ferror, "%s", line); continue;}
 
-        g_hash_table_insert(d->flights, strdup(fv->flight_id), fv);
+        FlightsManager fm = dataset_get_flights(d);
+        flights_manager_add(fm, fv);
     }
 
     fclose(f);
-    fclose(ferr);
+    fclose(ferror);
 }
 
-void parse_passengers(Dataset d, const char *dataset_path) {
-    char path[256];
-    snprintf(path, sizeof(path), "%s/passengers.csv", dataset_path);
+void parse_passengers(Dataset d, const char *data_path) {
+    char path[512];
+    snprintf(path, sizeof(path), "%s/passengers.csv", data_path);
 
     FILE *f = fopen(path, "r");
-    if (!f) { perror("passengers.csv"); return; }
+    if (!f) { perror(path); return; }
 
-    system("mkdir -p resultados");
-    FILE *ferr = fopen("resultados/passengers_errors.csv", "w");
-    if (!ferr) { perror("passengers_errors.csv"); fclose(f); return; }
+    exist_result();
+    FILE *ferror = fopen("resultados/passengers_errors.csv", "w");
+    if (!ferror) { perror("resultados/passengers_errors.csv"); fclose(f); return; }
 
-    char line[512], header[512];
-    fgets(header, sizeof(header), f);
-    fprintf(ferr, "%s", header);
+    wcsv_header(f, ferror);
 
+    char line[2048];
     while (fgets(line, sizeof(line), f)) {
-        char document_id[10], first_name[30], last_name[30], dob[11];
-        char nationality[20], gender[10], email[50], phone[15], address[50], photo[1000];
+        char document_id[11] = "", first_name[31] = "", last_name[31] = "", dob[12] = "";
+        char nationality[21] = "", gender[11] = "", email[51] = "", phone[16] = "", address[51] = "", photo[1001] = "";
 
-        int n = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+        int n = sscanf(line, "%10[^,],%30[^,],%30[^,],%11[^,],%20[^,],%10[^,],%50[^,],%15[^,],%50[^,],%1000[^\n]",
                        document_id, first_name, last_name, dob, nationality,
                        gender, email, phone, address, photo);
 
-        if (n != 10) { fprintf(ferr, "%s", line); continue; }
+        if (n != 10) { fprintf(ferror, "%s", line); continue; }
+
+        remove_quotes(document_id); remove_spc(document_id);
+        remove_quotes(first_name); remove_spc(first_name);
+        remove_quotes(last_name); remove_spc(last_name);
+        remove_quotes(dob); remove_spc(dob);
+        remove_quotes(nationality); remove_spc(nationality);
+        remove_quotes(gender); remove_spc(gender);
+        remove_quotes(email); remove_spc(email);
+        remove_quotes(phone); remove_spc(phone);
+        remove_quotes(address); remove_spc(address);
+        remove_quotes(photo); remove_spc(photo);
 
         if (!validate_email(email) ||
             !validate_document_number(document_id) ||
             !validate_gender(gender) ||
             !validate_date(dob)) {
-            fprintf(ferr, "%s", line);
+            fprintf(ferror, "%s", line);
             continue;
         }
 
         Passenger p = create_passenger(document_id, first_name, last_name, dob,
                                        nationality, gender, email, phone, address, photo);
-        g_hash_table_insert(d->passengers, strdup(p->document_id), p);
-    }
+        if (!p) { fprintf(stderr, "create_passenger failed"); fprintf(ferror, "%s", line); continue; }
+
+        PassengersManager pm = dataset_get_passengers(d);
+        passengers_manager_add(pm, p);
+        }
 
     fclose(f);
-    fclose(ferr);
+    fclose(ferror);
 }
 
 
-void parse_reservations(Dataset d, const char *dataset_path) {
-    char path[256];
-    snprintf(path, sizeof(path), "%s/reservations.csv", dataset_path);
+void parse_reservations(Dataset d, const char *data_path) {
+    char path[512];
+    snprintf(path, sizeof(path), "%s/reservations.csv", data_path);
 
     FILE *f = fopen(path, "r");
-    if (!f) { perror("reservations.csv"); return; }
+    if (!f) { perror(path); return; }
 
-    system("mkdir -p resultados");
-    FILE *ferr = fopen("resultados/reservations_errors.csv", "w");
-    if (!ferr) { perror("reservations_errors.csv"); fclose(f); return; }
+    exist_result();
+    FILE *ferror = fopen("resultados/reservations_errors.csv", "w");
+    if (!ferror) { perror("resultados/reservations_errors.csv"); fclose(f); return; }
 
-    char line[512], header[512];
-    fgets(header, sizeof(header), f);
-    fprintf(ferr, "%s", header);
+    wcsv_header(f, ferror);
 
+    char line[2048];
     while (fgets(line, sizeof(line), f)) {
-        char reservation_id[20], flight_id[2][10], document_number[15];
-        char qr_code[50];
-        int seat[2], extra_luggage[2], priority_boarding[2];
-        double price[2];
+        char reservation_id[21] = "", flight_id[2][11] = "", document_number[16] = "";
+        char qr_code[51] = "";
+        int seat[2] = {0}, extra_luggage[2] = {0}, priority_boarding[2] = {0};
+        double price[2] = {0.0};
 
-        int n = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%d,%d,%lf,%lf,%d,%d,%d,%d,%[^\n]",
+        int n = sscanf(line, "%20[^,],%10[^,],%10[^,],%15[^,],%d,%d,%lf,%lf,%d,%d,%d,%d,%50[^\n]",
                        reservation_id, flight_id[0], flight_id[1], document_number,
                        &seat[0], &seat[1], &price[0], &price[1],
                        &extra_luggage[0], &extra_luggage[1],
                        &priority_boarding[0], &priority_boarding[1],
                        qr_code);
 
-        if (n != 13) { fprintf(ferr, "%s", line); continue; }
+        if (n != 13) { fprintf(ferror, "%s", line); continue; }
 
-        if (!g_hash_table_contains(d->passengers, document_number)) {
-            fprintf(ferr, "%s", line);
+        if (!passengers_manager_exists(dataset_get_passengers(d), document_number)) {
+            fprintf(ferror, "%s", line);
             continue;
         }
 
         Reservation r = create_reservation(reservation_id, flight_id, document_number,
                                            seat, price, extra_luggage,
                                            priority_boarding, qr_code);
-        g_hash_table_insert(d->reservations, strdup(r->reservation_id), r);
+        if (!r) {fprintf(stderr, "create_reservation failed\n"); fprintf(ferror, "%s", line); continue;}
+        
+        ReservationsManager rm = dataset_get_reservations(d);
+        reservations_manager_add(rm, r);
     }
 
     fclose(f);
-    fclose(ferr);
+    fclose(ferror);
 }

@@ -3,6 +3,7 @@
 #include <glib.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 struct passengers_manager {
     GHashTable *passengers; // chave = document_id
@@ -31,4 +32,9 @@ Passenger passengers_manager_get(PassengersManager m, const char *id) {
 
 int passengers_manager_count(PassengersManager m) {
     return g_hash_table_size(m->passengers);
+}
+
+bool passengers_manager_exists(PassengersManager m, const char *document_id) {
+    if (!m || !document_id) return false;
+    return g_hash_table_contains(m->passengers, document_id);
 }
