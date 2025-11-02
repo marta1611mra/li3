@@ -8,4 +8,4 @@ bool validate_destination (struct flight f);
 bool validate_arrival(struct flight f);
 bool validate_aircraft(struct flight f, GHashTable *aircrafts);
 bool validate_status(struct flight f);
-bool logical_validate_document_number(struct reservation r, struct passenger p[], int N);
+bool logical_validate_document_number(Reservation r, Passenger p[], int N);

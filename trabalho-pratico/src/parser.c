@@ -2,11 +2,11 @@
 #include "dataset.h"
 #include "syntactic_validation.h"
 #include "logical_validation.h"
-#include "flights.c"
-#include "reservations.c"
-#include "passengers.c"
-#include "aircrafts.c"
-#include "airports.c"
+#include "flights.h"
+#include "reservations.h"
+#include "passengers.h"
+#include "aircrafts.h"
+#include "airports.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
