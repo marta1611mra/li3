@@ -16,20 +16,54 @@ bool validate_destination (Flight f){
     return strcmp(orig, dest) != 0;
 }
 
+static int compare_datetimes(const char *dt1, const char *dt2) {
+    int y1, m1, d1, h1, min1;
+    int y2, m2, d2, h2, min2;
+
+    if (sscanf(dt1, "%d-%d-%d %d:%d", &y1, &m1, &d1, &h1, &min1) != 5) return 0;
+    if (sscanf(dt2, "%d-%d-%d %d:%d", &y2, &m2, &d2, &h2, &min2) != 5) return 0;
+
+    if (y1 != y2) return y1 - y2;
+    if (m1 != m2) return m1 - m2;
+    if (d1 != d2) return d1 - d2;
+    if (h1 != h2) return h1 - h2;
+    return min1 - min2;
+}
+
 //Os campos arrival e actual arrival não poderão ser anteriores aos respetivos campos departure e actual departure. Para alem disso se o status for Delayed
-bool validate_arrival(Flight f){
-    // obtém os campos encapsulados
+bool validate_arrival(Flight f) {
     const char *dep = get_flight_departure(f);
     const char *arr = get_flight_arrival(f);
-    const char *actual_dep = get_flight_actual_departure(f);
-    const char *actual_arr = get_flight_actual_arrival(f);
+    const char *act_dep = get_flight_actual_departure(f);
+    const char *act_arr = get_flight_actual_arrival(f);
     flight_status status = get_flight_status(f);
 
-    // aqui podias reusar a tua lógica de comparação de datas (como já tinhas)
-    // mas sempre com getters em vez de f->campo.
-    // ...
-    return true; // só placeholder aqui
+    // Campos básicos têm de existir
+    if (!dep || !arr || !act_dep || !act_arr)
+        return false;
+
+    // arrival ≥ departure
+    if (compare_datetimes(arr, dep) < 0)
+        return false;
+
+    // actual_arrival ≥ actual_departure
+    if (compare_datetimes(act_arr, act_dep) < 0)
+        return false;
+
+    // Se o voo estiver "Delayed", a actual_departure não pode ser antes da programada
+    if (status == Delayed && compare_datetimes(act_dep, dep) < 0)
+        return false;
+
+    // Se o voo estiver "OnTime", as actuals devem ser >= programadas
+    if (status == OnTime) {
+        if (compare_datetimes(act_dep, dep) < 0) return false;
+        if (compare_datetimes(act_arr, arr) < 0) return false;
+    }
+
+    // Se for Cancelled, ignora (essa regra é validada noutro sítio)
+    return true;
 }
+
 
 // O campo aircraft de um voo, deverá corresponder a uma aeronave existente.
 bool validate_aircraft(Flight f, AircraftsManager am) {
