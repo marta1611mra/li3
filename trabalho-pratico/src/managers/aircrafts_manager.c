@@ -32,3 +32,8 @@ Aircraft aircrafts_manager_get(AircraftsManager m, const char *id) {
 int aircrafts_manager_count(AircraftsManager m) {
     return g_hash_table_size(m->aircrafts);
 }
+
+bool aircrafts_manager_exists(AircraftsManager m, const char *id){
+    if (!m || !id) return false;
+    return g_hash_table_contains(m->aircrafts, id);
+}
