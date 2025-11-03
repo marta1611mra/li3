@@ -6,8 +6,8 @@
 
 typedef struct passengers_manager *PassengersManager;
 
-PassengersManager create_passengers_manager();
-void destroy_passengers_manager(PassengersManager m);
+PassengersManager passengers_manager_create();
+void passengers_manager_destroy(PassengersManager m);
 void passengers_manager_add(PassengersManager m, Passenger p);
 Passenger passengers_manager_get(PassengersManager m, const char *id);
 int passengers_manager_count(PassengersManager m);

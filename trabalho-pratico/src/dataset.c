@@ -9,30 +9,29 @@ struct dataset {
     ReservationsManager reservations;
 };
 
-Dataset create_dataset() {
-    Dataset d = malloc(sizeof(*d));
+Dataset dataset_create(void) {
+    Dataset d = malloc(sizeof(struct dataset));
     if (!d) return NULL;
 
-    d->airports = create_airports_manager();
-    d->aircrafts = create_aircrafts_manager();
-    d->flights = create_flights_manager();
-    d->passengers = create_passengers_manager();
-    d->reservations = create_reservations_manager();
+    d->airports = airports_manager_create();
+    d->aircrafts = aircrafts_manager_create();
+    d->flights = flights_manager_create();
+    d->passengers = passengers_manager_create();
+    d->reservations = reservations_manager_create();
 
     return d;
 }
 
-void destroy_dataset(Dataset d) {
+void dataset_destroy(Dataset d) {
     if (!d) return;
-
-    destroy_airports_manager(d->airports);
-    destroy_aircrafts_manager(d->aircrafts);
-    destroy_flights_manager(d->flights);
-    destroy_passengers_manager(d->passengers);
-    destroy_reservations_manager(d->reservations);
-
+    airports_manager_destroy(d->airports);
+    aircrafts_manager_destroy(d->aircrafts);
+    flights_manager_destroy(d->flights);
+    passengers_manager_destroy(d->passengers);
+    reservations_manager_destroy(d->reservations);
     free(d);
 }
+
 
 AirportsManager dataset_get_airports(Dataset d) { 
     return d->airports; 

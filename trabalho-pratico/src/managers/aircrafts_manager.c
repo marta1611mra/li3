@@ -1,21 +1,21 @@
+#include <string.h>
 #include "aircrafts_manager.h"
 #include "aircrafts.h"
 #include <glib.h>
 #include <stdlib.h>
-#include <string.h>
 
 struct aircrafts_manager {
     GHashTable *aircrafts; // chave = id (tail number)
 };
 
-AircraftsManager create_aircrafts_manager() {
+AircraftsManager aircrafts_manager_create() {
     AircraftsManager m = malloc(sizeof(*m));
     if (!m) return NULL;
     m->aircrafts = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_aircraft);
     return m;
 }
 
-void destroy_aircrafts_manager(AircraftsManager m) {
+void aircrafts_manager_destroy(AircraftsManager m) {
     if (!m) return;
     g_hash_table_destroy(m->aircrafts);
     free(m);
@@ -33,7 +33,7 @@ int aircrafts_manager_count(AircraftsManager m) {
     return g_hash_table_size(m->aircrafts);
 }
 
-bool aircrafts_manager_exists(AircraftsManager m, const char *id){
-    if (!m || !id) return false;
-    return g_hash_table_contains(m->aircrafts, id);
+bool aircrafts_manager_exists(AircraftsManager am, const char *aircraft_id) {
+    if (!am || !aircraft_id) return false;
+    return g_hash_table_contains(am->aircrafts, aircraft_id);
 }

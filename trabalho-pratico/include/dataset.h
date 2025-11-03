@@ -11,9 +11,9 @@
 typedef struct dataset *Dataset;
 
 
-Dataset create_dataset();
+Dataset dataset_create(void);
 
-void destroy_dataset(Dataset d);
+void dataset_destroy(Dataset d);
 
 AirportsManager dataset_get_airports(Dataset d);
 

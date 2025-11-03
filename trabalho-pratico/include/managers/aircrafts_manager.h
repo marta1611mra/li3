@@ -6,11 +6,11 @@
 
 typedef struct aircrafts_manager *AircraftsManager;
 
-AircraftsManager create_aircrafts_manager();
-void destroy_aircrafts_manager(AircraftsManager m);
+AircraftsManager aircrafts_manager_create();
+void aircrafts_manager_destroy(AircraftsManager m);
 void aircrafts_manager_add(AircraftsManager m, Aircraft a);
 Aircraft aircrafts_manager_get(AircraftsManager m, const char *id);
 int aircrafts_manager_count(AircraftsManager m);
-bool aircrafts_manager_exists(AircraftsManager m, const char *id);
+bool aircrafts_manager_exists(AircraftsManager m, const char *aircraft_id);
 
 #endif
