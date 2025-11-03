@@ -11,8 +11,8 @@
 
 // O campo destination de um voo, deverá ser diferente do campo origin.
 bool validate_destination (Flight f){
-    const char *orig = get_flight_origin(f);
-    const char *dest = get_flight_destination(f);
+    const char *orig = get_flight_orig(f);
+    const char *dest = get_flight_dest(f);
     return strcmp(orig, dest) != 0;
 }
 
@@ -32,10 +32,10 @@ static int compare_datetimes(const char *dt1, const char *dt2) {
 
 //Os campos arrival e actual arrival não poderão ser anteriores aos respetivos campos departure e actual departure. Para alem disso se o status for Delayed
 bool validate_arrival(Flight f) {
-    const char *dep = get_flight_departure(f);
+    const char *dep = get_flight_dep(f);
     const char *arr = get_flight_arrival(f);
-    const char *act_dep = get_flight_actual_departure(f);
-    const char *act_arr = get_flight_actual_arrival(f);
+    const char *act_dep = get_flight_actual_dep(f);
+    const char *act_arr = get_flight_actual_ar(f);
     flight_status status = get_flight_status(f);
 
     // Campos básicos têm de existir
@@ -66,16 +66,16 @@ bool validate_arrival(Flight f) {
 
 
 // O campo aircraft de um voo, deverá corresponder a uma aeronave existente.
-bool validate_aircraft(Flight f, AircraftsManager am) {
-    const char *id = get_flight_aircraft_id(f);
-    return aircrafts_manager_exists(am, id);
+bool validate_aircraft(const char *aircraft_id, AircraftsManager am) {
+    if (!am || !aircraft_id || strlen(aircraft_id) == 0) return false;
+    return aircrafts_manager_exists(am, aircraft_id);
 }
 
 // Caso o campo status de um voo tome o valor Cancelled, os campos actual departure e actual arrival deverão conter o valor "N/A".
 bool validate_status(Flight f){
     flight_status status = get_flight_status(f);
-    const char *ad = get_flight_actual_departure(f);
-    const char *aa = get_flight_actual_arrival(f);
+    const char *ad = get_flight_actual_dep(f);
+    const char *aa = get_flight_actual_ar(f);
 
     if (status == Cancelled)
         return strcmp(ad, "N/A") == 0 && strcmp(aa, "N/A") == 0;
@@ -125,7 +125,7 @@ bool validate_reservation_connection(Reservation r, Flight *flights, int num_fli
     }
 
     if (!first || !second) return false;
-    return strcmp(get_flight_destination(first), get_flight_origin(second)) == 0;
+    return strcmp(get_flight_dest(first), get_flight_orig(second)) == 0;
 }
 
 

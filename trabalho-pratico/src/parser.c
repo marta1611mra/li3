@@ -26,15 +26,7 @@ static void remove_quotes(char *str) {
 static void remove_spc(char *str) {
     if (!str) return;
     int len = (int)strlen(str);
-    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\t' || str[len - 1] == ' ' || str[len - 1] == '\r')) {
-        str[--len] = '\0';
-    }
-}
-
-// duplicates string for manager keys where needed
-static char *dupnull(const char *s){
-    if (!s) return NULL;
-    return strdup(s);
+    while (len > 0 && isspace((unsigned char)str[len - 1])) str[--len] = '\0';
 }
 
 // creates the directory resultados if it doesn't exists
@@ -51,11 +43,12 @@ static void wcsv_header(FILE *csv, FILE *ferror) {
 }
 
 void parse_airports(Dataset d, const char *data_path) {
-    char filepath[512];
-    snprintf(filepath, sizeof(filepath), "%s/airports.csv", data_path);
+    char path[512];
+    snprintf(path, sizeof(path), "%s/airports.csv", data_path);
 
-    FILE *f = fopen(filepath, "r");
-    if (!f) { perror(filepath); return; }
+    FILE *f = fopen(path, "r");
+    if (!f) { perror(path); return; }
+    printf("📄 A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/airports_errors.csv", "w");
@@ -68,9 +61,11 @@ void parse_airports(Dataset d, const char *data_path) {
         char code[4] = "", name[101] = "", city[101] = "", country[51] = "";
         char lat_str[16] = "", long_str[16] = "", icao[5] = "", type[31] = "";
 
-        int n = sscanf(line, "%3[^,],%100[^,],%100[^,],%50[^,],%16[^,],%16[^,],%4[^,],%30[^\n]",
-                       code, name, city, country, lat_str, long_str, icao, type);
-        if (n != 8) { 
+        int n = sscanf(line,
+            "\"%3[^\"]\",\"%100[^\"]\",\"%100[^\"]\",\"%50[^\"]\",\"%16[^\"]\",\"%16[^\"]\",\"%4[^\"]\",\"%30[^\"]\"",
+            code, name, city, country, lat_str, long_str, icao, type);
+
+        if (n < 8) { 
             fprintf(ferror, "%s", line); 
             continue; 
         }
@@ -85,7 +80,7 @@ void parse_airports(Dataset d, const char *data_path) {
         remove_quotes(type); remove_spc(type);
 
         if (!validate_airport_code(code) ||
-            !validate_latitude_longitude(lat_str, long_str) ||
+            !validate_latitude_longitude(lat_str, long_str) || !validate_airport_type(type) ||
             strlen(name) == 0) {
             fprintf(ferror, "%s", line);
             continue;
@@ -114,6 +109,7 @@ void parse_aircrafts(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
+    printf("📄 A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/aircrafts_errors.csv", "w");
@@ -126,9 +122,11 @@ void parse_aircrafts(Dataset d, const char *data_path) {
         char id[16] = "", manufacturer[51] = "", model[51] = "";
         char year_str[8] = "", capacity_str[8] = "", range_str[10] = "";
 
-        int n = sscanf(line, "%15[^,],%50[^,],%50[^,],%7[^,],%7[^,],%9[^\n]",
-                       id, manufacturer, model, year_str, capacity_str, range_str);
-        if (n != 6) { fprintf(ferror, "%s", line); continue; }
+        int n = sscanf(line,
+                "\"%15[^\"]\",\"%50[^\"]\",\"%50[^\"]\",\"%7[^\"]\",\"%7[^\"]\",\"%9[^\"]\"",
+                id, manufacturer, model, year_str, capacity_str, range_str);
+
+        if (n < 6) { fprintf(ferror, "%s", line); continue; }
 
         remove_quotes(id); remove_spc(id);
         remove_quotes(manufacturer); remove_spc(manufacturer);
@@ -163,6 +161,7 @@ void parse_flights(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
+    printf("📄 A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/flights_errors.csv", "w");
@@ -175,25 +174,27 @@ void parse_flights(Dataset d, const char *data_path) {
         char flight_id[9] = "", departure[20] = "", actual_departure[20] = "", arrival[20] = "", actual_arrival[20] = "";
         char gate[4] = "", origin[5] = "", destination[5] = "", aircraft_id[16] = "", airline[41] = "", tracking_url[101] = "", status_str[16] = "";
 
-        int n = sscanf(line, "%9[^,],%20[^,],%20[^,],%20[^,],%20[^,],%4[^,],%5[^,],%5[^,],%16[^,],%41[^,],%101[^,],%16[^\n]",
-                       flight_id, departure, actual_departure, arrival, actual_arrival,
-                       gate, origin, destination, aircraft_id, airline, tracking_url, status_str);
+        int n = sscanf(line,
+                "\"%9[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%3[^\"]\",\"%15[^\"]\",\"%5[^\"]\",\"%5[^\"]\",\"%15[^\"]\",\"%40[^\"]\",\"%100[^\"]\"",
+                flight_id, departure, actual_departure, arrival, actual_arrival,
+                gate, status_str, origin, destination, aircraft_id, airline, tracking_url);
 
-        if (n != 12) { fprintf(ferror, "%s", line); continue; }
+
+        if (n < 12) { fprintf(ferror, "%s", line); continue; }
 
         remove_quotes(flight_id); remove_spc(flight_id);
         remove_quotes(aircraft_id); remove_spc(aircraft_id);
         remove_quotes(status_str); remove_spc(status_str);
         remove_quotes(origin); remove_spc(origin);
         remove_quotes(destination); remove_spc(destination);
-
         flight_status status;
+
         if (strcmp(status_str, "OnTime") == 0) status = OnTime;
         else if (strcmp(status_str, "Delayed") == 0) status = Delayed;
         else if (strcmp(status_str, "Cancelled") == 0) status = Cancelled;
         else { fprintf(ferror, "%s", line); continue; }
 
-        if (!validate_aircraft_id(aircraft_id, dataset_get_aircrafts(d))) {
+        if (!validate_aircraft(aircraft_id, dataset_get_aircrafts(d))) {
             fprintf(ferror, "%s", line);
             continue;
         }
@@ -201,8 +202,11 @@ void parse_flights(Dataset d, const char *data_path) {
         Flight fv = create_flight(flight_id, departure, actual_departure, arrival,
                                   actual_arrival, gate, status, origin,
                                   destination, aircraft_id, airline, tracking_url);
-        if (!fv) {fprintf(stderr, "create_flight failed\n"); fprintf(ferror, "%s", line); continue;}
-
+        if (!fv) {
+        fprintf(stderr, "create_flight failed\n");
+        fprintf(ferror, "%s", line);
+        continue;
+        }
         FlightsManager fm = dataset_get_flights(d);
         flights_manager_add(fm, fv);
     }
@@ -217,6 +221,7 @@ void parse_passengers(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
+    printf("📄 A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/passengers_errors.csv", "w");
@@ -229,11 +234,13 @@ void parse_passengers(Dataset d, const char *data_path) {
         char document_id[11] = "", first_name[31] = "", last_name[31] = "", dob[12] = "";
         char nationality[21] = "", gender[11] = "", email[51] = "", phone[16] = "", address[51] = "", photo[1001] = "";
 
-        int n = sscanf(line, "%10[^,],%30[^,],%30[^,],%11[^,],%20[^,],%10[^,],%50[^,],%15[^,],%50[^,],%1000[^\n]",
-                       document_id, first_name, last_name, dob, nationality,
-                       gender, email, phone, address, photo);
+        int n = sscanf(line,
+                "\"%10[^\"]\",\"%30[^\"]\",\"%30[^\"]\",\"%11[^\"]\",\"%20[^\"]\",\"%10[^\"]\",\"%50[^\"]\",\"%15[^\"]\",\"%50[^\"]\",\"%1000[^\"]\"",
+                document_id, first_name, last_name, dob, nationality,
+                gender, email, phone, address, photo);
 
-        if (n != 10) { fprintf(ferror, "%s", line); continue; }
+
+        if (n < 10) { fprintf(ferror, "%s", line); continue; }
 
         remove_quotes(document_id); remove_spc(document_id);
         remove_quotes(first_name); remove_spc(first_name);
@@ -273,6 +280,7 @@ void parse_reservations(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
+    printf("📄 A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/reservations_errors.csv", "w");
@@ -282,20 +290,28 @@ void parse_reservations(Dataset d, const char *data_path) {
 
     char line[2048];
     while (fgets(line, sizeof(line), f)) {
-        char reservation_id[21] = "", flight_id[2][11] = "", document_number[16] = "";
+        char reservation_id[21] = "";
+        char flight_id[2][10] = {{0}};
+        char document_number[16] = "";
         char qr_code[51] = "";
         int seat[2] = {0}, extra_luggage[2] = {0}, priority_boarding[2] = {0};
         double price[2] = {0.0};
 
-        int n = sscanf(line, "%20[^,],%10[^,],%10[^,],%15[^,],%d,%d,%lf,%lf,%d,%d,%d,%d,%50[^\n]",
-                       reservation_id, flight_id[0], flight_id[1], document_number,
-                       &seat[0], &seat[1], &price[0], &price[1],
-                       &extra_luggage[0], &extra_luggage[1],
-                       &priority_boarding[0], &priority_boarding[1],
-                       qr_code);
+        int n = sscanf(line,
+                    "\"%20[^\"]\",\"%10[^\"]\",\"%10[^\"]\",\"%15[^\"]\",\"%d\",\"%d\",\"%lf\",\"%lf\",\"%d\",\"%d\",\"%d\",\"%d\",\"%50[^\"]\"",
+                    reservation_id, flight_id[0], flight_id[1], document_number,
+                    &seat[0], &seat[1], &price[0], &price[1],
+                    &extra_luggage[0], &extra_luggage[1],
+                     &priority_boarding[0], &priority_boarding[1],
+                    qr_code);
+
 
         if (n != 13) { fprintf(ferror, "%s", line); continue; }
-
+        remove_quotes(reservation_id); remove_spc(reservation_id);
+        remove_quotes(flight_id[0]); remove_spc(flight_id[0]);
+        remove_quotes(flight_id[1]); remove_spc(flight_id[1]);
+        remove_quotes(document_number); remove_spc(document_number);
+        remove_quotes(qr_code); remove_spc(qr_code);
         if (!passengers_manager_exists(dataset_get_passengers(d), document_number)) {
             fprintf(ferror, "%s", line);
             continue;

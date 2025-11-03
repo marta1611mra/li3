@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h> // for the function to check if its alphanumeric
-
+#include <string.h>
 
 // validate the date in the format yyyy-mm-dd
 bool validate_date(const char *date){
@@ -42,12 +42,11 @@ bool validate_datetime(const char *datetime){
 }
 
 // validate the email int the format username@domain ( username@<lstring>.<rstring>)
-bool validar_email(const char *email) {
+bool validate_email(const char *email) {
 
     // username and @
     if (!email) return false; 
-    bool has_arroba = false;   
-    bool has_dot = false;  
+    bool has_arroba = false;    
     int arroba_pos = -1, i = 0;            
     while (email[i] != '\0') {
         char c = email[i]; 
@@ -61,9 +60,9 @@ bool validar_email(const char *email) {
     if (!has_arroba) return false; // make sure it has a @
 
     // Domain part before the dot
-    char *domain = email + arroba_pos + 1;
+    const char *domain = email + arroba_pos + 1;
     if (*domain == '\0') return false; // it means there is nothing after '@'
-    char *dot = NULL;
+    const char *dot = NULL;
     for (int j = 0; domain[j] != '\0'; j++) {
         if (domain[j] == '.') 
         dot = domain + j; // keep the position where "." it's located
@@ -133,7 +132,7 @@ bool validate_document_number(const char *doc_num){
 }
 
 // validates the airport type 
-bool validate_tipo_aeroporto(const char *type) {
+bool validate_airport_type(const char *type) {
     const char *valid[] = {"small_airport", "medium_airport", "large_airport", "heliport", "seaplane_base"};
     // array with valid airport types
     for (int i = 0; i < 5; i++)
