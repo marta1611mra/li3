@@ -9,4 +9,7 @@ void destroy_reservation(Reservation r);
 
 const char *get_reservation_id(Reservation r);
 
+const char *get_reservation_flight_id(Reservation r, int index);
+
+const char *get_reservation_document_number(Reservation r);
 #endif

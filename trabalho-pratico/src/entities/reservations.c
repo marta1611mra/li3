@@ -42,3 +42,11 @@ void destroy_reservation(Reservation r) {
 const char *get_reservation_id(Reservation r) { 
     return r->reservation_id; 
 }
+
+const char *get_reservation_flight_id(Reservation r, int index) {
+    return (index >= 0 && index < 2) ? r->flight_id[index] : NULL;
+}
+
+const char *get_reservation_document_number(Reservation r) {
+    return r->document_number;
+}

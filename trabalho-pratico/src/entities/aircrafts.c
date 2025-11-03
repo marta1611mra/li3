@@ -22,6 +22,8 @@ Aircraft create_aircraft(const char *id, const char *manufacturer, const char *m
     a->year = year;
     a->capacity = capacity;
     a->range = range;
+
+    return a;
 }
 
 void destroy_aircraft (Aircraft a){

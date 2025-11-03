@@ -13,12 +13,26 @@ Flight create_flight(const char *flight_id, const char *departure, const char *a
 
 void destroy_flight(Flight f);
 
-const char *get_orig(Flight f);
+const char *get_flight_orig(Flight f);
 
-const char *get_dest(Flight f);
+const char *get_flight_dest(Flight f);
 
-flight_status get_stat(Flight f);
+flight_status get_flight_status(Flight f);
 
 const char *get_flight_id(Flight f);
+
+const char *get_flight_dep(Flight f);
+
+const char *get_flight_actual_dep(Flight f);
+
+const char *get_flight_arrival(Flight f);
+
+const char *get_flight_actual_ar(Flight f);
+
+const char *get_flight_gate(Flight f);
+
+const char *get_flight_aircraft_id(Flight f);
+
+const char *get_flight_airline(Flight f);
 
 #endif

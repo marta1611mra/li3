@@ -44,20 +44,48 @@ void destroy_flight(Flight f) {
     if (f) free(f);
 }
 
-const char *get_orig(Flight f) {
+const char *get_flight_orig(Flight f) {
     return f->origin; 
 }
 
-const char *get_dest(Flight f) {
+const char *get_flight_dest(Flight f) {
     return f->destination; 
 }
 
-flight_status get_stat(Flight f) {
+flight_status get_flight_status(Flight f) {
     return f->status; 
 
 }
 
 const char *get_flight_id(Flight f) { 
     return f->flight_id; 
+}
+
+const char *get_flight_dep(Flight f) { 
+    return f->departure; 
+}
+
+const char *get_flight_actual_dep(Flight f) { 
+    return f->actual_departure; 
+}
+
+const char *get_flight_arrival(Flight f) { 
+    return f->arrival; 
+}
+
+const char *get_flight_actual_ar(Flight f) { 
+    return f->actual_arrival; 
+}
+
+const char *get_flight_gate(Flight f) { 
+    return f->gate; 
+}
+
+const char *get_flight_aircraft_id(Flight f) { 
+    return f->aircraft_id; 
+}
+
+const char *get_flight_airline(Flight f) { 
+    return f->airline; 
 }
 
