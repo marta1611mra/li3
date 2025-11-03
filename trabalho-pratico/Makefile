@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -Wall -g -std=gnu11 \
          -Iinclude -Iinclude/entities -Iinclude/managers \
-         -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
-LIBS = -lglib-2.0
+         $(shell pkg-config --cflags glib-2.0)
+LIBS = $(shell pkg-config --libs glib-2.0)
 
 SRC_COMMON = src/dataset.c src/parser.c src/logical_validation.c src/syntactic_validation.c \
              src/entities/aircrafts.c src/entities/airports.c src/entities/flights.c \

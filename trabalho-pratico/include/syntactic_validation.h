@@ -6,15 +6,15 @@
 
 
 // syntax
-bool validate_date();
-bool validate_datetime();
-bool validate_email();
-bool validate_airport_code();
-bool validate_gender();
-bool validate_latitude_longitude();
-bool validate_flight_id();
-bool validate_reservation_id();
-bool validate_document_number();
-bool validate_airport_type();
-bool validate_csv_lists();
+bool validate_date(const char *date);
+bool validate_datetime(const char *datetime);
+bool validate_email(const char *email);
+bool validate_airport_code(const char *code);
+bool validate_gender(const char *gender);
+bool validate_latitude_longitude(const char *latitude,const char *longitude);
+bool validate_flight_id(const char *id);
+bool validate_reservation_id(const char *id);
+bool validate_document_number(const char *doc_num);
+bool validate_airport_type(const char *type);
+bool validate_csv_lists(const char *list);
 

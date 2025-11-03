@@ -59,7 +59,7 @@ void parse_airports(Dataset d, const char *data_path) {
     char line[2048];
     while (fgets(line, sizeof(line), f)) {
         char code[4] = "", name[101] = "", city[101] = "", country[51] = "";
-        char lat_str[16] = "", long_str[16] = "", icao[5] = "", type[31] = "";
+        char lat_str[17] = "", long_str[17] = "", icao[5] = "", type[31] = "";
 
         int n = sscanf(line,
             "\"%3[^\"]\",\"%100[^\"]\",\"%100[^\"]\",\"%50[^\"]\",\"%16[^\"]\",\"%16[^\"]\",\"%4[^\"]\",\"%30[^\"]\"",
@@ -175,7 +175,7 @@ void parse_flights(Dataset d, const char *data_path) {
         char gate[4] = "", origin[5] = "", destination[5] = "", aircraft_id[16] = "", airline[41] = "", tracking_url[101] = "", status_str[16] = "";
 
         int n = sscanf(line,
-                "\"%9[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%3[^\"]\",\"%15[^\"]\",\"%5[^\"]\",\"%5[^\"]\",\"%15[^\"]\",\"%40[^\"]\",\"%100[^\"]\"",
+                "\"%8[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%3[^\"]\",\"%15[^\"]\",\"%4[^\"]\",\"%4[^\"]\",\"%15[^\"]\",\"%40[^\"]\",\"%100[^\"]\"",
                 flight_id, departure, actual_departure, arrival, actual_arrival,
                 gate, status_str, origin, destination, aircraft_id, airline, tracking_url);
 
@@ -298,7 +298,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         double price[2] = {0.0};
 
         int n = sscanf(line,
-                    "\"%20[^\"]\",\"%10[^\"]\",\"%10[^\"]\",\"%15[^\"]\",\"%d\",\"%d\",\"%lf\",\"%lf\",\"%d\",\"%d\",\"%d\",\"%d\",\"%50[^\"]\"",
+                    "\"%20[^\"]\",\"%9[^\"]\",\"%9[^\"]\",\"%15[^\"]\",\"%d\",\"%d\",\"%lf\",\"%lf\",\"%d\",\"%d\",\"%d\",\"%d\",\"%50[^\"]\"",
                     reservation_id, flight_id[0], flight_id[1], document_number,
                     &seat[0], &seat[1], &price[0], &price[1],
                     &extra_luggage[0], &extra_luggage[1],

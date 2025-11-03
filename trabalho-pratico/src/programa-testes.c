@@ -6,6 +6,7 @@
 #include <time.h>
 #include <sys/resource.h>
 #include "programa-testes.h"
+#include <sys/resource.h>
 
 
 
@@ -42,7 +43,15 @@ int compare_files(const char *generated, const char *expected) {
 void print_performance_info(struct timespec start, struct timespec end, struct rusage usage) {
     double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     printf("\n⏱️ Tempo total de execução: %.6f segundos\n", elapsed);
+
+getrusage(RUSAGE_SELF, &usage);
+
+#ifdef __APPLE__
+    printf("💾 Medição de memória não suportada no macOS com getrusage()\n");
+#else
     printf("💾 Memória máxima usada: %ld KB\n", usage.ru_maxrss);
+#endif
+
 }
 
 int run_programa_testes(const char *dataset_path, const char *commands_file, const char *expected_dir) {
