@@ -1,0 +1,95 @@
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <sys/resource.h>
+#include "programa-testes.h"
+
+
+
+int compare_files(const char *generated, const char *expected) {
+    FILE *fg = fopen(generated, "r");
+    FILE *fe = fopen(expected, "r");
+    if (!fg || !fe) {
+        fprintf(stderr, "❌ Erro ao abrir ficheiros: %s ou %s\n", generated, expected);
+        if (fg) fclose(fg);
+        if (fe) fclose(fe);
+        return 0;
+    }
+
+    char line_g[2048], line_e[2048];
+    int line_num = 1;
+
+    while (fgets(line_g, sizeof(line_g), fg) && fgets(line_e, sizeof(line_e), fe)) {
+        if (strcmp(line_g, line_e) != 0) {
+            printf("❌ Diferença na linha %d\n", line_num);
+            printf("   Gerado:   %s", line_g);
+            printf("   Esperado: %s\n", line_e);
+            fclose(fg);
+            fclose(fe);
+            return 0;
+        }
+        line_num++;
+    }
+
+    fclose(fg);
+    fclose(fe);
+    return 1;
+}
+
+void print_performance_info(struct timespec start, struct timespec end, struct rusage usage) {
+    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    printf("\n⏱️ Tempo total de execução: %.6f segundos\n", elapsed);
+    printf("💾 Memória máxima usada: %ld KB\n", usage.ru_maxrss);
+}
+
+int run_programa_testes(const char *dataset_path, const char *commands_file, const char *expected_dir) {
+    printf("🧪 A iniciar testes automáticos...\n");
+    struct timespec start, end;
+    struct rusage usage;
+    clock_gettime(CLOCK_REALTIME, &start);
+
+    // (aqui chamarias o programa principal se fosse integrado diretamente)
+    // Por agora, assume que já executaste ./programa-principal antes
+
+    int correct = 0, total = 0;
+    char generated[256], expected[256];
+
+    for (int i = 1; i <= 10; i++) {  // assume até 10 queries para teste
+        snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", i);
+        snprintf(expected, sizeof(expected), "%s/command%d_output.txt", expected_dir, i);
+        FILE *test = fopen(expected, "r");
+        if (!test) break;
+        fclose(test);
+
+        total++;
+        printf("\n🔍 A comparar %s...\n", generated);
+        if (compare_files(generated, expected)) {
+            printf("✅ command%d_output.txt está correto.\n", i);
+            correct++;
+        } else {
+            printf("❌ command%d_output.txt difere do esperado.\n", i);
+        }
+    }
+
+    clock_gettime(CLOCK_REALTIME, &end);
+    getrusage(RUSAGE_SELF, &usage);
+
+    printf("\n📊 Resultados dos testes:\n");
+    printf("   %d de %d ficheiros corretos (%.1f%%)\n",
+           correct, total, total > 0 ? (100.0 * correct / total) : 0.0);
+
+    print_performance_info(start, end, usage);
+    return (correct == total) ? 0 : 1;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 4) {
+        fprintf(stderr, "Uso: %s <dataset_path> <ficheiro_comandos> <resultados_esperados>\n", argv[0]);
+        return 1;
+    }
+
+    return run_programa_testes(argv[1], argv[2], argv[3]);
+}
