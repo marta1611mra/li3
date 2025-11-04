@@ -8,9 +8,12 @@
 // syntax
 bool validate_date(const char *date);
 bool validate_datetime(const char *datetime);
+bool validate_year(const char *year);
 bool validate_email(const char *email);
 bool validate_airport_code(const char *code);
 bool validate_gender(const char *gender);
+bool validate_latitude(const char *lat);
+bool validate_longitude(const char *lon);
 bool validate_latitude_longitude(const char *latitude,const char *longitude);
 bool validate_flight_id(const char *id);
 bool validate_reservation_id(const char *id);

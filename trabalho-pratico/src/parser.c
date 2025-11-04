@@ -291,37 +291,107 @@ void parse_reservations(Dataset d, const char *data_path) {
     char line[2048];
     while (fgets(line, sizeof(line), f)) {
         char reservation_id[21] = "";
-        char flight_id[2][10] = {{0}};
+        char flight_list[128] = "";
         char document_number[16] = "";
-        char qr_code[51] = "";
-        int seat[2] = {0}, extra_luggage[2] = {0}, priority_boarding[2] = {0};
-        double price[2] = {0.0};
+        char seat_str[8] = "";
+        char extra_luggage_str[8] = "";
+        char priority_boarding_str[8] = "";
+        char qr_code[1001] = "";
+        double price = 0.0;
 
+        // Leitura do CSV
         int n = sscanf(line,
-                    "\"%20[^\"]\",\"%9[^\"]\",\"%9[^\"]\",\"%15[^\"]\",\"%d\",\"%d\",\"%lf\",\"%lf\",\"%d\",\"%d\",\"%d\",\"%d\",\"%50[^\"]\"",
-                    reservation_id, flight_id[0], flight_id[1], document_number,
-                    &seat[0], &seat[1], &price[0], &price[1],
-                    &extra_luggage[0], &extra_luggage[1],
-                     &priority_boarding[0], &priority_boarding[1],
-                    qr_code);
+            "\"%20[^\"]\",\"%127[^\"]\",\"%15[^\"]\",\"%7[^\"]\",\"%lf\",\"%7[^\"]\",\"%7[^\"]\",\"%1000[^\"]\"",
+            reservation_id, flight_list, document_number, seat_str,
+            &price, extra_luggage_str, priority_boarding_str, qr_code);
 
-
-        if (n != 13) { fprintf(ferror, "%s", line); continue; }
-        remove_quotes(reservation_id); remove_spc(reservation_id);
-        remove_quotes(flight_id[0]); remove_spc(flight_id[0]);
-        remove_quotes(flight_id[1]); remove_spc(flight_id[1]);
-        remove_quotes(document_number); remove_spc(document_number);
-        remove_quotes(qr_code); remove_spc(qr_code);
-        if (!passengers_manager_exists(dataset_get_passengers(d), document_number)) {
+        if (n != 8) {
+            fprintf(stderr, "❌ DEBUG sscanf falhou (n=%d) linha: %s\n", n, line);
             fprintf(ferror, "%s", line);
             continue;
         }
 
+        // Remove aspas, espaços e quebras de linha
+        remove_quotes(reservation_id); remove_spc(reservation_id);
+        remove_quotes(flight_list); remove_spc(flight_list);
+        remove_quotes(document_number); remove_spc(document_number);
+        remove_quotes(seat_str); remove_spc(seat_str);
+        remove_quotes(extra_luggage_str); remove_spc(extra_luggage_str);
+        remove_quotes(priority_boarding_str); remove_spc(priority_boarding_str);
+        remove_quotes(qr_code); remove_spc(qr_code);
+
+        // Remove quebra de linha/carriage return
+        reservation_id[strcspn(reservation_id, "\r\n")] = 0;
+        flight_list[strcspn(flight_list, "\r\n")] = 0;
+        document_number[strcspn(document_number, "\r\n")] = 0;
+        seat_str[strcspn(seat_str, "\r\n")] = 0;
+        extra_luggage_str[strcspn(extra_luggage_str, "\r\n")] = 0;
+        priority_boarding_str[strcspn(priority_boarding_str, "\r\n")] = 0;
+        qr_code[strcspn(qr_code, "\r\n")] = 0;
+
+        // Debug: conferir document_number
+        // printf("DEBUG document_number='%s'\n", document_number);
+
+        // Verifica se passageiro existe
+        if (!passengers_manager_exists(dataset_get_passengers(d), document_number)) {
+            fprintf(stderr, "❌ DEBUG passageiro inexistente: %s\n", document_number);
+            fprintf(ferror, "%s", line);
+            continue;
+        }
+
+        // Validação da lista de voos
+        if (!validate_csv_lists(flight_list)) {
+            fprintf(stderr, "❌ DEBUG lista de voos inválida: %s\n", flight_list);
+            fprintf(ferror, "%s", line);
+            continue;
+        }
+
+        // Extrair IDs dos voos
+        char flight_id[2][10] = {{0}};
+        int num_ids = 0;
+
+        char tmp[128];
+        if (strlen(flight_list) > 2) {
+            strncpy(tmp, flight_list + 1, strlen(flight_list) - 2); // remove colchetes
+            tmp[strlen(flight_list) - 2] = '\0';
+
+            // Substitui apóstrofos por espaços
+            for (char *p = tmp; *p; p++) {
+                if (*p == '\'') *p = ' ';
+            }
+
+            char *token = strtok(tmp, ",");
+            while (token && num_ids < 2) {
+                remove_spc(token);
+                strncpy(flight_id[num_ids++], token, sizeof(flight_id[0]) - 1);
+                token = strtok(NULL, ",");
+            }
+        }
+
+        if (num_ids == 0) {
+            fprintf(stderr, "❌ DEBUG não encontrou flight_id em %s\n", flight_list);
+            fprintf(ferror, "%s", line);
+            continue;
+        }
+
+        // Converter strings lógicas
+        int extra_luggage = (strcmp(extra_luggage_str, "true") == 0);
+        int priority_boarding = (strcmp(priority_boarding_str, "true") == 0);
+
+        // Criar reserva
         Reservation r = create_reservation(reservation_id, flight_id, document_number,
-                                           seat, price, extra_luggage,
-                                           priority_boarding, qr_code);
-        if (!r) {fprintf(stderr, "create_reservation failed\n"); fprintf(ferror, "%s", line); continue;}
-        
+                                           (int[]){0,0}, (double[]){price,0.0},
+                                           (int[]){extra_luggage,0}, (int[]){priority_boarding,0},
+                                           qr_code);
+        if (!r) {
+            fprintf(stderr, "❌ DEBUG create_reservation falhou: %s\n", reservation_id);
+            fprintf(ferror, "%s", line);
+            continue;
+        }
+
+        fprintf(stderr, "✅ DEBUG reserva válida: %s -> %s | %s\n",
+                reservation_id, flight_id[0], document_number);
+
         ReservationsManager rm = dataset_get_reservations(d);
         reservations_manager_add(rm, r);
     }
