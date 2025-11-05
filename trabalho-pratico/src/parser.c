@@ -194,7 +194,7 @@ void parse_flights(Dataset d, const char *data_path) {
         else if (strcmp(status_str, "Cancelled") == 0) status = Cancelled;
         else { fprintf(ferror, "%s", line); continue; }
 
-        if (!validate_flight_id || 
+        if (!validate_flight_id(flight_id) || 
             !validate_datetime(actual_departure) || 
             !validate_datetime(arrival) || 
             !validate_datetime(actual_arrival) || 
