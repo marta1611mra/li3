@@ -85,7 +85,7 @@ bool date_in_range(const char* date, const char* start_date, const char* end_dat
     return (strcmp(date, start_date) >= 0 && strcmp(date, end_date) <= 0);
 }
 
-// gets the airport by it's code
+// gets the airport by it's code IATA
 Airport* get_airport_by_code(Airports* airports, const char* code) {
     if (!airports || !code) return NULL;
     for (int i = 0; i < airports->count; i++) {
