@@ -139,14 +139,19 @@ void parse_aircrafts(Dataset d, const char *data_path) {
         remove_quotes(capacity_str); remove_spc(capacity_str);
         remove_quotes(range_str); remove_spc(range_str);
 
-        int year = atoi(year_str);
-        int capacity = atoi(capacity_str);
-        int range = atoi(range_str);
-
-        if (strlen(id) == 0 || year <= 0 || capacity <= 0 || range <= 0) {
+        // Validação sintática dos campos
+        if (strlen(id) == 0 ||
+            !validate_year(year_str) ||  // <-- nova validação de ano
+            atoi(capacity_str) <= 0 ||
+            atoi(range_str) <= 0) {
             fprintf(ferror, "%s", line);
             continue;
         }
+
+        // Conversão segura após validação
+        int year = atoi(year_str);
+        int capacity = atoi(capacity_str);
+        int range = atoi(range_str);
 
         Aircraft a = create_aircraft(id, manufacturer, model, year, capacity, range);
         if (!a) {fprintf(stderr, "create_aircraft failed\n"); fprintf(ferror, "%s", line); continue; }
