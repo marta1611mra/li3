@@ -10,14 +10,19 @@ struct aircrafts_manager {
 
 AircraftsManager aircrafts_manager_create() {
     AircraftsManager m = malloc(sizeof(*m));
+
     if (!m) return NULL;
+
     m->aircrafts = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_aircraft);
+    
     return m;
 }
 
 void aircrafts_manager_destroy(AircraftsManager m) {
     if (!m) return;
+
     g_hash_table_destroy(m->aircrafts);
+
     free(m);
 }
 
