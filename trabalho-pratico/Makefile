@@ -10,7 +10,8 @@ SRC_COMMON = src/dataset.c src/parser.c src/logical_validation.c src/syntactic_v
              src/managers/aircrafts_manager.c src/managers/airports_manager.c \
              src/managers/flights_manager.c src/managers/passengers_manager.c \
              src/managers/reservations_manager.c \
-             src/query2.c
+             src/queries/query2.c \
+             src/queries/query3.c
 
 all: programa-principal programa-testes
 
