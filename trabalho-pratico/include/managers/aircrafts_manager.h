@@ -12,5 +12,6 @@ void aircrafts_manager_add(AircraftsManager m, Aircraft a);
 Aircraft aircrafts_manager_get(AircraftsManager m, const char *id);
 int aircrafts_manager_count(AircraftsManager m);
 bool aircrafts_manager_exists(AircraftsManager m, const char *aircraft_id);
+GHashTable *aircrafts_manager_get_table(AircraftsManager m);
 
 #endif

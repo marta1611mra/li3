@@ -33,3 +33,28 @@ void destroy_aircraft (Aircraft a){
 const char *get_aircraft_id(Aircraft a) {
     return a->id;
 }
+
+const char *get_aircraft_manufacturer(Aircraft a) {
+    if (!a) return NULL;
+    return a->manufacturer;
+}
+
+const char *get_aircraft_model(Aircraft a) {
+    if (!a) return NULL;
+    return a->model;
+}
+
+int get_aircraft_year(Aircraft a) {
+    if (!a) return -1;
+    return a->year;
+}
+
+int get_aircraft_capacity(Aircraft a) {
+    if (!a) return -1;
+    return a->capacity;
+}
+
+int get_aircraft_range(Aircraft a) {
+    if (!a) return -1;
+    return a->range;
+}

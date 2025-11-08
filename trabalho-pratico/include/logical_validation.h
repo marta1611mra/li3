@@ -7,10 +7,16 @@
 #include "entities/passengers.h"
 #include "managers/aircrafts_manager.h"
 
-bool validate_destination(Flight f);
-bool validate_arrival(Flight f);
+bool validate_destination(const char *orig, const char *dest);
+bool validate_arrival(const char *departure,
+                      const char *actual_departure,
+                      const char *arrival,
+                      const char *actual_arrival,
+                      flight_status status) ;
 bool validate_aircraft(const char *aircraft_id, AircraftsManager am);
-bool validate_status(Flight f);
+bool validate_status(flight_status status,
+                     const char *actual_departure,
+                     const char *actual_arrival);
 bool logical_validate_document_number(Reservation r, Passenger p[], int N);
 
 #endif

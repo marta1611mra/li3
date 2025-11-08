@@ -10,14 +10,19 @@ struct aircrafts_manager {
 
 AircraftsManager aircrafts_manager_create() {
     AircraftsManager m = malloc(sizeof(*m));
+
     if (!m) return NULL;
+
     m->aircrafts = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_aircraft);
+    
     return m;
 }
 
 void aircrafts_manager_destroy(AircraftsManager m) {
     if (!m) return;
+
     g_hash_table_destroy(m->aircrafts);
+
     free(m);
 }
 
@@ -36,4 +41,9 @@ int aircrafts_manager_count(AircraftsManager m) {
 bool aircrafts_manager_exists(AircraftsManager am, const char *aircraft_id) {
     if (!am || !aircraft_id) return false;
     return g_hash_table_contains(am->aircrafts, aircraft_id);
+}
+
+GHashTable *aircrafts_manager_get_table(AircraftsManager m) {
+    if (!m) return NULL;
+    return m->aircrafts;
 }

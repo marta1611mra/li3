@@ -10,13 +10,11 @@
 #include "aircrafts_manager.h"
 
 // the destination of a flight must be different from its origin
-bool validate_destination (Flight f){
-    if (!f) return false;
-    const char *orig = get_flight_orig(f);
-    const char *dest = get_flight_dest(f);
+bool validate_destination(const char *orig, const char *dest) {
     if (!orig || !dest) return false;
     return strcmp(orig, dest) != 0;
 }
+
 
 static int compare_datetimes(const char *dt1, const char *dt2) {
     if (!dt1 || !dt2) return 0;
@@ -34,41 +32,38 @@ static int compare_datetimes(const char *dt1, const char *dt2) {
 }
 
 // arrival and actual_arrival can't be before departure and actual_departure
-bool validate_arrival(Flight f) {
-    if (!f) return false;
-
-    const char *dep = get_flight_dep(f);
-    const char *arr = get_flight_arrival(f);
-    const char *act_dep = get_flight_actual_dep(f);
-    const char *act_arr = get_flight_actual_ar(f);
-    flight_status status = get_flight_status(f);
-
-    if (!dep || !arr || !act_dep || !act_arr)
+bool validate_arrival(const char *departure,
+                      const char *actual_departure,
+                      const char *arrival,
+                      const char *actual_arrival,
+                      flight_status status) {
+    if (!departure || !actual_departure || !arrival || !actual_arrival)
         return false;
 
     // arrival ≥ departure
-    if (compare_datetimes(arr, dep) < 0)
+    if (compare_datetimes(arrival, departure) < 0)
         return false;
 
     // actual_arrival ≥ actual_departure
-    if (compare_datetimes(act_arr, act_dep) < 0)
+    if (compare_datetimes(actual_arrival, actual_departure) < 0)
         return false;
 
-    // If the flight is "Delayed", the actual_departure cant't be before departure
+    // Se estiver atrasado, actual_* não podem ser antes dos planeados
     if (status == Delayed) {
-        if (compare_datetimes(act_dep, dep) < 0) return false;
-        if (compare_datetimes(act_arr, arr) < 0) return false;
+        if (compare_datetimes(actual_departure, departure) < 0) return false;
+        if (compare_datetimes(actual_arrival, arrival) < 0) return false;
     }
 
-    // If the flight is "OnTime", the actuals must be >= than scheduled
+    // Se estiver OnTime, actual_* devem ser >= aos planeados
     if (status == OnTime) {
-        if (compare_datetimes(act_dep, dep) < 0) return false;
-        if (compare_datetimes(act_arr, arr) < 0) return false;
+        if (compare_datetimes(actual_departure, departure) < 0) return false;
+        if (compare_datetimes(actual_arrival, arrival) < 0) return false;
     }
 
-    // If it is "Cancelled", ignores (it's already validated in validate_status)
+    // Se for Cancelled, não valida aqui (handled por validate_status)
     return true;
 }
+
 
 // Aircraft of a flight must correspond to an existing aircraft.
 bool validate_aircraft(const char *aircraft_id, AircraftsManager am) {
@@ -77,19 +72,18 @@ bool validate_aircraft(const char *aircraft_id, AircraftsManager am) {
 }
 
 // In case status of a flight is "Cancelled", actual departure and actual arrival must be "N/A".
-bool validate_status(Flight f){
-    if (!f) return false;
-
-    flight_status status = get_flight_status(f);
-    const char *ad = get_flight_actual_dep(f);
-    const char *aa = get_flight_actual_ar(f);
+bool validate_status(flight_status status,
+                     const char *actual_departure,
+                     const char *actual_arrival) {
+    if (!actual_departure || !actual_arrival) return false;
 
     if (status == Cancelled) {
-        if (!ad || !aa) return false;
-        return strcmp(ad, "N/A") == 0 && strcmp(aa, "N/A") == 0;
+        return strcmp(actual_departure, "N/A") == 0 &&
+               strcmp(actual_arrival, "N/A") == 0;
     }
     return true;
 }
+
 
 // Flight ids of a reservation must correspond to a list of one or two existing flights.
 bool validate_reservation_flights(Reservation r, Flight *flights, int num_flights, int num_ids) {

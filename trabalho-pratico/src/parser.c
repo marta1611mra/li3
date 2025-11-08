@@ -26,7 +26,13 @@ static void remove_quotes(char *str) {
 static void remove_spc(char *str) {
     if (!str) return;
     int len = (int)strlen(str);
-    while (len > 0 && isspace((unsigned char)str[len - 1])) str[--len] = '\0';
+    
+    while (isspace((unsigned char)*str)) memmove(str, str + 1, strlen(str));
+    
+    while (len > 0 && (isspace((unsigned char)str[len - 1]) ||
+                       str[len - 1] == '\r' || str[len - 1] == '\n')) {
+        str[--len] = '\0';
+    }
 }
 
 // creates the directory resultados if it doesn't exists
@@ -101,8 +107,6 @@ void parse_airports(Dataset d, const char *data_path) {
 }
 
 
-
-
 void parse_aircrafts(Dataset d, const char *data_path) {
     char path[512];
     snprintf(path, sizeof(path), "%s/aircrafts.csv", data_path);
@@ -135,14 +139,19 @@ void parse_aircrafts(Dataset d, const char *data_path) {
         remove_quotes(capacity_str); remove_spc(capacity_str);
         remove_quotes(range_str); remove_spc(range_str);
 
-        int year = atoi(year_str);
-        int capacity = atoi(capacity_str);
-        int range = atoi(range_str);
-
-        if (strlen(id) == 0 || year <= 0 || capacity <= 0 || range <= 0) {
+        // Validação sintática dos campos
+        if (strlen(id) == 0 ||
+            !validate_year(year_str) ||  // <-- nova validação de ano
+            atoi(capacity_str) <= 0 ||
+            atoi(range_str) <= 0) {
             fprintf(ferror, "%s", line);
             continue;
         }
+
+        // Conversão segura após validação
+        int year = atoi(year_str);
+        int capacity = atoi(capacity_str);
+        int range = atoi(range_str);
 
         Aircraft a = create_aircraft(id, manufacturer, model, year, capacity, range);
         if (!a) {fprintf(stderr, "create_aircraft failed\n"); fprintf(ferror, "%s", line); continue; }
@@ -194,7 +203,16 @@ void parse_flights(Dataset d, const char *data_path) {
         else if (strcmp(status_str, "Cancelled") == 0) status = Cancelled;
         else { fprintf(ferror, "%s", line); continue; }
 
-        if (!validate_aircraft(aircraft_id, dataset_get_aircrafts(d))) {
+        if (!validate_flight_id(flight_id) || 
+            !validate_datetime(actual_departure) || 
+            !validate_datetime(arrival) || 
+            !validate_datetime(actual_arrival) || 
+            !validate_airport_code(origin) || 
+            !validate_airport_code(destination) || 
+            !validate_aircraft(aircraft_id, dataset_get_aircrafts(d)) || 
+            !validate_destination(origin,destination) ||
+            !validate_arrival(departure,actual_departure,arrival,actual_arrival,status) ||
+            !validate_status(status,actual_departure,actual_arrival)) {
             fprintf(ferror, "%s", line);
             continue;
         }
@@ -340,7 +358,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         }
 
         // Validação da lista de voos
-        if (!validate_csv_lists(flight_list)) {
+        if (!validate_reservation_id(reservation_id) || !validate_document_number(document_number) ||!validate_csv_lists(flight_list)) {
             fprintf(stderr, "❌ DEBUG lista de voos inválida: %s\n", flight_list);
             fprintf(ferror, "%s", line);
             continue;
@@ -356,11 +374,15 @@ void parse_reservations(Dataset d, const char *data_path) {
             tmp[strlen(flight_list) - 2] = '\0';
 
             // Substitui apóstrofos por espaços
-            for (char *p = tmp; *p; p++) {
-                if (*p == '\'') *p = ' ';
+            char cleaned[128] = "";
+            int pos = 0;
+            for (int i = 0; tmp[i]; i++) {
+                if (tmp[i] != '\'' && tmp[i] != ' ')
+                cleaned[pos++] = tmp[i];
             }
+            cleaned[pos] = '\0';
 
-            char *token = strtok(tmp, ",");
+            char *token = strtok(cleaned, ",");
             while (token && num_ids < 2) {
                 remove_spc(token);
                 strncpy(flight_id[num_ids++], token, sizeof(flight_id[0]) - 1);

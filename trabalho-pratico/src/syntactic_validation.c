@@ -61,7 +61,7 @@ if (!email) return false;
 
     // username part
     for (const char *p = email; p < at; p++)
-        if (!(islower(*p) || isdigit(*p) || *p == '.')) return false;
+        if (!(islower(*p) || isdigit(*p) || *p == '.' || *p=='-' || *p=='_')) return false;
 
     // domain part
     const char *dot = strrchr(at, '.');
