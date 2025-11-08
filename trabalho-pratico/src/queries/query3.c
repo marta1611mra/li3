@@ -7,6 +7,7 @@
 #include "dataset.h"
 #include "flights.h"
 #include "airports.h"
+#include "query3.h"
 
 
 
