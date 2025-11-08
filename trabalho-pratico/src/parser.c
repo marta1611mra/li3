@@ -382,7 +382,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             }
             cleaned[pos] = '\0';
 
-            char *token = strtok(tmp, ",");
+            char *token = strtok(cleaned, ",");
             while (token && num_ids < 2) {
                 remove_spc(token);
                 strncpy(flight_id[num_ids++], token, sizeof(flight_id[0]) - 1);
