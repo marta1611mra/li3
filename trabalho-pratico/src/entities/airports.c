@@ -14,6 +14,18 @@ struct airport {
     char type[30]; // type of airport
 };
 
+const char *get_airport_name(Airport a) {
+    return a->name;
+}
+
+const char *get_airport_city(Airport a) {
+    return a->city;
+}
+
+const char *get_airport_country(Airport a) {
+    return a->country;
+}
+
 Airport create_airport(const char *code, const char *name, const char *city, const char *country, double latitude, double longitude, const char *icao, const char *type){
     Airport a = malloc(sizeof(struct airport));
     if (!a) return NULL;
