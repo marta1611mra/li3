@@ -1,14 +1,15 @@
 #ifndef QUERY2_H
 #define QUERY2_H
-#include <glib.h>        // para GHashTable e GList
-#include <stdio.h>       // para FILE
-#include <stdlib.h>      // para malloc/free
-#include <string.h>      // para strcmp, strlen
-#include "dataset.h"             // acesso ao Dataset
-#include "flights.h"             // tipo Flight e flight_status
-#include "flights_manager.h"     // FlightsManager
-#include "aircrafts.h"           // tipo Aircraft
-#include "aircrafts_manager.h"   // AircraftsManager
 
+#include <stdio.h>
+#include "managers/flights_manager.h"
+#include "managers/aircrafts_manager.h"
+
+// Executes query 2: Top N aircrafts with most flights (optionally filtered by manufacturer)
+void query2_topN_aircrafts(FlightsManager fm,
+                           AircraftsManager am,
+                           int N,
+                           const char *filter_manufacturer,
+                           FILE *out);
 
 #endif
