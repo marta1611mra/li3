@@ -1,0 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <glib.h>
+#include "dataset.h"
+#include "flights_manager.h"
+#include "flights.h"
+#include "aircrafts_manager.h"
+#include "aircrafts.h"
+#include "query2.h"
