@@ -13,6 +13,71 @@
 #include "managers/aircrafts_manager.h"
 #include "managers/airports_manager.h"
 #include "programa-principal.h"
+#include "queries/query2.h"
+#include "queries/query3.h"
+
+// 🔧 Processa o ficheiro de comandos (fase 2)
+static void process_commands(Dataset d, const char *commands_file) {
+    FILE *f = fopen(commands_file, "r");
+    if (!f) {
+        perror(commands_file);
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), f)) {
+        int query_id;
+        char arg1[128] = "", arg2[128] = "", arg3[128] = "";
+
+        // Exemplo: "2 10 Airbus" ou "3 LPPT 2023-01-01 2023-12-31"
+        int n = sscanf(line, "%d %127s %127s %127s", &query_id, arg1, arg2, arg3);
+
+        char out_path[256];
+        snprintf(out_path, sizeof(out_path), "resultados/command_%d_output.csv", query_id);
+        FILE *out = fopen(out_path, "w");
+        if (!out) {
+            perror(out_path);
+            continue;
+        }
+
+        switch (query_id) {
+            case 2: {
+                // 🛩️ Query 2: Top N aircrafts with most flights
+                int N = atoi(arg1);
+                const char *manufacturer = (n >= 3) ? arg2 : NULL;
+
+                query2_topN_aircrafts(
+                    dataset_get_flights(d),
+                    dataset_get_aircrafts(d),
+                    N,
+                    manufacturer,
+                    out
+                );
+                break;
+            }
+
+            case 3: {
+                // arg1 = data início, arg2 = data fim
+            const char *start_date = arg1;
+            const char *end_date   = arg2;
+
+            q3(start_date, end_date,
+            dataset_get_flights(d),
+            dataset_get_airports(d),
+            out);
+            break;
+            }
+
+            default:
+                fprintf(stderr, "⚠️ Query desconhecida: %d\n", query_id);
+                break;
+        }
+
+        fclose(out);
+    }
+
+    fclose(f);
+}
 
 int run_programa_principal(const char *dataset_path, const char *commands_file) {
     printf("📂 A carregar dataset da pasta: %s\n", dataset_path);
@@ -42,6 +107,10 @@ int run_programa_principal(const char *dataset_path, const char *commands_file) 
     printf("  🎫 Reservas válidas:       %d\n", reservations_manager_count(dataset_get_reservations(d)));
 
     printf("\n📁 Ficheiros de erros foram gerados em 'resultados/'\n");
+
+    printf("📜 A processar comandos de %s...\n", commands_file);
+    process_commands(d, commands_file);  // <--- adiciona esta linha
+    printf("✅ Comandos processados com sucesso.\n");
 
     dataset_destroy(d);
     printf("\n✅ Memória libertada. Programa terminado com sucesso.\n");
