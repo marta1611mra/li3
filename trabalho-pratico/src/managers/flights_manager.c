@@ -33,3 +33,8 @@ Flight flights_manager_get(FlightsManager m, const char *id) {
 int flights_manager_count(FlightsManager m) {
     return g_hash_table_size(m->flights);
 }
+
+GHashTable *flights_manager_get_table(FlightsManager m) {
+    if (!m) return NULL;
+    return m->flights;
+}
