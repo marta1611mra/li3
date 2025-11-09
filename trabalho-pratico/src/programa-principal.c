@@ -16,7 +16,7 @@
 #include "queries/query2.h"
 #include "queries/query3.h"
 
-// 🔧 Processa o ficheiro de comandos (fase 2)
+// 🔧 Processa o ficheiro de comandos
 static void process_commands(Dataset d, const char *commands_file) {
     FILE *f = fopen(commands_file, "r");
     if (!f) {
@@ -33,7 +33,7 @@ static void process_commands(Dataset d, const char *commands_file) {
         int n = sscanf(line, "%d %127s %127s %127s", &query_id, arg1, arg2, arg3);
 
         char out_path[256];
-        snprintf(out_path, sizeof(out_path), "resultados/command_%d_output.csv", query_id);
+        snprintf(out_path, sizeof(out_path), "resultados/command%d_output.txt", query_id);
         FILE *out = fopen(out_path, "w");
         if (!out) {
             perror(out_path);
@@ -41,6 +41,12 @@ static void process_commands(Dataset d, const char *commands_file) {
         }
 
         switch (query_id) {
+
+            case 1: {
+                //query fantasma 
+                fprintf(out, "\n");
+                break;
+            }
             case 2: {
                 // 🛩️ Query 2: Top N aircrafts with most flights
                 int N = atoi(arg1);
@@ -70,6 +76,7 @@ static void process_commands(Dataset d, const char *commands_file) {
 
             default:
                 fprintf(stderr, "⚠️ Query desconhecida: %d\n", query_id);
+                fprintf(out, "\n"); //cria o ficheiro vazio se query desconhecida
                 break;
         }
 
