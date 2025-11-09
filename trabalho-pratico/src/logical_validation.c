@@ -37,6 +37,7 @@ bool validate_arrival(const char *departure,
                       const char *arrival,
                       const char *actual_arrival,
                       flight_status status) {
+    if (status == Cancelled) return true;
     if (!departure || !actual_departure || !arrival || !actual_arrival)
         return false;
 

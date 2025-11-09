@@ -13,6 +13,15 @@
 #include <ctype.h>
 #include <glib.h>
 
+// Helper para verificar se uma string contém apenas dígitos
+static bool is_all_digits(const char *s) {
+    if (!s || !*s) return false;
+    for (const char *p = s; *p; p++) {
+        if (!isdigit((unsigned char)*p)) return false;
+    }
+    return true;
+}
+
 // Removes quotation marks 
 static void remove_quotes(char *str) {
     if(!str) return;
@@ -139,14 +148,14 @@ void parse_aircrafts(Dataset d, const char *data_path) {
         remove_quotes(capacity_str); remove_spc(capacity_str);
         remove_quotes(range_str); remove_spc(range_str);
 
-        // Validação sintática dos campos
-        if (strlen(id) == 0 ||
-            !validate_year(year_str) ||  // <-- nova validação de ano
-            atoi(capacity_str) <= 0 ||
-            atoi(range_str) <= 0) {
-            fprintf(ferror, "%s", line);
-            continue;
-        }
+// Validação sintática dos campos
+if (strlen(id) == 0 ||
+    !validate_year(year_str) ||
+    !is_all_digits(capacity_str) || atoi(capacity_str) <= 0 ||
+    !is_all_digits(range_str) || atoi(range_str) <= 0) {
+    fprintf(ferror, "%s", line);
+    continue;
+}
 
         // Conversão segura após validação
         int year = atoi(year_str);
@@ -198,24 +207,45 @@ void parse_flights(Dataset d, const char *data_path) {
         remove_quotes(destination); remove_spc(destination);
         flight_status status;
 
-        if (strcmp(status_str, "OnTime") == 0) status = OnTime;
-        else if (strcmp(status_str, "Delayed") == 0) status = Delayed;
-        else if (strcmp(status_str, "Cancelled") == 0) status = Cancelled;
-        else { fprintf(ferror, "%s", line); continue; }
+ // Aceita "On Time" e "OnTime"
+if (strcmp(status_str, "On Time") == 0 || strcmp(status_str, "OnTime") == 0)
+    status = OnTime;
+else if (strcmp(status_str, "Delayed") == 0)
+    status = Delayed;
+else if (strcmp(status_str, "Cancelled") == 0)
+    status = Cancelled;
+else {
+    fprintf(ferror, "%s", line);
+    continue;
+}
 
-        if (!validate_flight_id(flight_id) || 
-            !validate_datetime(actual_departure) || 
-            !validate_datetime(arrival) || 
-            !validate_datetime(actual_arrival) || 
-            !validate_airport_code(origin) || 
-            !validate_airport_code(destination) || 
-            !validate_aircraft(aircraft_id, dataset_get_aircrafts(d)) || 
-            !validate_destination(origin,destination) ||
-            !validate_arrival(departure,actual_departure,arrival,actual_arrival,status) ||
-            !validate_status(status,actual_departure,actual_arrival)) {
-            fprintf(ferror, "%s", line);
-            continue;
-        }
+// --- Validação sintática e lógica ---
+bool synt_ok =
+    validate_flight_id(flight_id) &&
+    validate_datetime(departure) &&
+    validate_datetime(arrival) &&
+    validate_airport_code(origin) &&
+    validate_airport_code(destination) &&
+    validate_aircraft(aircraft_id, dataset_get_aircrafts(d)) &&
+    validate_destination(origin, destination);
+
+if (status == Cancelled) {
+    // "Cancelled" → actual_* devem ser "N/A"
+    synt_ok = synt_ok &&
+              strcmp(actual_departure, "N/A") == 0 &&
+              strcmp(actual_arrival, "N/A") == 0;
+} else {
+    synt_ok = synt_ok &&
+              validate_datetime(actual_departure) &&
+              validate_datetime(actual_arrival);
+}
+
+if (!synt_ok ||
+    !validate_arrival(departure, actual_departure, arrival, actual_arrival, status) ||
+    !validate_status(status, actual_departure, actual_arrival)) {
+    fprintf(ferror, "%s", line);
+    continue;
+}
         
         Flight fv = create_flight(flight_id, departure, actual_departure, arrival,
                                   actual_arrival, gate, status, origin,
@@ -395,6 +425,31 @@ void parse_reservations(Dataset d, const char *data_path) {
             fprintf(ferror, "%s", line);
             continue;
         }
+
+        // Verificar existência dos voos e ligação (quando há 2)
+FlightsManager fm = dataset_get_flights(d);
+bool flights_ok = true;
+for (int i = 0; i < num_ids; i++) {
+    if (!flights_manager_get(fm, flight_id[i])) {
+        fprintf(stderr, "❌ DEBUG voo inexistente: %s\n", flight_id[i]);
+        fprintf(ferror, "%s", line);
+        flights_ok = false;
+        break;
+    }
+}
+if (!flights_ok) continue;
+
+if (num_ids == 2) {
+    Flight f1 = flights_manager_get(fm, flight_id[0]);
+    Flight f2 = flights_manager_get(fm, flight_id[1]);
+    const char *dest1 = get_flight_dest(f1);
+    const char *orig2 = get_flight_orig(f2);
+    if (!dest1 || !orig2 || strcmp(dest1, orig2) != 0) {
+        fprintf(stderr, "❌ DEBUG ligação inválida entre %s e %s\n", flight_id[0], flight_id[1]);
+        fprintf(ferror, "%s", line);
+        continue;
+    }
+}
 
         // Converter strings lógicas
         int extra_luggage = (strcmp(extra_luggage_str, "true") == 0);
