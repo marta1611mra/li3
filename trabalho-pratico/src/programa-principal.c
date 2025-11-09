@@ -15,6 +15,7 @@
 #include "programa-principal.h"
 #include "queries/query2.h"
 #include "queries/query3.h"
+#include "query1.h"
 
 // 🔧 Processa o ficheiro de comandos
 static void process_commands(Dataset d, const char *commands_file) {
@@ -43,8 +44,9 @@ static void process_commands(Dataset d, const char *commands_file) {
         switch (query_id) {
 
             case 1: {
-                //query fantasma 
-                fprintf(out, "\n");
+                // 🛩️ Query 1: resumo de um aeroporto
+                const char *airport_code = arg1;
+                query1(dataset_get_airports(d), airport_code, out);
                 break;
             }
             case 2: {
