@@ -20,24 +20,34 @@ int compare_files(const char *generated, const char *expected) {
         return 0;
     }
 
-    char line_g[2048], line_e[2048];
+    char line_g[4096], line_e[4096];
     int line_num = 1;
+    int identical=1;
 
     while (fgets(line_g, sizeof(line_g), fg) && fgets(line_e, sizeof(line_e), fe)) {
+        line_g[strcspn(line_g, "\r\n")] = 0;
+        line_e[strcspn(line_e, "\r\n")] = 0;  
+
         if (strcmp(line_g, line_e) != 0) {
             printf("❌ Diferença na linha %d\n", line_num);
             printf("   Gerado:   %s", line_g);
             printf("   Esperado: %s\n", line_e);
-            fclose(fg);
-            fclose(fe);
-            return 0;
+            identical=0;
+            break;
         }
         line_num++;
+    }
+    if (identical){
+        if ((fgets(line_g, sizeof(line_g), fg) != NULL) ||
+            (fgets(line_e, sizeof(line_e), fe) != NULL)) {
+            printf("❌ Ficheiros têm comprimentos diferentes.\n");
+            identical = 0;
+        }        
     }
 
     fclose(fg);
     fclose(fe);
-    return 1;
+    return identical;
 }
 
 void print_performance_info(struct timespec start, struct timespec end, struct rusage usage) {
@@ -60,8 +70,6 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
     struct rusage usage;
     clock_gettime(CLOCK_REALTIME, &start);
 
-    // (aqui chamarias o programa principal se fosse integrado diretamente)
-    // Por agora, assume que já executaste ./programa-principal antes
 
     int correct = 0, total = 0;
     char generated[256], expected[256];
@@ -70,7 +78,10 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
         snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", i);
         snprintf(expected, sizeof(expected), "%s/command%d_output.txt", expected_dir, i);
         FILE *test = fopen(expected, "r");
-        if (!test) break;
+        if (!test) {
+            printf("⚠️  Ficheiro esperado não encontrado: %s\n", expected);
+            continue;
+        }
         fclose(test);
 
         total++;

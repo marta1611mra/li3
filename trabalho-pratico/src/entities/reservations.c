@@ -11,7 +11,7 @@ struct reservation{
     double price [7]; // price of the reservation
     int extra_luggage[5]; // indicates with true or false (1 or 0) if the reservations includes extra luggage
     int priority_boarding[5]; // indicates with true or false (1 or 0) if the reservations include prioritary boarding
-    char qr_code[1000]; // associated qr code
+    char qr_code[4096]; // associated qr code
 };
 
 Reservation create_reservation(const char *reservation_id, const char flight_id[2][10], const char *document_number, const int seat[2], const double price[2], const int extra_luggage[2], const int priority_boarding[2], const char *qr_code) {

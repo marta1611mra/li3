@@ -13,8 +13,8 @@
 #include "managers/aircrafts_manager.h"
 #include "managers/airports_manager.h"
 #include "programa-principal.h"
-#include "queries/query2.h"
-#include "queries/query3.h"
+#include "query2.h"
+#include "query3.h"
 #include "query1.h"
 
 // 🔧 Processa o ficheiro de comandos
@@ -105,7 +105,20 @@ int run_programa_principal(const char *dataset_path, const char *commands_file) 
     parse_reservations(d, dataset_path);
     printf("✅ Todos os ficheiros carregados.\n");
 
-    // 👉 Aqui no futuro: processar as queries de input.txt (fase 2)
+    char commands_path[512];
+    snprintf(commands_path, sizeof(commands_path), "%s", commands_file);
+    FILE *test = fopen(commands_path, "r");
+    if (!test) {
+        char alt_path[512];
+        snprintf(alt_path, sizeof(alt_path), "../%s", commands_file);
+        test = fopen(alt_path, "r");
+        if (test) {
+            strcpy(commands_path, alt_path);
+        }
+    }
+    if (test) fclose(test);
+
+    
     printf("📜 A processar comandos de %s (a implementar na fase 2)\n", commands_file);
 
     printf("\n📊 Resumo do carregamento:\n");
@@ -117,8 +130,8 @@ int run_programa_principal(const char *dataset_path, const char *commands_file) 
 
     printf("\n📁 Ficheiros de erros foram gerados em 'resultados/'\n");
 
-    printf("📜 A processar comandos de %s...\n", commands_file);
-    process_commands(d, commands_file);  // <--- adiciona esta linha
+    printf("📜 A processar comandos de %s...\n", commands_path);
+    process_commands(d, commands_path);  // <--- adiciona esta linha
     printf("✅ Comandos processados com sucesso.\n");
 
     dataset_destroy(d);

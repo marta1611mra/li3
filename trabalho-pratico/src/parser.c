@@ -34,9 +34,11 @@ static void remove_quotes(char *str) {
 
 static void remove_spc(char *str) {
     if (!str) return;
-    int len = (int)strlen(str);
+    int len = strlen(str);
     
-    while (isspace((unsigned char)*str)) memmove(str, str + 1, strlen(str));
+    while (*str && (isspace((unsigned char)*str))) {
+        memmove(str, str + 1, strlen(str));
+    }
     
     while (len > 0 && (isspace((unsigned char)str[len - 1]) ||
                        str[len - 1] == '\r' || str[len - 1] == '\n')) {
@@ -207,20 +209,20 @@ void parse_flights(Dataset d, const char *data_path) {
         remove_quotes(destination); remove_spc(destination);
         flight_status status;
 
- // Aceita "On Time" e "OnTime"
-if (strcmp(status_str, "On Time") == 0 || strcmp(status_str, "OnTime") == 0)
-    status = OnTime;
-else if (strcmp(status_str, "Delayed") == 0)
-    status = Delayed;
-else if (strcmp(status_str, "Cancelled") == 0)
-    status = Cancelled;
-else {
-    fprintf(ferror, "%s", line);
-    continue;
+        // Aceita "On Time" e "OnTime"
+        if (strcmp(status_str, "On Time") == 0 || strcmp(status_str, "OnTime") == 0)
+        status = OnTime;
+        else if (strcmp(status_str, "Delayed") == 0)
+        status = Delayed;
+        else if (strcmp(status_str, "Cancelled") == 0)
+        status = Cancelled;
+        else {
+        fprintf(ferror, "%s", line);
+        continue;
 }
 
 // --- Validação sintática e lógica ---
-bool synt_ok =
+    bool synt_ok =
     validate_flight_id(flight_id) &&
     validate_datetime(departure) &&
     validate_datetime(arrival) &&
@@ -229,34 +231,34 @@ bool synt_ok =
     validate_aircraft(aircraft_id, dataset_get_aircrafts(d)) &&
     validate_destination(origin, destination);
 
-if (status == Cancelled) {
+    if (status == Cancelled) {
     // "Cancelled" → actual_* devem ser "N/A"
     synt_ok = synt_ok &&
               strcmp(actual_departure, "N/A") == 0 &&
               strcmp(actual_arrival, "N/A") == 0;
-} else {
+    } else {
     synt_ok = synt_ok &&
               validate_datetime(actual_departure) &&
               validate_datetime(actual_arrival);
-}
+    }
 
-if (!synt_ok ||
+    if (!synt_ok ||
     !validate_arrival(departure, actual_departure, arrival, actual_arrival, status) ||
     !validate_status(status, actual_departure, actual_arrival)) {
     fprintf(ferror, "%s", line);
     continue;
-}
+    }
         
-        Flight fv = create_flight(flight_id, departure, actual_departure, arrival,
+    Flight fv = create_flight(flight_id, departure, actual_departure, arrival,
                                   actual_arrival, gate, status, origin,
                                   destination, aircraft_id, airline, tracking_url);
-        if (!fv) {
-        fprintf(stderr, "create_flight failed\n");
-        fprintf(ferror, "%s", line);
-        continue;
-        }
-        FlightsManager fm = dataset_get_flights(d);
-        flights_manager_add(fm, fv);
+    if (!fv) {
+    fprintf(stderr, "create_flight failed\n");
+    fprintf(ferror, "%s", line);
+    continue;
+    }
+    FlightsManager fm = dataset_get_flights(d);
+    flights_manager_add(fm, fv);
     }
 
     fclose(f);
@@ -280,10 +282,10 @@ void parse_passengers(Dataset d, const char *data_path) {
     char line[2048];
     while (fgets(line, sizeof(line), f)) {
         char document_id[11] = "", first_name[31] = "", last_name[31] = "", dob[12] = "";
-        char nationality[21] = "", gender[11] = "", email[51] = "", phone[16] = "", address[51] = "", photo[1001] = "";
+        char nationality[21] = "", gender[11] = "", email[51] = "", phone[16] = "", address[51] = "", photo[2001] = "";
 
         int n = sscanf(line,
-                "\"%10[^\"]\",\"%30[^\"]\",\"%30[^\"]\",\"%11[^\"]\",\"%20[^\"]\",\"%10[^\"]\",\"%50[^\"]\",\"%15[^\"]\",\"%50[^\"]\",\"%1000[^\"]\"",
+                "\"%10[^\"]\",\"%30[^\"]\",\"%30[^\"]\",\"%11[^\"]\",\"%20[^\"]\",\"%10[^\"]\",\"%50[^\"]\",\"%15[^\"]\",\"%50[^\"]\",\"%4095[^\"]\"",
                 document_id, first_name, last_name, dob, nationality,
                 gender, email, phone, address, photo);
 
@@ -344,12 +346,12 @@ void parse_reservations(Dataset d, const char *data_path) {
         char seat_str[8] = "";
         char extra_luggage_str[8] = "";
         char priority_boarding_str[8] = "";
-        char qr_code[1001] = "";
+        char qr_code[4096] = "";
         double price = 0.0;
 
         // Leitura do CSV
         int n = sscanf(line,
-            "\"%20[^\"]\",\"%127[^\"]\",\"%15[^\"]\",\"%7[^\"]\",\"%lf\",\"%7[^\"]\",\"%7[^\"]\",\"%1000[^\"]\"",
+            "\"%20[^\"]\",\"%127[^\"]\",\"%15[^\"]\",\"%7[^\"]\",\"%lf\",\"%7[^\"]\",\"%7[^\"]\",\"%4095[^\"]\"",
             reservation_id, flight_list, document_number, seat_str,
             &price, extra_luggage_str, priority_boarding_str, qr_code);
 

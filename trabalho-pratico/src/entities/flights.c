@@ -10,7 +10,7 @@ struct flight{
     char actual_departure[19];
     char arrival[19];
     char actual_arrival[19];
-    char gate[3];
+    char gate[6];
     flight_status status;
     char origin[4];
     char destination[4];
@@ -29,7 +29,8 @@ Flight create_flight(const char *flight_id, const char *departure, const char *a
     strcpy(f->actual_departure, actual_departure);
     strcpy(f->arrival, arrival);
     strcpy(f->actual_arrival, actual_arrival);
-    strcpy(f->gate, gate);
+    strncpy(f->gate, gate, sizeof(f->gate)-1);
+    f->gate[sizeof(f->gate)-1] = '\0';  
     f->status = status;
     strcpy(f->origin, origin);
     strcpy(f->destination, destination);
