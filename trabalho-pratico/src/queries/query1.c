@@ -12,5 +12,5 @@ void query1(AirportsManager am, const char *code, FILE *out) {
 
     if(a) {
         fprintf(out, "%s,%s,%s,%s,%s\n", get_airport_code(a), get_airport_name(a), get_airport_city(a), get_airport_country(a), get_airport_type(a));
-    } else {} // writes nothing
+    }
 }
