@@ -282,10 +282,10 @@ void parse_passengers(Dataset d, const char *data_path) {
     char line[2048];
     while (fgets(line, sizeof(line), f)) {
         char document_id[11] = "", first_name[31] = "", last_name[31] = "", dob[12] = "";
-        char nationality[21] = "", gender[11] = "", email[51] = "", phone[16] = "", address[51] = "", photo[2001] = "";
+        char nationality[21] = "", gender[11] = "", email[51] = "", phone[16] = "", address[51] = "", photo[4096] = "";
 
         int n = sscanf(line,
-                "\"%10[^\"]\",\"%30[^\"]\",\"%30[^\"]\",\"%11[^\"]\",\"%20[^\"]\",\"%10[^\"]\",\"%50[^\"]\",\"%15[^\"]\",\"%50[^\"]\",\"%4095[^\"]\"",
+                "\"%10[^\"]\",\"%30[^\"]\",\"%30[^\"]\",\"%10[^\"]\",\"%20[^\"]\",\"%10[^\"]\",\"%50[^\"]\",\"%15[^\"]\",\"%50[^\"]\",\"%4095[^\"]\"",
                 document_id, first_name, last_name, dob, nationality,
                 gender, email, phone, address, photo);
 
