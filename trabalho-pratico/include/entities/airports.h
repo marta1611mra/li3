@@ -12,5 +12,6 @@ const char *get_airport_code(Airport a);
 const char *get_airport_name(Airport a);
 const char *get_airport_city(Airport a);
 const char *get_airport_country(Airport a);
+const char *get_airport_type(Airport a);
 
 #endif

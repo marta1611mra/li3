@@ -6,7 +6,7 @@
 
 struct passenger{
 
-    char document_id[10];
+    char document_id[16];
     char first_name[30];
     char last_name[30];
     char dob[11];
@@ -15,7 +15,7 @@ struct passenger{
     char email[50];
     char phone[15];
     char address[50];
-    char photo[1000];
+    char photo[4096];
 
 };
 
@@ -23,7 +23,9 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
     Passenger p = g_new0(struct passenger, 1);
     if (!p) return NULL;
 
-    if (document_id)  strncpy(p->document_id, document_id, sizeof(p->document_id) - 1);
+    if (document_id)  {
+    strncpy(p->document_id, document_id, sizeof(p->document_id) - 1);
+    p->document_id[sizeof(p->document_id) - 1] = '\0';}
     if (first_name)   strncpy(p->first_name,  first_name,  sizeof(p->first_name) - 1);
     if (last_name)    strncpy(p->last_name,   last_name,   sizeof(p->last_name) - 1);
     if (dob)          strncpy(p->dob,         dob,         sizeof(p->dob) - 1);

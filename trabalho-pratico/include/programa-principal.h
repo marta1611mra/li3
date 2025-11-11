@@ -24,6 +24,5 @@
  * @param commands_file Caminho para o ficheiro de comandos (input.txt).
  * @return int Retorna 0 em caso de sucesso, ou um código de erro.
  */
-int run_programa_principal(const char *dataset_path, const char *commands_file);
 
 #endif

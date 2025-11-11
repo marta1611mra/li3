@@ -49,3 +49,7 @@ void destroy_airport(Airport a){
 const char *get_airport_code(Airport a) {
     return a->code;
 }
+
+const char *get_airport_type(Airport a) {
+    return a -> type;
+}

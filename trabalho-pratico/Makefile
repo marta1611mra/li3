@@ -9,7 +9,7 @@ SRC_COMMON = src/dataset.c src/parser.c src/logical_validation.c src/syntactic_v
              src/entities/passengers.c src/entities/reservations.c \
              src/managers/aircrafts_manager.c src/managers/airports_manager.c \
              src/managers/flights_manager.c src/managers/passengers_manager.c src/managers/reservations_manager.c \
-             src/queries/query1.c src/queries/query3.c src/queries/query2.c
+             src/queries/query1.c src/queries/query2.c src/queries/query3.c src/queries/queries.c
 
 OBJ_COMMON = $(SRC_COMMON:.c=.o)
 
