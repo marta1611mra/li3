@@ -49,14 +49,6 @@ static int compare_aircrafts(const void *a, const void *b) {
 void query2_topN_aircrafts(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
     if (!fm || !am || N <= 0 || !out) return;
 
-    //Remove possible '\r' or '\n' from manufacturer filter
-    char manufacturer_clean[128] = "";
-    if (filter_manufacturer) {
-        strncpy(manufacturer_clean, filter_manufacturer, sizeof(manufacturer_clean) - 1);
-        manufacturer_clean[strcspn(manufacturer_clean, "\r\n")] = '\0';
-        filter_manufacturer = manufacturer_clean;
-    }
-
     // Step 1: count flights per aircraft
     GHashTable *flight_counts = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
     g_hash_table_foreach(flights_manager_get_table(fm), count_flights, flight_counts);
