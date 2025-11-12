@@ -44,6 +44,11 @@ void process_queries(Dataset d, const char *queries_path) {
         char arg1[128] = "", arg2[128] = "";
         int n = sscanf(line, "%d %127s %127s", &qid, arg1, arg2);
 
+        //limpeza de argumentos (remove \r e \n) ---
+        arg1[strcspn(arg1, "\r\n")] = '\0';
+        arg2[strcspn(arg2, "\r\n")] = '\0';
+
+
         switch (qid) {
             case 1:
                 // Query 1: 1 <airport_code>
