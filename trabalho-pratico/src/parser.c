@@ -53,7 +53,7 @@ static void exist_result(void) {
 
 // helps writting header line to error file
 static void wcsv_header(FILE *csv, FILE *ferror) {
-    char header[2048];
+    char header[1000];
     if(fgets(header, sizeof(header), csv)) {
         fprintf(ferror, "%s", header);
     }
@@ -65,7 +65,7 @@ void parse_airports(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
-    printf("📄 A ler ficheiro: %s\n", path);
+    printf("A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/airports_errors.csv", "w");
@@ -73,7 +73,7 @@ void parse_airports(Dataset d, const char *data_path) {
 
     wcsv_header(f, ferror);
 
-    char line[2048];
+    char line[1500];
     while (fgets(line, sizeof(line), f)) {
         char code[4] = "", name[101] = "", city[101] = "", country[51] = "";
         char lat_str[17] = "", long_str[17] = "", icao[5] = "", type[31] = "";
@@ -124,7 +124,7 @@ void parse_aircrafts(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
-    printf("📄 A ler ficheiro: %s\n", path);
+    printf("A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/aircrafts_errors.csv", "w");
@@ -132,7 +132,7 @@ void parse_aircrafts(Dataset d, const char *data_path) {
 
     wcsv_header(f, ferror);
 
-    char line[2048];
+    char line[1000];
     while (fgets(line, sizeof(line), f)) {
         char id[16] = "", manufacturer[51] = "", model[51] = "";
         char year_str[8] = "", capacity_str[8] = "", range_str[10] = "";
@@ -181,7 +181,7 @@ void parse_flights(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
-    printf("📄 A ler ficheiro: %s\n", path);
+    printf("A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/flights_errors.csv", "w");
@@ -189,7 +189,7 @@ void parse_flights(Dataset d, const char *data_path) {
 
     wcsv_header(f, ferror);
 
-    char line[2048];
+    char line[1500];
     while (fgets(line, sizeof(line), f)) {
         char flight_id[9] = "", departure[20] = "", actual_departure[20] = "", arrival[20] = "", actual_arrival[20] = "";
         char gate[4] = "", origin[5] = "", destination[5] = "", aircraft_id[16] = "", airline[41] = "", tracking_url[101] = "", status_str[16] = "";
@@ -271,7 +271,7 @@ void parse_passengers(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
-    printf("📄 A ler ficheiro: %s\n", path);
+    printf("A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/passengers_errors.csv", "w");
@@ -330,7 +330,7 @@ void parse_reservations(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
-    printf("📄 A ler ficheiro: %s\n", path);
+    printf("A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/reservations_errors.csv", "w");
@@ -356,7 +356,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             &price, extra_luggage_str, priority_boarding_str, qr_code);
 
         if (n != 8) {
-            fprintf(stderr, "❌ DEBUG sscanf falhou (n=%d) linha: %s\n", n, line);
+            fprintf(stderr, "sscanf falhou (n=%d) linha: %s\n", n, line);
             fprintf(ferror, "%s", line);
             continue;
         }
@@ -379,19 +379,16 @@ void parse_reservations(Dataset d, const char *data_path) {
         priority_boarding_str[strcspn(priority_boarding_str, "\r\n")] = 0;
         qr_code[strcspn(qr_code, "\r\n")] = 0;
 
-        // Debug: conferir document_number
-        // printf("DEBUG document_number='%s'\n", document_number);
-
         // Verifica se passageiro existe
         if (!passengers_manager_exists(dataset_get_passengers(d), document_number)) {
-            fprintf(stderr, "❌ DEBUG passageiro inexistente: %s\n", document_number);
+            fprintf(stderr, "passageiro inexistente: %s\n", document_number);
             fprintf(ferror, "%s", line);
             continue;
         }
 
         // Validação da lista de voos
         if (!validate_reservation_id(reservation_id) || !validate_document_number(document_number) ||!validate_csv_lists(flight_list)) {
-            fprintf(stderr, "❌ DEBUG lista de voos inválida: %s\n", flight_list);
+            fprintf(stderr, "lista de voos inválida: %s\n", flight_list);
             fprintf(ferror, "%s", line);
             continue;
         }
@@ -423,7 +420,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         }
 
         if (num_ids == 0) {
-            fprintf(stderr, "❌ DEBUG não encontrou flight_id em %s\n", flight_list);
+            fprintf(stderr, "não encontrou flight_id em %s\n", flight_list);
             fprintf(ferror, "%s", line);
             continue;
         }
@@ -433,7 +430,7 @@ FlightsManager fm = dataset_get_flights(d);
 bool flights_ok = true;
 for (int i = 0; i < num_ids; i++) {
     if (!flights_manager_get(fm, flight_id[i])) {
-        fprintf(stderr, "❌ DEBUG voo inexistente: %s\n", flight_id[i]);
+        fprintf(stderr, "voo inexistente: %s\n", flight_id[i]);
         fprintf(ferror, "%s", line);
         flights_ok = false;
         break;
@@ -447,7 +444,7 @@ if (num_ids == 2) {
     const char *dest1 = get_flight_dest(f1);
     const char *orig2 = get_flight_orig(f2);
     if (!dest1 || !orig2 || strcmp(dest1, orig2) != 0) {
-        fprintf(stderr, "❌ DEBUG ligação inválida entre %s e %s\n", flight_id[0], flight_id[1]);
+        fprintf(stderr, "DEBUG ligação inválida entre %s e %s\n", flight_id[0], flight_id[1]);
         fprintf(ferror, "%s", line);
         continue;
     }
@@ -463,12 +460,12 @@ if (num_ids == 2) {
                                            (int[]){extra_luggage,0}, (int[]){priority_boarding,0},
                                            qr_code);
         if (!r) {
-            fprintf(stderr, "❌ DEBUG create_reservation falhou: %s\n", reservation_id);
+            fprintf(stderr, "create_reservation falhou: %s\n", reservation_id);
             fprintf(ferror, "%s", line);
             continue;
         }
 
-        fprintf(stderr, "✅ DEBUG reserva válida: %s -> %s | %s\n",
+        fprintf(stderr, "reserva válida: %s -> %s | %s\n",
                 reservation_id, flight_id[0], document_number);
 
         ReservationsManager rm = dataset_get_reservations(d);
