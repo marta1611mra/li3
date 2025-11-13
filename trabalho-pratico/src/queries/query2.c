@@ -47,7 +47,9 @@ static int compare_aircrafts(const void *a, const void *b) {
 
 // Main function
 void query2_topN_aircrafts(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
-    if (!fm || !am || N <= 0 || !out) return;
+    if (!fm || !am || N <= 0 || !out){
+        fprintf(out,"\n");
+    }else{
 
     // Step 1: count flights per aircraft
     GHashTable *flight_counts = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
@@ -94,4 +96,5 @@ void query2_topN_aircrafts(FlightsManager fm, AircraftsManager am, int N, const 
     // Cleanup
     free(array);
     g_hash_table_destroy(flight_counts);
+    }
 }
