@@ -79,6 +79,13 @@ void query2_topN_aircrafts(FlightsManager fm, AircraftsManager am, int N, const 
         array[used].count = cnt ? *cnt : 0;
         used++;
     }
+    
+    if (used == 0) {
+        fprintf(out, "\n");
+        free(array);
+        g_hash_table_destroy(flight_counts);
+        return;
+    }
 
     // Step 3: sort array (only the used part)
     qsort(array, used, sizeof(AircraftCount), compare_aircrafts);
