@@ -18,20 +18,44 @@
 #include "query1.h"
 #include "queries.h"
 
-// Função auxiliar para garantir que a pasta resultados existe
+/**
+ * Função auxiliar para garantir que a pasta "resultados" existe.
+ * Cria a pasta caso ainda não exista.
+ */
 static void ensure_result_dir(void) {
-    system("mkdir -p resultados");
+    system("mkdir -p resultados"); // comando POSIX para criar pasta se não existir
 }
 
+/**
+ * Função principal do programa.
+ * 
+ * Fluxo:
+ * 1. Verifica os argumentos de linha de comando.
+ * 2. Cria a estrutura principal do dataset.
+ * 3. Carrega os dados de aeroportos, aeronaves, voos, passageiros e reservas.
+ * 4. Garante que a pasta "resultados" existe.
+ * 5. Processa as queries definidas no ficheiro de comandos.
+ * 6. Liberta a memória alocada para o dataset.
+ * 
+ * Uso:
+ * ./programa <pasta_dataset> <ficheiro_comandos>
+ * 
+ * @param argc Número de argumentos da linha de comando.
+ * @param argv Array de strings com os argumentos da linha de comando.
+ * @return 0 se a execução for bem sucedida, 1 em caso de erro.
+ */
+
 int main(int argc, char *argv[]) {
+    // Verifica se os argumentos foram fornecidos corretamente
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <pasta_dataset> <ficheiro_comandos>\n", argv[0]);
         return 1;
     }
     
-    const char *dataset_path = argv[1];
-    const char *commands_file = argv[2];
+    const char *dataset_path = argv[1];     // Caminho para a pasta com os datasets
+    const char *commands_file = argv[2];    // Caminho para o ficheiro de comandos
 
+    // Cria a estrutura do dataset
     Dataset d = dataset_create();
     if (!d) {
         fprintf(stderr, "Erro ao criar estrutura do dataset.\n");
@@ -39,16 +63,21 @@ int main(int argc, char *argv[]) {
     }
 
     printf("A carregar datasets...\n");
+
+    // Carrega os diferentes tipos de dados para o dataset
     parse_airports(d, dataset_path);
     parse_aircrafts(d, dataset_path);
     parse_flights(d, dataset_path);
     parse_passengers(d, dataset_path);
     parse_reservations(d, dataset_path);
 
+    // Garante que a pasta de resultados existe
     ensure_result_dir();
 
+    // Processa as queries a partir do ficheiro de comandos
     process_queries(d, commands_file);
 
+    // Liberta memória alocada para o dataset
     dataset_destroy(d);
     return 0;
 }
