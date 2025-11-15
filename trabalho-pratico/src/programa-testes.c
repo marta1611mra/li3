@@ -8,6 +8,15 @@
 
 #define MAX_QUERIES 10
 
+/**
+ * Compara dois ficheiros linha a linha.
+ * 
+ * @param generated Caminho para o ficheiro gerado pelo programa.
+ * @param expected Caminho para o ficheiro esperado.
+ * @param diff_line Ponteiro para armazenar a linha da primeira diferença (se houver).
+ * @return 1 se os ficheiros forem idênticos, 0 caso contrário.
+ */
+
 int compare_files(const char *generated, const char *expected, int *diff_line) {
     FILE *fg = fopen(generated, "r");
     FILE *fe = fopen(expected, "r");
@@ -22,9 +31,10 @@ int compare_files(const char *generated, const char *expected, int *diff_line) {
     int line_num = 1;
     int identical = 1;
 
+    // Lê e compara linha a linha
     while (fgets(line_g, sizeof(line_g), fg) && fgets(line_e, sizeof(line_e), fe)) {
-        line_g[strcspn(line_g, "\r\n")] = 0;
-        line_e[strcspn(line_e, "\r\n")] = 0;
+        line_g[strcspn(line_g, "\r\n")] = 0; // Remove \n ou \r\n
+        line_e[strcspn(line_e, "\r\n")] = 0; // Guarda a linha da primeira diferença
 
         if (strcmp(line_g, line_e) != 0) {
             *diff_line = line_num;
@@ -34,6 +44,7 @@ int compare_files(const char *generated, const char *expected, int *diff_line) {
         line_num++;
     }
 
+    // Verifica se um dos ficheiros tem linhas extra
     if (identical) {
         if ((fgets(line_g, sizeof(line_g), fg) != NULL) ||
             (fgets(line_e, sizeof(line_e), fe) != NULL)) {
@@ -47,6 +58,14 @@ int compare_files(const char *generated, const char *expected, int *diff_line) {
     return identical;
 }
 
+/**
+ * Imprime informações de desempenho do programa.
+ * 
+ * @param start Timestamp de início da execução.
+ * @param end Timestamp de fim da execução.
+ * @param usage Estrutura contendo informações de recursos usados.
+ */
+
 void print_performance_info(struct timespec start, struct timespec end, struct rusage usage) {
     double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     printf("\nTempo total de execução: %.6f segundos\n", elapsed);
@@ -58,9 +77,18 @@ void print_performance_info(struct timespec start, struct timespec end, struct r
 #endif
 }
 
+/**
+ * Executa testes automáticos comparando ficheiros gerados com resultados esperados.
+ * 
+ * @param dataset_path Caminho para o dataset.
+ * @param commands_file Caminho para ficheiro de comandos.
+ * @param expected_dir Diretório que contem os ficheiros esperados.
+ * @return 0 se todos os ficheiros estiverem corretos, 1 caso contrário.
+ */
+
 int run_programa_testes(const char *dataset_path, const char *commands_file, const char *expected_dir) {
-    (void)dataset_path;  // Não usado, mas necessário para o argumento
-    (void)commands_file; // Não usado, mas necessário para o argumento
+    (void)dataset_path; 
+    (void)commands_file; 
 
     printf("A iniciar testes automáticos...\n\n");
 
@@ -68,12 +96,14 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
     struct rusage usage;
     clock_gettime(CLOCK_REALTIME, &start_total);
 
-    int total_queries = 0;
-    int total_correct = 0;
+    int total_queries = 0; // Contador de queries executadas
+    int total_correct = 0; // Contador de queries corretas
 
-    double times[MAX_QUERIES];
-    int correct_flags[MAX_QUERIES];
+    double times[MAX_QUERIES]; // Array para armazenar tempos de execução de cada query
+    int correct_flags[MAX_QUERIES]; // Flags de correção de cada query
 
+
+    // Loop sobre todas as queries
     for (int query_index = 1; query_index <= MAX_QUERIES; query_index++) {
         char generated[256], expected[256];
         snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", query_index);
@@ -81,9 +111,10 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
 
         printf("🔍 A comparar %s...\n", generated);
 
+         // Verifica se o ficheiro esperado existe
         FILE *test = fopen(expected, "r");
         if (!test) {
-            printf("⚠️  Ficheiro esperado não encontrado: %s\n\n", expected);
+            printf("Ficheiro esperado não encontrado: %s\n\n", expected);
             continue;
         }
         fclose(test);
@@ -93,6 +124,7 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
         struct timespec t_start, t_end;
         clock_gettime(CLOCK_REALTIME, &t_start);
 
+        // Compara ficheiros
         int ok = compare_files(generated, expected, &diff_line);
 
         clock_gettime(CLOCK_REALTIME, &t_end);
@@ -104,17 +136,18 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
 
         if (ok) {
             printf("command%d_output.txt está correto.\n\n", query_index);
-            printf("✅ Query %d correta. Tempo: %.6f s\n", query_index, elapsed_query);
+            printf("Query %d correta. Tempo: %.6f s\n", query_index, elapsed_query);
             total_correct++;
         } else {
             printf("command%d_output.txt difere do esperado. Primeira diferença na linha %d.\n\n", query_index, diff_line);
-            printf("❌ Query %d incorreta. Tempo: %.6f s\n", query_index, elapsed_query);
+            printf("Query %d incorreta. Tempo: %.6f s\n", query_index, elapsed_query);
         }
     }
 
     clock_gettime(CLOCK_REALTIME, &end_total);
     getrusage(RUSAGE_SELF, &usage);
 
+    // Imprime resumo dos resultados
     printf("\n--- Resultados dos testes ---\n");
     for (int i = 0; i < total_queries; i++) {
         printf("Query %d: %s, tempo = %.6f s\n",
@@ -132,6 +165,12 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
 
     return (total_correct == total_queries) ? 0 : 1;
 }
+
+/**
+ * Função principal do programa.
+ * 
+ * Uso: ./programa <dataset_path> <ficheiro_comandos> <resultados_esperados>
+ */
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
