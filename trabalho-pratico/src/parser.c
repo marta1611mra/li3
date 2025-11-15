@@ -13,7 +13,13 @@
 #include <ctype.h>
 #include <glib.h>
 
-// Helper para verificar se uma string contém apenas dígitos
+
+/**
+ * Função auxiliar para verificar se uma string contém apenas dígitos.
+ * @param s String a verificar.
+ * @return true se todos os caracteres forem dígitos, false caso contrário.
+ */
+
 static bool is_all_digits(const char *s) {
     if (!s || !*s) return false;
     for (const char *p = s; *p; p++) {
@@ -22,7 +28,11 @@ static bool is_all_digits(const char *s) {
     return true;
 }
 
-// Removes quotation marks 
+/**
+ * Remove aspas iniciais e finais de uma string.
+ * @param str String a modificar.
+ */
+
 static void remove_quotes(char *str) {
     if(!str) return;
     size_t len = strlen(str);
@@ -31,6 +41,11 @@ static void remove_quotes(char *str) {
     len = strlen(str);
     if (len > 0 && str[len - 1] == '"') str[len - 1] = '\0';
 }
+
+/**
+ * Remove espaços em branco do início e do fim de uma string.
+ * @param str String a modificar.
+ */
 
 static void remove_spc(char *str) {
     if (!str) return;
@@ -46,12 +61,21 @@ static void remove_spc(char *str) {
     }
 }
 
-// creates the directory resultados if it doesn't exists
+
+/**
+ * Cria a pasta "resultados" caso não exista.
+ */
+
 static void exist_result(void) {
     system ("mkdir -p resultados");
 }
 
-// helps writting header line to error file
+/**
+ * Copia a linha de cabeçalho do ficheiro CSV para o ficheiro de erros.
+ * @param csv Ficheiro CSV de entrada.
+ * @param ferror Ficheiro de erros a escrever.
+ */
+
 static void wcsv_header(FILE *csv, FILE *ferror) {
     char header[1000];
     if(fgets(header, sizeof(header), csv)) {
@@ -59,8 +83,18 @@ static void wcsv_header(FILE *csv, FILE *ferror) {
     }
 }
 
+/**
+ * Lê e processa o ficheiro airports.csv
+ * - Valida sintaticamente os campos
+ * - Cria objetos Airport e adiciona ao AirportsManager do dataset
+ * - Escreve linhas inválidas no ficheiro resultados/airports_errors.csv
+ * @param d Dataset onde adicionar os aeroportos
+ * @param data_path Caminho para a pasta do dataset
+ */
+
 void parse_airports(Dataset d, const char *data_path) {
-        char clean_path[512];
+    // Normaliza o path removendo '/' no final
+    char clean_path[512];
     strcpy(clean_path, data_path);
     size_t len = strlen(clean_path);
     while (len > 0 && clean_path[len - 1] == '/') {
@@ -94,6 +128,7 @@ void parse_airports(Dataset d, const char *data_path) {
             continue; 
         }
 
+        // Limpeza de aspas e espaços
         remove_quotes(code); remove_spc(code);
         remove_quotes(name); remove_spc(name);
         remove_quotes(city); remove_spc(city);
@@ -103,6 +138,7 @@ void parse_airports(Dataset d, const char *data_path) {
         remove_quotes(icao); remove_spc(icao);
         remove_quotes(type); remove_spc(type);
 
+        // Validação sintática
         if (!validate_airport_code(code) ||
             !validate_latitude_longitude(lat_str, long_str) || !validate_airport_type(type) ||
             strlen(name) == 0) {
@@ -110,9 +146,11 @@ void parse_airports(Dataset d, const char *data_path) {
             continue;
         }
 
+        // Conversão para double
         double latitude = strtod(lat_str, NULL);
         double longitude = strtod(long_str, NULL);
 
+        // Criação do objeto Airport
         Airport a = create_airport(code, name, city, country, latitude, longitude, icao, type);
         if (!a) {fprintf(stderr, "create_airport failed\n"); fprintf(ferror, "%s", line); continue; } 
     
@@ -124,6 +162,13 @@ void parse_airports(Dataset d, const char *data_path) {
     fclose(ferror);
 }
 
+
+/**
+ * Lê e processa o ficheiro aircrafts.csv
+ * - Valida sintaticamente os campos
+ * - Cria objetos Aircraft e adiciona ao AircraftsManager do dataset
+ * - Escreve linhas inválidas no ficheiro resultados/aircrafts_errors.csv
+ */
 
 void parse_aircrafts(Dataset d, const char *data_path) {
     char clean_path[512];
@@ -165,14 +210,14 @@ void parse_aircrafts(Dataset d, const char *data_path) {
         remove_quotes(capacity_str); remove_spc(capacity_str);
         remove_quotes(range_str); remove_spc(range_str);
 
-// Validação sintática dos campos
-if (strlen(id) == 0 ||
-    !validate_year(year_str) ||
-    !is_all_digits(capacity_str) || atoi(capacity_str) <= 0 ||
-    !is_all_digits(range_str) || atoi(range_str) <= 0) {
-    fprintf(ferror, "%s", line);
-    continue;
-}
+        // Validação sintática
+        if (strlen(id) == 0 ||
+        !validate_year(year_str) ||
+        !is_all_digits(capacity_str) || atoi(capacity_str) <= 0 ||
+        !is_all_digits(range_str) || atoi(range_str) <= 0) {
+        fprintf(ferror, "%s", line);
+        continue;
+        }
 
         // Conversão segura após validação
         int year = atoi(year_str);
@@ -189,6 +234,14 @@ if (strlen(id) == 0 ||
     fclose(f);
     fclose(ferror);
 }
+
+
+/**
+ * Lê o ficheiro "flights.csv", valida os dados e adiciona os voos ao dataset.
+ * Linhas inválidas são registadas em "resultados/flights_errors.csv".
+ * @param d Dataset onde os voos serão armazenados.
+ * @param data_path Caminho da pasta que contém "flights.csv".
+ */
 
 void parse_flights(Dataset d, const char *data_path) {
     char clean_path[512];
@@ -244,7 +297,7 @@ void parse_flights(Dataset d, const char *data_path) {
         continue;
 }
 
-// --- Validação sintática e lógica ---
+    // Validação sintática e lógica
     bool synt_ok =
     validate_flight_id(flight_id) &&
     validate_datetime(departure) &&
@@ -287,6 +340,13 @@ void parse_flights(Dataset d, const char *data_path) {
     fclose(f);
     fclose(ferror);
 }
+
+/**
+ * Lê o ficheiro "passengers.csv", valida os dados e adiciona os passageiros ao dataset.
+ * Linhas inválidas são registadas em "resultados/passengers_errors.csv".
+ * @param d Dataset onde os passageiros serão armazenados.
+ * @param data_path Caminho da pasta que contém "passengers.csv".
+ */
 
 void parse_passengers(Dataset d, const char *data_path) {
     char clean_path[512];
@@ -354,6 +414,14 @@ void parse_passengers(Dataset d, const char *data_path) {
     fclose(ferror);
 }
 
+
+/**
+ * Lê o ficheiro "reservations.csv", valida os dados, verifica a existência de passageiros e voos,
+ * e adiciona as reservas ao dataset. Linhas inválidas são registadas em
+ * "resultados/reservations_errors.csv".
+ * @param d Dataset onde as reservas serão armazenadas.
+ * @param data_path Caminho da pasta que contém "reservations.csv".
+ */
 
 void parse_reservations(Dataset d, const char *data_path) {
     char clean_path[512];
@@ -462,38 +530,37 @@ void parse_reservations(Dataset d, const char *data_path) {
             continue;
         }
 
-// Verificar existência dos voos e ligação (quando há 2)
-FlightsManager fm = dataset_get_flights(d);
-bool flights_ok = true;
-for (int i = 0; i < num_ids; i++) {
-    if (!flights_manager_get(fm, flight_id[i])) {
-        fprintf(ferror, "%s", line);
-        flights_ok = false;
-        break;
+    // Verificar existência dos voos e ligação (quando há 2)
+    FlightsManager fm = dataset_get_flights(d);
+    bool flights_ok = true;
+    for (int i = 0; i < num_ids; i++) {
+        if (!flights_manager_get(fm, flight_id[i])) {
+            fprintf(ferror, "%s", line);
+            flights_ok = false;
+            break;
+        }
     }
-}
-if (!flights_ok) continue;
+    if (!flights_ok) continue;
 
-if (num_ids == 2) {
-    Flight f1 = flights_manager_get(fm, flight_id[0]);
-    Flight f2 = flights_manager_get(fm, flight_id[1]);
-    const char *dest1 = get_flight_dest(f1);
-    const char *orig2 = get_flight_orig(f2);
-    if (!dest1 || !orig2 || strcmp(dest1, orig2) != 0) {
-        fprintf(ferror, "%s", line);
-        continue;
+    if (num_ids == 2) {
+        Flight f1 = flights_manager_get(fm, flight_id[0]);
+        Flight f2 = flights_manager_get(fm, flight_id[1]);
+        const char *dest1 = get_flight_dest(f1);
+        const char *orig2 = get_flight_orig(f2);
+        if (!dest1 || !orig2 || strcmp(dest1, orig2) != 0) {
+            fprintf(ferror, "%s", line);
+            continue;
+        }
     }
-}
 
-        // Converter strings lógicas
-        int extra_luggage = (strcmp(extra_luggage_str, "true") == 0);
-        int priority_boarding = (strcmp(priority_boarding_str, "true") == 0);
+    // Converter strings lógicas
+    int extra_luggage = (strcmp(extra_luggage_str, "true") == 0);
+    int priority_boarding = (strcmp(priority_boarding_str, "true") == 0);
 
-        // Criar reserva
-        Reservation r = create_reservation(reservation_id, flight_id, document_number,
-                                           (int[]){0,0}, (double[]){price,0.0},
-                                           (int[]){extra_luggage,0}, (int[]){priority_boarding,0},
-                                           qr_code);
+
+    // Criar reserva
+    Reservation r = create_reservation(reservation_id, flight_id, document_number,
+        (int[]){0,0}, (double[]){price,0.0},(int[]){extra_luggage,0}, (int[]){priority_boarding,0},qr_code);
         if (!r) {
             fprintf(stderr, "create_reservation falhou: %s\n", reservation_id);
             fprintf(ferror, "%s", line);
