@@ -21,7 +21,6 @@ int compare_files(const char *generated, const char *expected) {
 
     char line_g[4096], line_e[4096];
     int line_num = 1;
-    int identical=1;
 
     while (fgets(line_g, sizeof(line_g), fg) && fgets(line_e, sizeof(line_e), fe)) {
         line_g[strcspn(line_g, "\r\n")] = 0;
@@ -31,7 +30,6 @@ int compare_files(const char *generated, const char *expected) {
             printf("   Diferença na linha %d\n", line_num);
             printf("   Gerado:   %s", line_g);
             printf("   Esperado: %s\n", line_e);
-            identical=0;
             break;
         }
         line_num++;
