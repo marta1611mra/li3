@@ -43,6 +43,7 @@ bool validate_datetime(const char *datetime){
     return true;
 }
 
+
 // validate the year
 bool validate_year(const char *year) {
     if (!year || strlen(year) != 4) return false;
