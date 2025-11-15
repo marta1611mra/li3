@@ -5,12 +5,10 @@
 #include <string.h>
 #include <time.h>
 #include <sys/resource.h>
-#include "programa-testes.h"
-#include <sys/resource.h>
 
+#define MAX_QUERIES 10
 
-
-int compare_files(const char *generated, const char *expected) {
+int compare_files(const char *generated, const char *expected, int *diff_line) {
     FILE *fg = fopen(generated, "r");
     FILE *fe = fopen(expected, "r");
     if (!fg || !fe) {
@@ -22,27 +20,26 @@ int compare_files(const char *generated, const char *expected) {
 
     char line_g[4096], line_e[4096];
     int line_num = 1;
-    int identical=1;
+    int identical = 1;
 
     while (fgets(line_g, sizeof(line_g), fg) && fgets(line_e, sizeof(line_e), fe)) {
         line_g[strcspn(line_g, "\r\n")] = 0;
-        line_e[strcspn(line_e, "\r\n")] = 0;  
+        line_e[strcspn(line_e, "\r\n")] = 0;
 
         if (strcmp(line_g, line_e) != 0) {
-            printf("Diferença na linha %d\n", line_num);
-            printf("Gerado:   %s", line_g);
-            printf("Esperado: %s\n", line_e);
-            identical=0;
+            *diff_line = line_num;
+            identical = 0;
             break;
         }
         line_num++;
     }
-    if (identical){
+
+    if (identical) {
         if ((fgets(line_g, sizeof(line_g), fg) != NULL) ||
             (fgets(line_e, sizeof(line_e), fe) != NULL)) {
-            printf("Ficheiros têm comprimentos diferentes.\n");
+            *diff_line = line_num;
             identical = 0;
-        }        
+        }
     }
 
     fclose(fg);
@@ -54,55 +51,86 @@ void print_performance_info(struct timespec start, struct timespec end, struct r
     double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     printf("\nTempo total de execução: %.6f segundos\n", elapsed);
 
-getrusage(RUSAGE_SELF, &usage);
-
 #ifdef __APPLE__
-    printf("Medição de memória não suportada no macOS com getrusage()\n");
+    printf("Memória máxima usada: não suportado no macOS\n");
 #else
     printf("Memória máxima usada: %ld KB\n", usage.ru_maxrss);
 #endif
-
 }
 
 int run_programa_testes(const char *dataset_path, const char *commands_file, const char *expected_dir) {
-    printf("A iniciar testes automáticos...\n");
-    struct timespec start, end;
+    (void)dataset_path;  // Não usado, mas necessário para o argumento
+    (void)commands_file; // Não usado, mas necessário para o argumento
+
+    printf("A iniciar testes automáticos...\n\n");
+
+    struct timespec start_total, end_total;
     struct rusage usage;
-    clock_gettime(CLOCK_REALTIME, &start);
+    clock_gettime(CLOCK_REALTIME, &start_total);
 
+    int total_queries = 0;
+    int total_correct = 0;
 
-    int correct = 0, total = 0;
-    char generated[256], expected[256];
+    double times[MAX_QUERIES];
+    int correct_flags[MAX_QUERIES];
 
-    for (int i = 1; i <= 10; i++) {  // assume até 10 queries para teste
-        snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", i);
-        snprintf(expected, sizeof(expected), "%s/command%d_output.txt", expected_dir, i);
+    for (int query_index = 1; query_index <= MAX_QUERIES; query_index++) {
+        char generated[256], expected[256];
+        snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", query_index);
+        snprintf(expected, sizeof(expected), "%s/command%d_output.txt", expected_dir, query_index);
+
+        printf("🔍 A comparar %s...\n", generated);
+
         FILE *test = fopen(expected, "r");
         if (!test) {
-            printf("⚠️  Ficheiro esperado não encontrado: %s\n", expected);
+            printf("⚠️  Ficheiro esperado não encontrado: %s\n\n", expected);
             continue;
         }
         fclose(test);
 
-        total++;
-        printf("\n🔍 A comparar %s...\n", generated);
-        if (compare_files(generated, expected)) {
-            printf("command%d_output.txt está correto.\n", i);
-            correct++;
+        total_queries++;
+        int diff_line = 0;
+        struct timespec t_start, t_end;
+        clock_gettime(CLOCK_REALTIME, &t_start);
+
+        int ok = compare_files(generated, expected, &diff_line);
+
+        clock_gettime(CLOCK_REALTIME, &t_end);
+        double elapsed_query = (t_end.tv_sec - t_start.tv_sec) +
+                               (t_end.tv_nsec - t_start.tv_nsec) / 1e9;
+
+        times[total_queries - 1] = elapsed_query;
+        correct_flags[total_queries - 1] = ok;
+
+        if (ok) {
+            printf("command%d_output.txt está correto.\n\n", query_index);
+            printf("✅ Query %d correta. Tempo: %.6f s\n", query_index, elapsed_query);
+            total_correct++;
         } else {
-            printf("command%d_output.txt difere do esperado.\n", i);
+            printf("command%d_output.txt difere do esperado. Primeira diferença na linha %d.\n\n", query_index, diff_line);
+            printf("❌ Query %d incorreta. Tempo: %.6f s\n", query_index, elapsed_query);
         }
     }
 
-    clock_gettime(CLOCK_REALTIME, &end);
+    clock_gettime(CLOCK_REALTIME, &end_total);
     getrusage(RUSAGE_SELF, &usage);
+
+    printf("\n--- Resultados dos testes ---\n");
+    for (int i = 0; i < total_queries; i++) {
+        printf("Query %d: %s, tempo = %.6f s\n",
+               i + 1,
+               correct_flags[i] ? "correta" : "incorreta",
+               times[i]);
+    }
 
     printf("\nResultados dos testes:\n");
     printf("   %d de %d ficheiros corretos (%.1f%%)\n",
-           correct, total, total > 0 ? (100.0 * correct / total) : 0.0);
+           total_correct, total_queries,
+           total_queries > 0 ? 100.0 * total_correct / total_queries : 0.0);
 
-    print_performance_info(start, end, usage);
-    return (correct == total) ? 0 : 1;
+    print_performance_info(start_total, end_total, usage);
+
+    return (total_correct == total_queries) ? 0 : 1;
 }
 
 int main(int argc, char *argv[]) {
