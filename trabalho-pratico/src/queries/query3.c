@@ -22,12 +22,12 @@ static void count_departures(gpointer key, gpointer value, gpointer user_data) {
         return;
 
     const char *dep_full = get_flight_actual_dep(f);
-    if (!dep_full) return;
+    
+    if (!dep_full || strlen(dep_full) < 16 || dep_full[10] != ' ') return;
 
     // ignorar "N/A" e formatos inválidos
     if (strlen(dep_full) < 16 || dep_full[10] != ' ')
         return;
-
     char dep_date[11];
     memcpy(dep_date, dep_full, 10);
     dep_date[10] = '\0';
@@ -48,22 +48,23 @@ static void count_departures(gpointer key, gpointer value, gpointer user_data) {
     }
 }
 
+
 // função principal da query 3
 void q3(const char *start_date, const char *end_date,
         FlightsManager flights, AirportsManager airports, FILE *output) {
 
     if (!flights || !airports || !output) return;
-    // tabela para guardar contagens de partidas por aeroporto    GHashTable *departures =
-    g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
-    // contexto para passar ao foreach
+
+    GHashTable *departures = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
+
+    // contexto 
         struct {
         GHashTable *table;
         const char *start;
         const char *end;
     } ctx = { departures, start_date, end_date };
     // percorre todos os voos
-    g_hash_table_foreach(flights_manager_get_table(flights),
-                         count_departures, &ctx);
+    g_hash_table_foreach(flights_manager_get_table(flights), count_departures, &ctx);
 
     // encontrar o aeroporto com mais partidas
     GHashTableIter iter;
