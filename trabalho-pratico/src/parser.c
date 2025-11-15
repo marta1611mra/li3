@@ -37,7 +37,7 @@ static void remove_spc(char *str) {
     int len = strlen(str);
     
     while (*str && (isspace((unsigned char)*str))) {
-        memmove(str, str + 1, strlen(str));
+        memmove(str, str + 1, strlen(str+1)+1);
     }
     
     while (len > 0 && (isspace((unsigned char)str[len - 1]) ||
@@ -425,7 +425,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             continue;
         }
 
-        // Verificar existência dos voos e ligação (quando há 2)
+// Verificar existência dos voos e ligação (quando há 2)
 FlightsManager fm = dataset_get_flights(d);
 bool flights_ok = true;
 for (int i = 0; i < num_ids; i++) {
