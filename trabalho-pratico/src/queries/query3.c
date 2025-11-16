@@ -11,29 +11,7 @@
 #include "query3.h"
 
 
-/**
- * @brief Função callback usada para contar partidas por aeroporto num intervalo de datas.
- *
- * Esta função é chamada para cada voo armazenado no `FlightsManager`.  
- * Apenas voos **não cancelados** são considerados.
- *
- * O procedimento é:
- * - extrair a data (AAAA-MM-DD) da actual departure do voo;
- * - verificar se a data está dentro do intervalo `[start, end]`;
- * - incrementar o contador associado ao aeroporto de origem.
- *
- * Os resultados são guardados numa GHashTable onde:
- * - chave → código de aeroporto (string)
- * - valor → inteiro alocado dinamicamente contendo o número de partidas
- *
- * @param key        Chave da tabela (não usada).
- * @param value      Valor da tabela, um objeto `Flight`.
- * @param user_data  Estrutura de contexto contendo:
- *                   - tabela de contagens
- *                   - start_date
- *                   - end_date
- */
-
+//Função callback usada para contar partidas por aeroporto num intervalo de datas.
 static void count_departures(gpointer key, gpointer value, gpointer user_data) {
     Flight f = (Flight)value;
     struct {
@@ -73,38 +51,7 @@ static void count_departures(gpointer key, gpointer value, gpointer user_data) {
 }
 
 
-/**
- * @brief Executa a Query 3: encontrar o aeroporto com mais partidas
- *        num intervalo de datas especificado.
- *
- * A query recebe duas datas:
- *
- *     start_date end_date
- *
- * Exemplo:
- *     2022-05-01 2022-05-31
- *
- * A função:
- * 1. Percorre todos os voos do sistema.
- * 2. Considera apenas voos:
- *      - não cancelados
- *      - cuja actual departure esteja dentro do intervalo de datas
- * 3. Conta partidas por aeroporto.
- * 4. Identifica o aeroporto com maior número de partidas.
- * 5. Em caso de empate, usa ordenação lexicográfica do código do aeroporto.
- *
- * O output segue o formato:
- *
- *     code,name,city,country,count
- *
- * Se nenhum aeroporto tiver partidas no intervalo, imprime uma linha vazia.
- *
- * @param start_date  Data inicial (formato YYYY-MM-DD).
- * @param end_date    Data final (formato YYYY-MM-DD).
- * @param flights     Estrutura FlightsManager com todos os voos.
- * @param airports    Estrutura AirportsManager com todos os aeroportos.
- * @param output      Ficheiro onde será escrito o resultado.
- */
+// Executa a Query 3: encontrar o aeroporto com mais partidas num intervalo de datas especificado.
 
 void q3(const char *start_date, const char *end_date,
         FlightsManager flights, AirportsManager airports, FILE *output) {

@@ -1,18 +1,3 @@
-/**
- * @file query2.c
- * @brief Implementação da Query 2: Top N aeronaves com mais voos.
- *
- * Este módulo fornece a função para executar a Query 2, que lista as N
- * aeronaves com maior número de voos registados, podendo opcionalmente
- * filtrar por fabricante.
- *
- * O resultado é escrito em ficheiro, cada linha com:
- * 
- *      aircraft_id,manufacturer,model,flight_count
- *
- * Se não houver aeronaves válidas, é escrita uma linha vazia.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,27 +8,12 @@
 #include "managers/aircrafts_manager.h"
 #include "managers/flights_manager.h"
 
-/**
- * @struct AircraftCount
- * @brief Estrutura auxiliar para armazenar uma aeronave e a contagem de voos.
- */
 typedef struct {
-    Aircraft aircraft; /**< Ponteiro para a aeronave */
-    int count;         /**< Número de voos associados */
+    Aircraft aircraft;
+    int count;         
 } AircraftCount;
 
-/**
- * @brief Callback para contar voos por aeronave.
- *
- * Apenas voos cujo estado não seja Cancelled são contabilizados.
- * Os resultados são guardados numa GHashTable com:
- *   - chave: aircraft_id
- *   - valor: ponteiro para inteiro com o número de voos
- *
- * @param key Chave da tabela (não usada)
- * @param value Ponteiro para o voo (Flight)
- * @param user_data Ponteiro para a GHashTable onde são guardados os contadores
- */
+// Callback para contar voos por aeronave.
 static void count_flights(gpointer key, gpointer value, gpointer user_data) {
     Flight f = value;
     GHashTable *table = user_data;
@@ -63,17 +33,8 @@ static void count_flights(gpointer key, gpointer value, gpointer user_data) {
     }
 }
 
-/**
- * @brief Função de comparação para ordenar aeronaves.
- *
- * Critérios de ordenação:
- *  1. Número de voos (decrescente)
- *  2. ID da aeronave (ascendente) em caso de empate
- *
- * @param a Ponteiro para um AircraftCount
- * @param b Ponteiro para outro AircraftCount
- * @return Inteiro <0, 0 ou >0 para uso em qsort
- */
+// Função de comparação para ordenar aeronaves.
+ 
 static int compare_aircrafts(const void *a, const void *b) {
     const AircraftCount *x = a;
     const AircraftCount *y = b;
@@ -84,21 +45,8 @@ static int compare_aircrafts(const void *a, const void *b) {
     return strcmp(get_aircraft_id(x->aircraft), get_aircraft_id(y->aircraft));
 }
 
-/**
- * @brief Executa a Query 2: listar o Top N de aeronaves por número de voos.
- *
- * Passos:
- * 1. Conta todos os voos por aeronave, ignorando voos cancelados
- * 2. Opcionalmente filtra aeronaves pelo fabricante
- * 3. Ordena pelo número de voos (desc) e ID (asc)
- * 4. Imprime o top N no ficheiro de saída
- *
- * @param fm Estrutura FlightsManager com todos os voos
- * @param am Estrutura AircraftsManager com todas as aeronaves
- * @param N Número máximo de aeronaves a listar
- * @param filter_manufacturer Se não NULL, filtra apenas por este fabricante
- * @param out Ficheiro onde será escrito o resultado
- */
+// Executa a Query 2: listar o Top N de aeronaves por número de voos.
+
 void query2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
     if (!fm || !am || N <= 0 || !out){
         fprintf(out,"\n");

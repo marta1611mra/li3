@@ -1,11 +1,3 @@
-/**
- * @file passengers.c
- * @brief Implementação das funções para criação e manipulação de passageiros (Passenger).
- *
- * Cada passageiro possui número de documento, nome, data de nascimento, nacionalidade,
- * gênero, email, telefone, endereço e foto.
- */
-
 #include "passengers.h"
 #include <stdio.h>
 #include <string.h>
@@ -27,21 +19,7 @@ struct passenger{
 
 };
 
-/**
- * @brief Cria um novo passageiro com os dados fornecidos.
- *
- * @param document_id Número de documento.
- * @param first_name Primeiro nome.
- * @param last_name Último nome.
- * @param dob Data de nascimento (YYYY-MM-DD).
- * @param nationality Nacionalidade.
- * @param gender Gênero.
- * @param email Email do passageiro.
- * @param phone Telefone.
- * @param address Endereço.
- * @param photo Foto (caminho ou base64).
- * @return Ponteiro para o passageiro criado ou NULL se falhar a alocação.
- */
+//Cria um novo passageiro com os dados fornecidos.
 Passenger create_passenger(const char *document_id, const char *first_name, const char *last_name, const char *dob, const char *nationality, const char *gender, const char *email, const char *phone, const char *address, const char *photo) {
     Passenger p = g_new0(struct passenger, 1);
     if (!p) return NULL;
