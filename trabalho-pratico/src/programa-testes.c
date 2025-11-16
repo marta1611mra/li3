@@ -14,6 +14,8 @@
 #include <string.h>
 #include <time.h>
 #include <sys/resource.h>
+#include "programa-testes.h"
+#include <sys/resource.h>
 
 #define MAX_QUERIES 10
 

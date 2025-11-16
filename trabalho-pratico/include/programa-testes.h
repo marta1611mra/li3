@@ -25,7 +25,7 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
  * @param expected Caminho para o ficheiro esperado.
  * @return int 1 se os ficheiros forem iguais, 0 caso contrário.
  */
-int compare_files(const char *generated, const char *expected);
+int compare_files(const char *generated, const char *expected,int *diff_line);
 
 /**
  * @brief Mede e imprime o tempo e memória usados.

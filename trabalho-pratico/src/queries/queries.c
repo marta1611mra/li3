@@ -28,7 +28,7 @@
 static FILE *safe_fopen(const char *path, const char *mode) {
     FILE *f = fopen(path, mode);
     if (!f) {
-        fprintf(stderr, "❌ Erro ao abrir ficheiro: %s\n", path);
+        fprintf(stderr, "Erro ao abrir ficheiro: %s\n", path);
     }
     return f;
 }
@@ -56,7 +56,7 @@ void process_queries(Dataset d, const char *queries_path) {
     FILE *queries_file = safe_fopen(queries_path, "r");
     if (!queries_file) return;
 
-    printf("⚙️  A executar queries de '%s'...\n", queries_path);
+    printf("A executar queries de '%s'...\n", queries_path);
 
     int command_number = 1;
     char line[256];
@@ -66,7 +66,7 @@ void process_queries(Dataset d, const char *queries_path) {
 
         /** Cria o ficheiro de saída para a query atual */
         char output_path[128];
-        snprintf(output_path, sizeof(output_path), "command%d_output.txt", command_number);
+        snprintf(output_path, sizeof(output_path), "resultados/command%d_output.txt", command_number);
 
         FILE *out = safe_fopen(output_path, "w");
         if (!out) {
@@ -116,5 +116,5 @@ void process_queries(Dataset d, const char *queries_path) {
     }
 
     fclose(queries_file);
-    printf("✅ Todas as queries foram processadas.\n");
+    printf("Todas as queries foram processadas.\n");
 }
