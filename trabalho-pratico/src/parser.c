@@ -524,6 +524,6 @@ void parse_reservations(Dataset d, const char *data_path) {
         reservations_manager_add(rm, r);
     }
 
-    fclose(f);oc
+    fclose(f);
     fclose(ferror);
 }
