@@ -18,33 +18,14 @@
 #include "query1.h"
 #include "queries.h"
 
-/**
- * @brief Garante que a pasta "resultados" existe.
- *
- * Se a pasta ainda não existir, cria usando comando POSIX `mkdir -p`.
- */
+
+// Garante que a pasta "resultados" existe.
 static void ensure_result_dir(void) {
     system("mkdir -p resultados");
 }
 
-/**
- * @brief Função principal do programa.
- *
- * Fluxo de execução:
- * 1. Verifica os argumentos de linha de comando.
- * 2. Cria a estrutura principal do dataset.
- * 3. Carrega os dados de aeroportos, aeronaves, voos, passageiros e reservas.
- * 4. Garante que a pasta "resultados" existe.
- * 5. Processa as queries definidas no ficheiro de comandos.
- * 6. Liberta a memória alocada para o dataset.
- *
- * Uso:
- * ./programa <pasta_dataset> <ficheiro_comandos>
- *
- * @param argc Número de argumentos da linha de comando.
- * @param argv Array de strings com os argumentos da linha de comando.
- * @return 0 se execução bem sucedida, 1 em caso de erro.
- */
+
+// Função principal do programa.
 int main(int argc, char *argv[]) {
     // Verifica se os argumentos foram fornecidos corretamente
     if (argc != 3) {

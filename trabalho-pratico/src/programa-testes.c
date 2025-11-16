@@ -1,11 +1,3 @@
-/**
- * @file programa-testes.c
- * @brief Programa para execução automática de testes comparando ficheiros gerados com resultados esperados.
- *
- * Este programa lê os ficheiros gerados por um conjunto de queries e compara com
- * os ficheiros esperados, reportando diferenças e tempos de execução.
- */
-
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 
@@ -19,19 +11,8 @@
 
 #define MAX_QUERIES 120
 
-/**
- * @brief Compara dois ficheiros linha a linha.
- *
- * Esta função abre dois ficheiros de texto, lê cada linha e compara-as.
- * Se houver diferença, retorna imediatamente e fornece a linha da primeira discrepância.
- *
- * @param generated Caminho para o ficheiro gerado pelo programa.
- * @param expected Caminho para o ficheiro esperado.
- * @param diff_line Ponteiro para armazenar a linha da primeira diferença (se houver).
- * @return int Retorna 1 se os ficheiros forem idênticos, 0 caso contrário.
- *
- * @note Remove automaticamente os caracteres de nova linha (\n ou \r\n) antes da comparação.
- */
+
+// Compara dois ficheiros linha a linha.
 int compare_files(const char *generated, const char *expected, int *diff_line) {
     FILE *fg = fopen(generated, "r");
     FILE *fe = fopen(expected, "r");
@@ -73,17 +54,8 @@ int compare_files(const char *generated, const char *expected, int *diff_line) {
     return identical;
 }
 
-/**
- * @brief Imprime informações de desempenho do programa.
- *
- * Mostra o tempo total de execução e a memória máxima utilizada.
- *
- * @param start Timestamp de início da execução.
- * @param end Timestamp de fim da execução.
- * @param usage Estrutura contendo informações de recursos usados.
- *
- * @note A memória máxima usada não é suportada no macOS.
- */
+
+// Imprime informações de desempenho do programa.
 void print_performance_info(struct timespec start, struct timespec end, struct rusage usage) {
     double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     printf("\nTempo total de execução: %.6f segundos\n", elapsed);
@@ -95,17 +67,8 @@ void print_performance_info(struct timespec start, struct timespec end, struct r
 #endif
 }
 
-/**
- * @brief Executa testes automáticos comparando ficheiros gerados com resultados esperados.
- *
- * Lê cada ficheiro gerado pelo programa, compara com o correspondente ficheiro esperado,
- * calcula o tempo de execução de cada query e imprime um resumo dos resultados.
- *
- * @param dataset_path Caminho para o dataset (não utilizado nesta função, reservado para extensão futura).
- * @param commands_file Caminho para ficheiro de comandos (não utilizado nesta função, reservado para extensão futura).
- * @param expected_dir Diretório que contém os ficheiros esperados.
- * @return int Retorna 0 se todos os ficheiros estiverem corretos, 1 caso contrário.
- */
+
+// Executa testes automáticos comparando ficheiros gerados com resultados esperados.
 int run_programa_testes(const char *dataset_path, const char *commands_file, const char *expected_dir) {
     (void)dataset_path; 
     (void)commands_file; 
@@ -182,13 +145,8 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
                 count_q[qtype]++;
             }
         }
-
-
-
-
-
     }
-
+    
     clock_gettime(CLOCK_REALTIME, &end_total);
     getrusage(RUSAGE_SELF, &usage);
 
@@ -220,17 +178,8 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
     return (total_correct == total_cmds) ? 0 : 1;
 }
 
-/**
- * @brief Função principal do programa.
- *
- * Espera três argumentos: caminho para o dataset, ficheiro de comandos e diretório de resultados esperados.
- *
- * @param argc Número de argumentos.
- * @param argv Array de argumentos.
- * @return int 0 se os testes forem executados com sucesso, 1 caso contrário.
- *
- * @usage ./programa <dataset_path> <ficheiro_comandos> <resultados_esperados>
- */
+
+// Função principal do programa.
 int main(int argc, char *argv[]) {
     if (argc != 4) {
         fprintf(stderr, "Uso: %s <dataset_path> <ficheiro_comandos> <resultados_esperados>\n", argv[0]);
