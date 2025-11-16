@@ -46,7 +46,7 @@ static int compare_aircrafts(const void *a, const void *b) {
 }
 
 // Main function
-void query2_topN_aircrafts(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
+void query2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
     if (!fm || !am || N <= 0 || !out){
         fprintf(out,"\n");
     }else{

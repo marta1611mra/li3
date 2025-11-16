@@ -54,7 +54,7 @@ void process_queries(Dataset d, const char *queries_path) {
                 // Query 2: 2 <N> [manufacturer]
                 int N = atoi(arg1);
                 const char *filter = (n == 3) ? arg2 : NULL;
-                query2_topN_aircrafts(dataset_get_flights(d),
+                query2(dataset_get_flights(d),
                                       dataset_get_aircrafts(d),
                                       N, filter, out);
                 break;
