@@ -41,23 +41,15 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
     return p;
 }
 
-/**
- * @brief Liberta a memória associada a um passageiro.
- *
- * @param p Ponteiro para o passageiro a destruir.
- */
+
+// Liberta a memória associada a um passageiro.
 void destroy_passenger(Passenger p) {
     if (!p) return;
     free(p->photo);
         g_free(p);
 }
 
-/**
- * @brief Obtém o número de documento do passageiro.
- *
- * @param p Ponteiro para o passageiro.
- * @return Número de documento.
- */
+// Obtém o número de documento do passageiro.
 const char *get_passenger_document_id(Passenger p) { 
     return p->document_id; 
 }

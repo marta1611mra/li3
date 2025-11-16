@@ -1,20 +1,8 @@
-/**
- * @file reservations.c
- * @brief Implementação das funções para criação e manipulação de reservas (Reservation).
- *
- * Cada reserva possui identificador, até dois voos associados, número de documento do passageiro,
- * assentos, preços, bagagem extra, embarque prioritário e QR code.
- */
-
 #include "reservations.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-/**
- * @struct reservation
- * @brief Estrutura que representa uma reserva.
- */
 struct reservation {
     char reservation_id[11];       /**Número da reserva. */
     char flight_id[2][10];         /**Identificadores dos voos associados (máx. 2). */
@@ -26,19 +14,8 @@ struct reservation {
     char *qr_code;            /**QR code associado à reserva. */
 };
 
-/**
- * @brief Cria uma nova reserva com os dados fornecidos.
- *
- * @param reservation_id Identificador da reserva.
- * @param flight_id Matrizes de identificadores dos voos (até 2).
- * @param document_number Número do documento do passageiro.
- * @param seat Assentos reservados para cada voo.
- * @param price Preço para cada voo.
- * @param extra_luggage Indica se há bagagem extra para cada voo.
- * @param priority_boarding Indica se há embarque prioritário para cada voo.
- * @param qr_code QR code associado à reserva.
- * @return Ponteiro para a reserva criada ou NULL se falhar a alocação.
- */
+
+// Cria uma nova reserva com os dados fornecidos.
 Reservation create_reservation(const char *reservation_id, const char flight_id[2][10], const char *document_number, const int seat[2], const double price[2], const int extra_luggage[2], const int priority_boarding[2], const char *qr_code) {
     Reservation r = malloc(sizeof(struct reservation));
     if (!r) return NULL;
@@ -58,44 +35,24 @@ Reservation create_reservation(const char *reservation_id, const char flight_id[
     return r;
 }
 
-/**
- * @brief Liberta a memória associada a uma reserva.
- *
- * @param r Ponteiro para a reserva a destruir.
- */
+// Liberta a memória associada a uma reserva.
 void destroy_reservation(Reservation r) {
     if (!r) return;
     free(r->qr_code);
     free(r);
 }
 
-/**
- * @brief Obtém o identificador da reserva.
- *
- * @param r Ponteiro para a reserva.
- * @return Identificador da reserva.
- */
+// Obtém o identificador da reserva.
 const char *get_reservation_id(Reservation r) { 
     return r->reservation_id; 
 }
 
-/**
- * @brief Obtém o identificador do voo associado à reserva.
- *
- * @param r Ponteiro para a reserva.
- * @param index Índice do voo (0 ou 1).
- * @return Identificador do voo ou NULL se índice inválido.
- */
+// Obtém o identificador do voo associado à reserva.
 const char *get_reservation_flight_id(Reservation r, int index) {
     return (index >= 0 && index < 2) ? r->flight_id[index] : NULL;
 }
 
-/**
- * @brief Obtém o número do documento do passageiro associado à reserva.
- *
- * @param r Ponteiro para a reserva.
- * @return Número do documento do passageiro.
- */
+// Obtém o número do documento do passageiro associado à reserva.
 const char *get_reservation_document_number(Reservation r) {
     return r->document_number;
 }

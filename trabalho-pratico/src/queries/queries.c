@@ -1,12 +1,3 @@
-/**
- * @file queries.c
- * @brief Implementação do processamento de queries a partir de ficheiros de entrada.
- *
- * Este módulo lê queries de um ficheiro de texto, identifica o tipo de query,
- * interpreta os argumentos, executa a query correspondente e gera ficheiros
- * de saída com os resultados.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
