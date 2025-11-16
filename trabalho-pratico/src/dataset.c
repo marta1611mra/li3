@@ -1,30 +1,42 @@
+/**
+ * @file dataset.c
+ * @brief Implementação do Dataset: agregador de todos os gestores do sistema.
+ *
+ * O Dataset funciona como a estrutura principal que contém os cinco gestores:
+ * - AirportsManager
+ * - AircraftsManager
+ * - FlightsManager
+ * - PassengersManager
+ * - ReservationsManager
+ *
+ * Cada gestor é responsável por armazenar e manipular os respetivos dados.
+ */
+
 #include "dataset.h"
 #include <stdlib.h>
 
 /**
- * Estrutura interna que agrega todos os gestores necessários
- * ao funcionamento do sistema: aeroportos, aeronaves, voos,
- * passageiros e reservas.
+ * @struct dataset
+ * @brief Estrutura interna que agrega todos os gestores do sistema.
+ *
+ * Cada campo corresponde a um gestor específico.
  */
-
 struct dataset {
-    AirportsManager airports;
-    AircraftsManager aircrafts;
-    FlightsManager flights;
-    PassengersManager passengers;
-    ReservationsManager reservations;
+    AirportsManager airports;       /** Gestor de aeroportos */
+    AircraftsManager aircrafts;     /** Gestor de aeronaves */
+    FlightsManager flights;         /** Gestor de voos */
+    PassengersManager passengers;   /** Gestor de passageiros */
+    ReservationsManager reservations; /** Gestor de reservas */
 };
 
 /**
- * Cria e inicializa um novo Dataset contendo todos os gestores do sistema.
+ * @brief Cria e inicializa um novo Dataset.
  *
- * Cada gestor é criado individualmente através das respetivas funções
- * de criação.
+ * Esta função cria cada gestor individualmente e retorna um ponteiro
+ * para a estrutura Dataset. Se alguma alocação falhar, retorna NULL.
  *
- * @return Um ponteiro para o Dataset recém-criado,
- *         ou NULL caso a alocação de memória falhe.
+ * @return Ponteiro para Dataset inicializado, ou NULL se houver falha.
  */
-
 Dataset dataset_create(void) {
     Dataset d = malloc(sizeof(struct dataset));
     if (!d) return NULL;
@@ -39,16 +51,16 @@ Dataset dataset_create(void) {
 }
 
 /**
- * Liberta toda a memória associada a um Dataset.
+ * @brief Liberta toda a memória associada ao Dataset.
  *
- * Esta função destrói cada gestor individualmente e,
- * por fim, liberta a própria estrutura Dataset.
+ * Esta função destrói todos os gestores contidos no Dataset
+ * e, por fim, liberta a própria estrutura.
  *
- * @param d Dataset a destruir. Ignorado se for NULL.
+ * @param d Dataset a destruir. Ignorado se NULL.
  */
-
 void dataset_destroy(Dataset d) {
     if (!d) return;
+
     airports_manager_destroy(d->airports);
     aircrafts_manager_destroy(d->aircrafts);
     flights_manager_destroy(d->flights);
@@ -58,49 +70,50 @@ void dataset_destroy(Dataset d) {
 }
 
 /**
- * Obtém o gestor de aeroportos associado ao Dataset.
- * @param d Dataset.
- * @return AirportsManager armazenado no Dataset.
+ * @brief Obtém o gestor de aeroportos do Dataset.
+ *
+ * @param d Dataset
+ * @return AirportsManager armazenado no Dataset
  */
-
 AirportsManager dataset_get_airports(Dataset d) { 
     return d->airports; 
 }
 
 /**
- * Obtém o gestor de aeronaves associado ao Dataset.
- * @param d Dataset.
- * @return AircraftsManager armazenado no Dataset.
+ * @brief Obtém o gestor de aeronaves do Dataset.
+ *
+ * @param d Dataset
+ * @return AircraftsManager armazenado no Dataset
  */
-
 AircraftsManager dataset_get_aircrafts(Dataset d) { 
     return d->aircrafts; 
 }
 
 /**
- * Obtém o gestor de voos associado ao Dataset.
- * @param d Dataset.
- * @return FlightsManager armazenado no Dataset.
+ * @brief Obtém o gestor de voos do Dataset.
+ *
+ * @param d Dataset
+ * @return FlightsManager armazenado no Dataset
  */
-
 FlightsManager dataset_get_flights(Dataset d) { 
     return d->flights; 
 }
 
 /**
- * Obtém o gestor de passageiros associado ao Dataset.
- * @param d Dataset.
- * @return PassengersManager armazenado no Dataset.
+ * @brief Obtém o gestor de passageiros do Dataset.
+ *
+ * @param d Dataset
+ * @return PassengersManager armazenado no Dataset
  */
-
 PassengersManager dataset_get_passengers(Dataset d) { 
     return d->passengers; 
 }
 
 /**
- * Obtém o gestor de reservas associado ao Dataset.
- * @param d Dataset.
- * @return ReservationsManager armazenado no Dataset.
+ * @brief Obtém o gestor de reservas do Dataset.
+ *
+ * @param d Dataset
+ * @return ReservationsManager armazenado no Dataset
  */
 ReservationsManager dataset_get_reservations(Dataset d) { 
     return d->reservations; 

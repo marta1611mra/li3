@@ -1,3 +1,12 @@
+/**
+ * @file queries.c
+ * @brief Implementação do processamento de queries a partir de ficheiros de entrada.
+ *
+ * Este módulo lê queries de um ficheiro de texto, identifica o tipo de query,
+ * interpreta os argumentos, executa a query correspondente e gera ficheiros
+ * de saída com os resultados.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,51 +16,47 @@
 #include "queries/query3.h"
 
 /**
- * Abre um ficheiro de forma segura, verificando erros.
+ * @brief Abre um ficheiro de forma segura.
  *
- * Caso o ficheiro não consiga ser aberto, imprime uma mensagem de erro
- * no stderr e retorna NULL.
+ * Tenta abrir o ficheiro no modo especificado. Caso não consiga,
+ * imprime uma mensagem de erro no stderr e retorna NULL.
  *
- * @param path Caminho do ficheiro a abrir.
- * @param mode Modo de abertura (ex.: "r", "w").
- * @return Ponteiro para FILE caso sucesso, ou NULL caso ocorra erro.
+ * @param path Caminho para o ficheiro.
+ * @param mode Modo de abertura (ex.: "r" ou "w").
+ * @return Ponteiro para FILE se bem-sucedido, NULL caso contrário.
  */
-
 static FILE *safe_fopen(const char *path, const char *mode) {
     FILE *f = fopen(path, mode);
     if (!f) {
-        fprintf(stderr, " Erro ao abrir ficheiro: %s\n", path);
+        fprintf(stderr, "❌ Erro ao abrir ficheiro: %s\n", path);
     }
     return f;
 }
 
 /**
- * Lê e processa todas as queries fornecidas num ficheiro de texto.
+ * @brief Processa todas as queries listadas num ficheiro de input.
  *
  * Para cada linha do ficheiro:
- *  - Identifica o número da query (1, 2, 3, ...)
- *  - Interpreta parâmetros adicionais (se existirem)
+ *  - Lê o número da query (qid)
+ *  - Lê argumentos opcionais
  *  - Executa a query correspondente
- *  - Gera um ficheiro "commandX_output.txt" com o resultado
+ *  - Cria um ficheiro de output "commandX_output.txt" com o resultado
  *
- * Formatos das queries suportadas:
+ * Queries suportadas:
+ * - Query 1: 1 <airport_code>
+ * - Query 2: 2 <N> [manufacturer]
+ * - Query 3: 3 <start_date> <end_date>
  *
- *   Query 1: 1 <airport_code>
- *   Query 2: 2 <N> [manufacturer]
- *   Query 3: 3 <start_date> <end_date>
+ * Queries mal formatadas ou não implementadas geram mensagens de erro no stderr.
  *
- * Se uma query estiver mal formatada ou for desconhecida,
- * é reportada no stderr.
- *
- * @param d Dataset carregado contendo aeroportos, voos, aeronaves, etc.
- * @param queries_path Caminho para o ficheiro que contém as queries.
+ * @param d Dataset contendo aeroportos, aeronaves, voos, passageiros e reservas.
+ * @param queries_path Caminho para o ficheiro de queries.
  */
-
 void process_queries(Dataset d, const char *queries_path) {
     FILE *queries_file = safe_fopen(queries_path, "r");
     if (!queries_file) return;
 
-    printf(" A executar queries de '%s'...\n", queries_path);
+    printf("⚙️  A executar queries de '%s'...\n", queries_path);
 
     int command_number = 1;
     char line[256];
@@ -59,14 +64,9 @@ void process_queries(Dataset d, const char *queries_path) {
     while (fgets(line, sizeof(line), queries_file)) {
         if (strlen(line) == 0 || line[0] == '\n') continue;
 
-        /** 
-         * Cria o nome do ficheiro de saída da query corrente.
-         * Exemplo: command1_output.txt
-         */
-
+        /** Cria o ficheiro de saída para a query atual */
         char output_path[128];
-        snprintf(output_path, sizeof(output_path),
-                 "command%d_output.txt", command_number);
+        snprintf(output_path, sizeof(output_path), "command%d_output.txt", command_number);
 
         FILE *out = safe_fopen(output_path, "w");
         if (!out) {
@@ -74,31 +74,19 @@ void process_queries(Dataset d, const char *queries_path) {
             continue;
         }
 
-         /**
-         * Interpreta a linha da query:
-         * qid = número da query
-         * arg1, arg2 = parâmetros opcionais
-         */
+        /** Interpreta a linha da query */
         int qid;
         char arg1[128] = "", arg2[128] = "";
         int n = sscanf(line, "%d %127s %127s", &qid, arg1, arg2);
 
         switch (qid) {
-             /**
-             * Query 1
-             * Formato: 1 <airport_code>
-             * Obtém estatísticas de um aeroporto específico.
-             */
             case 1:
+                /** Query 1: 1 <airport_code> */
                 query1(dataset_get_airports(d), arg1, out);
                 break;
-             /**
-             * Query 2
-             * Formato: 2 <N> [manufacturer]
-             * Lista o top N de aeronaves por número de voos,
-             * opcionalmente filtradas por fabricante.
-             */
+
             case 2: {
+                /** Query 2: 2 <N> [manufacturer] */
                 int N = atoi(arg1);
                 const char *filter = (n == 3) ? arg2 : NULL;
                 query2_topN_aircrafts(dataset_get_flights(d),
@@ -106,23 +94,18 @@ void process_queries(Dataset d, const char *queries_path) {
                                       N, filter, out);
                 break;
             }
-            /**
-             * Query 3
-             * Formato: 3 <start_date> <end_date>
-             * Lista voos ocorridos num intervalo de datas.
-             */
+
             case 3:
+                /** Query 3: 3 <start_date> <end_date> */
                 if (n == 3)
                     q3(arg1, arg2, dataset_get_flights(d),
                        dataset_get_airports(d), out);
                 else
                     fprintf(stderr, "Query 3 mal formatada na linha %d\n", command_number);
                 break;
-            /**
-            * Query não reconhecida
-            */
 
             default:
+                /** Query desconhecida */
                 fprintf(stderr, "Query %d não implementada.\n", qid);
                 fprintf(out, "\n");
                 break;
@@ -133,5 +116,5 @@ void process_queries(Dataset d, const char *queries_path) {
     }
 
     fclose(queries_file);
-    printf("Todas as queries foram processadas.\n");
+    printf("✅ Todas as queries foram processadas.\n");
 }
