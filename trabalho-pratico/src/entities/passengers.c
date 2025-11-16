@@ -15,7 +15,7 @@ struct passenger{
     char email[50];
     char phone[15];
     char address[50];
-    char photo[4096];
+    char *photo;
 
 };
 
@@ -34,12 +34,14 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
     if (email)        strncpy(p->email,       email,       sizeof(p->email) - 1);
     if (phone)        strncpy(p->phone,       phone,       sizeof(p->phone) - 1);
     if (address)      strncpy(p->address,     address,     sizeof(p->address) - 1);
-    if (photo)        strncpy(p->photo,       photo,       sizeof(p->photo) - 1);
+    if (photo)        p->photo=strdup(photo);
 
     return p;
 }
 
 void destroy_passenger(Passenger p) {
+    if (!p) return;
+    free(p->photo);
         g_free(p);
 }
 
