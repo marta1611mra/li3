@@ -99,7 +99,7 @@ static int compare_aircrafts(const void *a, const void *b) {
  * @param filter_manufacturer Se não NULL, filtra apenas por este fabricante
  * @param out Ficheiro onde será escrito o resultado
  */
-void query2_topN_aircrafts(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
+void query2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
     if (!fm || !am || N <= 0 || !out){
         fprintf(out,"\n");
     } else {

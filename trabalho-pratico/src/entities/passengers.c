@@ -12,21 +12,19 @@
 #include <stdlib.h>
 #include <glib.h>
 
-/**
- * @struct passenger
- * @brief Estrutura que representa um passageiro.
- */
-struct passenger {
-    char document_id[16]; /**< Número de documento do passageiro. */
-    char first_name[30];  /**< Primeiro nome do passageiro. */
-    char last_name[30];   /**< Último nome do passageiro. */
-    char dob[11];         /**< Data de nascimento (YYYY-MM-DD). */
-    char nationality[20]; /**< Nacionalidade do passageiro. */
-    char gender[10];      /**< Gênero do passageiro. */
-    char email[50];       /**< Email do passageiro. */
-    char phone[15];       /**< Telefone do passageiro. */
-    char address[50];     /**< Endereço do passageiro. */
-    char photo[4096];     /**< Caminho ou base64 da foto do passageiro. */
+struct passenger{
+
+    char document_id[16];
+    char first_name[30];
+    char last_name[30];
+    char dob[11];
+    char nationality[20];
+    char gender[10];
+    char email[50];
+    char phone[15];
+    char address[50];
+    char *photo;
+
 };
 
 /**
@@ -60,7 +58,7 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
     if (email)        strncpy(p->email,       email,       sizeof(p->email) - 1);
     if (phone)        strncpy(p->phone,       phone,       sizeof(p->phone) - 1);
     if (address)      strncpy(p->address,     address,     sizeof(p->address) - 1);
-    if (photo)        strncpy(p->photo,       photo,       sizeof(p->photo) - 1);
+    if (photo)        p->photo=strdup(photo);
 
     return p;
 }
@@ -71,7 +69,9 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
  * @param p Ponteiro para o passageiro a destruir.
  */
 void destroy_passenger(Passenger p) {
-    g_free(p);
+    if (!p) return;
+    free(p->photo);
+        g_free(p);
 }
 
 /**

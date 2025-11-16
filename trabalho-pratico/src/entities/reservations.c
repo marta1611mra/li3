@@ -16,14 +16,14 @@
  * @brief Estrutura que representa uma reserva.
  */
 struct reservation {
-    char reservation_id[11];       /**< Número da reserva. */
-    char flight_id[2][10];         /**< Identificadores dos voos associados (máx. 2). */
-    char document_number[10];      /**< Número do documento de identificação do passageiro. */
-    int seat[2];                   /**< Números dos assentos reservados para cada voo. */
-    double price[7];               /**< Preço da reserva para cada voo (até 7?). */
-    int extra_luggage[5];          /**< Indica se a reserva inclui bagagem extra (1=true, 0=false). */
-    int priority_boarding[5];      /**< Indica se a reserva inclui embarque prioritário (1=true, 0=false). */
-    char qr_code[4096];            /**< QR code associado à reserva. */
+    char reservation_id[11];       /**Número da reserva. */
+    char flight_id[2][10];         /**Identificadores dos voos associados (máx. 2). */
+    char document_number[10];      /**Número do documento de identificação do passageiro. */
+    int seat[2];                   /**Números dos assentos reservados para cada voo. */
+    double price[7];               /**Preço da reserva para cada voo (até 7?). */
+    int extra_luggage[5];          /**Indica se a reserva inclui bagagem extra (1=true, 0=false). */
+    int priority_boarding[5];      /**Indica se a reserva inclui embarque prioritário (1=true, 0=false). */
+    char *qr_code;            /**QR code associado à reserva. */
 };
 
 /**
@@ -45,7 +45,7 @@ Reservation create_reservation(const char *reservation_id, const char flight_id[
 
     strcpy(r->reservation_id, reservation_id);
     strcpy(r->document_number, document_number);
-    strcpy(r->qr_code, qr_code);
+    r->qr_code =strdup(qr_code);
 
     for (int i = 0; i < 2; i++) {
         strcpy(r->flight_id[i], flight_id[i]);
@@ -64,7 +64,9 @@ Reservation create_reservation(const char *reservation_id, const char flight_id[
  * @param r Ponteiro para a reserva a destruir.
  */
 void destroy_reservation(Reservation r) {
-    if (r) free(r);
+    if (!r) return;
+    free(r->qr_code);
+    free(r);
 }
 
 /**
