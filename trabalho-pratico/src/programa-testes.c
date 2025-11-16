@@ -155,11 +155,11 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
 
         if (ok) {
             printf("command%d_output.txt está correto.\n\n", cmd);
-            printf("Query %d correta. Tempo: %.6f s\n", cmd, elapsed);
+            printf("Comando %d correta. Tempo: %.6f s\n", cmd, elapsed);
             total_correct++;
         } else {
             printf("command%d_output.txt difere do esperado. Primeira diferença na linha %d.\n\n", cmd, diff_line);
-            printf("Query %d incorreta. Tempo: %.6f s\n", cmd, elapsed);
+            printf("Comando %d incorreta. Tempo: %.6f s\n", cmd, elapsed);
         }
 
         FILE *fcmd = fopen(commands_file, "r");
