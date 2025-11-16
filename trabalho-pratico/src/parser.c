@@ -50,12 +50,12 @@ static void remove_spc(char *str) {
 }
 
 
-// @brief Cria a pasta "resultados" caso não exista.
+// Cria a pasta "resultados" caso não exista.
 static void exist_result(void) {
     system ("mkdir -p resultados");
 }
 
-// @brief Copia a linha de cabeçalho do ficheiro CSV para o ficheiro de erros.
+// Copia a linha de cabeçalho do ficheiro CSV para o ficheiro de erros.
 static void wcsv_header(FILE *csv, FILE *ferror) {
     char header[1000];
     if(fgets(header, sizeof(header), csv)) {
