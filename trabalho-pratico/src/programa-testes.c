@@ -1,5 +1,14 @@
+/**
+ * @file programa-testes.c
+ * @brief Programa para execução automática de testes comparando ficheiros gerados com resultados esperados.
+ *
+ * Este programa lê os ficheiros gerados por um conjunto de queries e compara com
+ * os ficheiros esperados, reportando diferenças e tempos de execução.
+ */
+
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,14 +18,18 @@
 #define MAX_QUERIES 10
 
 /**
- * Compara dois ficheiros linha a linha.
- * 
+ * @brief Compara dois ficheiros linha a linha.
+ *
+ * Esta função abre dois ficheiros de texto, lê cada linha e compara-as.
+ * Se houver diferença, retorna imediatamente e fornece a linha da primeira discrepância.
+ *
  * @param generated Caminho para o ficheiro gerado pelo programa.
  * @param expected Caminho para o ficheiro esperado.
  * @param diff_line Ponteiro para armazenar a linha da primeira diferença (se houver).
- * @return 1 se os ficheiros forem idênticos, 0 caso contrário.
+ * @return int Retorna 1 se os ficheiros forem idênticos, 0 caso contrário.
+ *
+ * @note Remove automaticamente os caracteres de nova linha (\n ou \r\n) antes da comparação.
  */
-
 int compare_files(const char *generated, const char *expected, int *diff_line) {
     FILE *fg = fopen(generated, "r");
     FILE *fe = fopen(expected, "r");
@@ -31,7 +44,6 @@ int compare_files(const char *generated, const char *expected, int *diff_line) {
     int line_num = 1;
     int identical = 1;
 
-    // Lê e compara linha a linha
     while (fgets(line_g, sizeof(line_g), fg) && fgets(line_e, sizeof(line_e), fe)) {
         line_g[strcspn(line_g, "\r\n")] = 0;
         line_e[strcspn(line_e, "\r\n")] = 0;  
@@ -46,7 +58,6 @@ int compare_files(const char *generated, const char *expected, int *diff_line) {
         line_num++;
     }
 
-    // Verifica se um dos ficheiros tem linhas extra
     if (identical) {
         if ((fgets(line_g, sizeof(line_g), fg) != NULL) ||
             (fgets(line_e, sizeof(line_e), fe) != NULL)) {
@@ -61,13 +72,16 @@ int compare_files(const char *generated, const char *expected, int *diff_line) {
 }
 
 /**
- * Imprime informações de desempenho do programa.
- * 
+ * @brief Imprime informações de desempenho do programa.
+ *
+ * Mostra o tempo total de execução e a memória máxima utilizada.
+ *
  * @param start Timestamp de início da execução.
  * @param end Timestamp de fim da execução.
  * @param usage Estrutura contendo informações de recursos usados.
+ *
+ * @note A memória máxima usada não é suportada no macOS.
  */
-
 void print_performance_info(struct timespec start, struct timespec end, struct rusage usage) {
     double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     printf("\nTempo total de execução: %.6f segundos\n", elapsed);
@@ -80,14 +94,16 @@ void print_performance_info(struct timespec start, struct timespec end, struct r
 }
 
 /**
- * Executa testes automáticos comparando ficheiros gerados com resultados esperados.
- * 
- * @param dataset_path Caminho para o dataset.
- * @param commands_file Caminho para ficheiro de comandos.
- * @param expected_dir Diretório que contem os ficheiros esperados.
- * @return 0 se todos os ficheiros estiverem corretos, 1 caso contrário.
+ * @brief Executa testes automáticos comparando ficheiros gerados com resultados esperados.
+ *
+ * Lê cada ficheiro gerado pelo programa, compara com o correspondente ficheiro esperado,
+ * calcula o tempo de execução de cada query e imprime um resumo dos resultados.
+ *
+ * @param dataset_path Caminho para o dataset (não utilizado nesta função, reservado para extensão futura).
+ * @param commands_file Caminho para ficheiro de comandos (não utilizado nesta função, reservado para extensão futura).
+ * @param expected_dir Diretório que contém os ficheiros esperados.
+ * @return int Retorna 0 se todos os ficheiros estiverem corretos, 1 caso contrário.
  */
-
 int run_programa_testes(const char *dataset_path, const char *commands_file, const char *expected_dir) {
     (void)dataset_path; 
     (void)commands_file; 
@@ -98,18 +114,18 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
     struct rusage usage;
     clock_gettime(CLOCK_REALTIME, &start_total);
 
-    int total_queries = 0; // Contador de queries executadas
-    int total_correct = 0; // Contador de queries corretas
+    int total_queries = 0;
+    int total_correct = 0;
 
-    double times[MAX_QUERIES]; // Array para armazenar tempos de execução de cada query
-    int correct_flags[MAX_QUERIES]; // Flags de correção de cada query
+    double times[MAX_QUERIES];
+    int correct_flags[MAX_QUERIES];
 
-
-    // Loop sobre todas as queries
     for (int query_index = 1; query_index <= MAX_QUERIES; query_index++) {
         char generated[256], expected[256];
         snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", query_index);
         snprintf(expected, sizeof(expected), "%s/command%d_output.txt", expected_dir, query_index);
+
+        printf("🔍 A comparar %s...\n", generated);
 
          // Verifica se o ficheiro esperado existe
         FILE *test = fopen(expected, "r");
@@ -124,7 +140,6 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
         struct timespec t_start, t_end;
         clock_gettime(CLOCK_REALTIME, &t_start);
 
-        // Compara ficheiros
         int ok = compare_files(generated, expected, &diff_line);
 
         clock_gettime(CLOCK_REALTIME, &t_end);
@@ -147,7 +162,6 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
     clock_gettime(CLOCK_REALTIME, &end_total);
     getrusage(RUSAGE_SELF, &usage);
 
-    // Imprime resumo dos resultados
     printf("\n--- Resultados dos testes ---\n");
     for (int i = 0; i < total_queries; i++) {
         printf("Query %d: %s, tempo = %.6f s\n",
@@ -167,11 +181,16 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
 }
 
 /**
- * Função principal do programa.
- * 
- * Uso: ./programa <dataset_path> <ficheiro_comandos> <resultados_esperados>
+ * @brief Função principal do programa.
+ *
+ * Espera três argumentos: caminho para o dataset, ficheiro de comandos e diretório de resultados esperados.
+ *
+ * @param argc Número de argumentos.
+ * @param argv Array de argumentos.
+ * @return int 0 se os testes forem executados com sucesso, 1 caso contrário.
+ *
+ * @usage ./programa <dataset_path> <ficheiro_comandos> <resultados_esperados>
  */
-
 int main(int argc, char *argv[]) {
     if (argc != 4) {
         fprintf(stderr, "Uso: %s <dataset_path> <ficheiro_comandos> <resultados_esperados>\n", argv[0]);

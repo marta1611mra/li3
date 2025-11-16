@@ -1,3 +1,19 @@
+/**
+ * @file logical_validation.c
+ * @brief Funções de validação lógica de dados.
+ *
+ * Este módulo contém funções que validam coerência e regras de negócio
+ * entre voos, aeronaves, passageiros e reservas.
+ *
+ * Validações incluem:
+ * - Destino diferente da origem
+ * - Consistência de horários de voos
+ * - Existência de aeronaves
+ * - Coerência entre estado do voo e horários
+ * - Existência de passageiros referenciados em reservas
+ * - Validação de conexão entre voos de uma mesma reserva
+ */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -9,13 +25,25 @@
 #include "passengers.h"
 #include "aircrafts_manager.h"
 
-// the destination of a flight must be different from its origin
+/**
+ * @brief Valida se o destino de um voo é diferente da origem.
+ *
+ * @param orig Código da origem.
+ * @param dest Código do destino.
+ * @return true se origem e destino forem diferentes, false caso contrário.
+ */
 bool validate_destination(const char *orig, const char *dest) {
     if (!orig || !dest) return false;
     return strcmp(orig, dest) != 0;
 }
 
-
+/**
+ * @brief Função auxiliar para comparar duas datas no formato "YYYY-MM-DD HH:MM".
+ *
+ * @param dt1 Primeira data.
+ * @param dt2 Segunda data.
+ * @return Valor negativo se dt1 < dt2, zero se iguais (ou inválidas), positivo se dt1 > dt2.
+ */
 static int compare_datetimes(const char *dt1, const char *dt2) {
     if (!dt1 || !dt2) return 0;
     int y1, m1, d1, h1, min1;
@@ -31,7 +59,24 @@ static int compare_datetimes(const char *dt1, const char *dt2) {
     return min1 - min2;
 }
 
-// arrival and actual_arrival can't be before departure and actual_departure
+/**
+ * @brief Valida coerência entre horários planejados e reais de um voo.
+ *
+ * Regras principais:
+ *  - arrival >= departure
+ *  - actual_arrival >= actual_departure
+ *  - Se status = Delayed ou OnTime:
+ *       actual_departure >= departure
+ *       actual_arrival >= arrival
+ *  - Se status = Cancelled → sempre válido
+ *
+ * @param departure Partida planejada.
+ * @param actual_departure Partida real.
+ * @param arrival Chegada planejada.
+ * @param actual_arrival Chegada real.
+ * @param status Estado do voo.
+ * @return true se tempos forem coerentes, false caso contrário.
+ */
 bool validate_arrival(const char *departure,
                       const char *actual_departure,
                       const char *arrival,
@@ -41,38 +86,42 @@ bool validate_arrival(const char *departure,
     if (!departure || !actual_departure || !arrival || !actual_arrival)
         return false;
 
-    // arrival ≥ departure
     if (compare_datetimes(arrival, departure) < 0)
         return false;
 
-    // actual_arrival ≥ actual_departure
     if (compare_datetimes(actual_arrival, actual_departure) < 0)
         return false;
 
-    // Se estiver atrasado, actual_* não podem ser antes dos planeados
-    if (status == Delayed) {
+    if (status == Delayed || status == OnTime) {
         if (compare_datetimes(actual_departure, departure) < 0) return false;
         if (compare_datetimes(actual_arrival, arrival) < 0) return false;
     }
 
-    // Se estiver OnTime, actual_* devem ser >= aos planeados
-    if (status == OnTime) {
-        if (compare_datetimes(actual_departure, departure) < 0) return false;
-        if (compare_datetimes(actual_arrival, arrival) < 0) return false;
-    }
-
-    // Se for Cancelled, não valida aqui (handled por validate_status)
     return true;
 }
 
-
-// Aircraft of a flight must correspond to an existing aircraft.
+/**
+ * @brief Verifica se a aeronave associada a um voo existe no sistema.
+ *
+ * @param aircraft_id ID da aeronave.
+ * @param am Gestor de aeronaves.
+ * @return true se a aeronave existir, false caso contrário.
+ */
 bool validate_aircraft(const char *aircraft_id, AircraftsManager am) {
     if (!am || !aircraft_id || strlen(aircraft_id) == 0) return false;
     return aircrafts_manager_exists(am, aircraft_id);
 }
 
-// In case status of a flight is "Cancelled", actual departure and actual arrival must be "N/A".
+/**
+ * @brief Valida coerência entre o estado do voo e os horários reais.
+ *
+ * - Se status = Cancelled → actual_departure e actual_arrival devem ser "N/A".
+ *
+ * @param status Estado do voo.
+ * @param actual_departure Partida real.
+ * @param actual_arrival Chegada real.
+ * @return true se válido, false caso contrário.
+ */
 bool validate_status(flight_status status,
                      const char *actual_departure,
                      const char *actual_arrival) {
@@ -85,25 +134,14 @@ bool validate_status(flight_status status,
     return true;
 }
 
-
-// Flight ids of a reservation must correspond to a list of one or two existing flights.
-bool validate_reservation_flights(Reservation r, Flight *flights, int num_flights, int num_ids) {
-    if (!r || !flights || num_flights <= 0 || num_ids <= 0) return false;
-
-    for (int i = 0; i < num_ids; i++) {
-        const char *fid = get_reservation_flight_id(r, i);
-        if (!fid) return false;
-        bool found = false;
-        for (int j = 0; j < num_flights && !found; j++) {
-            if (strcmp(fid, get_flight_id(flights[j])) == 0)
-                found = true;
-        }
-        if (!found) return false;
-    }
-    return true;
-}
-
-// Document number of a reservation must correspond to an existing passenger.
+/**
+ * @brief Valida se o documento associado à reserva corresponde a um passageiro registado.
+ *
+ * @param r Reserva.
+ * @param passengers Lista de passageiros.
+ * @param N Número total de passageiros.
+ * @return true se o documento existir, false caso contrário.
+ */
 bool logical_validate_document_number(Reservation r, Passenger *passengers, int N) {
     if (!r || !passengers) return false;
     const char *doc = get_reservation_document_number(r);
@@ -117,10 +155,22 @@ bool logical_validate_document_number(Reservation r, Passenger *passengers, int 
     return false;
 }
 
-// Flight ids of a reservation must correspond to a list of one or two existing flights.
+/**
+ * @brief Valida ligação entre dois voos de uma reserva de conexão.
+ *
+ * Regras:
+ *  - Só valida reservas com exatamente dois voos.
+ *  - O destino do primeiro voo deve corresponder à origem do segundo.
+ *
+ * @param r Reserva.
+ * @param flights Lista de voos existentes.
+ * @param num_flights Número de voos existentes.
+ * @param num_ids Número de ids na reserva (deve ser 2 para validar).
+ * @return true se conexão válida, false caso contrário.
+ */
 bool validate_reservation_connection(Reservation r, Flight *flights, int num_flights, int num_ids) {
     if (!r|| !flights) return false;
-    if (num_ids != 2) return true; // only for reservations with 2 flights
+    if (num_ids != 2) return true;
 
     const Flight *first = NULL, *second = NULL;
     const char *fid1 = get_reservation_flight_id(r, 0);
