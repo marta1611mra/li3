@@ -33,12 +33,14 @@ int compare_files(const char *generated, const char *expected, int *diff_line) {
 
     // Lê e compara linha a linha
     while (fgets(line_g, sizeof(line_g), fg) && fgets(line_e, sizeof(line_e), fe)) {
-        line_g[strcspn(line_g, "\r\n")] = 0; // Remove \n ou \r\n
-        line_e[strcspn(line_e, "\r\n")] = 0; // Guarda a linha da primeira diferença
+        line_g[strcspn(line_g, "\r\n")] = 0;
+        line_e[strcspn(line_e, "\r\n")] = 0;  
 
         if (strcmp(line_g, line_e) != 0) {
-            *diff_line = line_num;
-            identical = 0;
+            printf("Diferença na linha %d\n", line_num);
+            printf("Gerado:   %s", line_g);
+            printf("Esperado: %s\n", line_e);
+            identical=0;
             break;
         }
         line_num++;
@@ -108,8 +110,6 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
         char generated[256], expected[256];
         snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", query_index);
         snprintf(expected, sizeof(expected), "%s/command%d_output.txt", expected_dir, query_index);
-
-        printf("🔍 A comparar %s...\n", generated);
 
          // Verifica se o ficheiro esperado existe
         FILE *test = fopen(expected, "r");
