@@ -1,22 +1,3 @@
-/**
- * @file parser.c
- * @brief Parser para ficheiros CSV do dataset.
- *
- * Este módulo lê e processa os ficheiros CSV:
- * - airports.csv
- * - aircrafts.csv
- * - flights.csv
- * - passengers.csv
- * - reservations.csv
- *
- * Para cada ficheiro, são aplicadas:
- * - Validações sintáticas
- * - Validações lógicas
- * - Criação de objetos correspondentes (Airport, Aircraft, Flight, Passenger, Reservation)
- * - Armazenamento nos respetivos managers do Dataset
- * - Registo de linhas inválidas em ficheiros resultados/errors.csv
- */
-
 #include "parser.h"
 #include "dataset.h"
 #include "syntactic_validation.h"
@@ -33,11 +14,7 @@
 #include <glib.h>
 
 
-/**
- * @brief Verifica se uma string contém apenas dígitos.
- * @param s String a verificar.
- * @return true se todos os caracteres forem dígitos, false caso contrário.
- */
+// Verifica se uma string contém apenas dígitos.
 static bool is_all_digits(const char *s) {
     if (!s || !*s) return false;
     for (const char *p = s; *p; p++) {
@@ -46,10 +23,7 @@ static bool is_all_digits(const char *s) {
     return true;
 }
 
-/**
- * @brief Remove aspas iniciais e finais de uma string.
- * @param str String a modificar.
- */
+// Remove aspas iniciais e finais de uma string.
 static void remove_quotes(char *str) {
     if(!str) return;
     size_t len = strlen(str);
@@ -59,10 +33,8 @@ static void remove_quotes(char *str) {
     if (len > 0 && str[len - 1] == '"') str[len - 1] = '\0';
 }
 
-/**
- * @brief Remove espaços em branco do início e fim de uma string.
- * @param str String a modificar.
- */
+// Remove espaços em branco do início e fim de uma string.
+
 static void remove_spc(char *str) {
     if (!str) return;
     int len = strlen(str);
@@ -78,18 +50,12 @@ static void remove_spc(char *str) {
 }
 
 
-/**
- * @brief Cria a pasta "resultados" caso não exista.
- */
+// @brief Cria a pasta "resultados" caso não exista.
 static void exist_result(void) {
     system ("mkdir -p resultados");
 }
 
-/**
- * @brief Copia a linha de cabeçalho do ficheiro CSV para o ficheiro de erros.
- * @param csv Ficheiro CSV de entrada.
- * @param ferror Ficheiro de erros a escrever.
- */
+// @brief Copia a linha de cabeçalho do ficheiro CSV para o ficheiro de erros.
 static void wcsv_header(FILE *csv, FILE *ferror) {
     char header[1000];
     if(fgets(header, sizeof(header), csv)) {
@@ -97,18 +63,7 @@ static void wcsv_header(FILE *csv, FILE *ferror) {
     }
 }
 
-/**
- * @brief Lê e processa o ficheiro airports.csv.
- *
- * Para cada linha:
- * - Valida sintaticamente os campos
- * - Cria objeto Airport
- * - Adiciona ao AirportsManager do Dataset
- * - Linhas inválidas são registadas em resultados/airports_errors.csv
- *
- * @param d Dataset onde adicionar os aeroportos
- * @param data_path Caminho da pasta do dataset
- */
+// Lê e processa o ficheiro airports.csv.
 void parse_airports(Dataset d, const char *data_path) {
     // Normaliza o path removendo '/' no final
     char clean_path[512];
@@ -181,18 +136,8 @@ void parse_airports(Dataset d, const char *data_path) {
 
 
 
-/**
- * @brief Lê e processa o ficheiro aircrafts.csv.
- *
- * Para cada linha:
- * - Valida sintaticamente os campos
- * - Cria objeto Aircraft
- * - Adiciona ao AircraftsManager do Dataset
- * - Linhas inválidas são registadas em resultados/aircrafts_errors.csv
- *
- * @param d Dataset onde adicionar as aeronaves
- * @param data_path Caminho da pasta do dataset
- */
+// Lê e processa o ficheiro aircrafts.csv.
+
 void parse_aircrafts(Dataset d, const char *data_path) {
     char clean_path[512];
     strcpy(clean_path, data_path);
@@ -260,19 +205,8 @@ void parse_aircrafts(Dataset d, const char *data_path) {
 
 
 
-/**
- * @brief Lê e processa o ficheiro flights.csv.
- *
- * Para cada linha:
- * - Valida sintaticamente os campos
- * - Valida regras lógicas (horários, cancelamentos, aeroporto válido)
- * - Cria objeto Flight
- * - Adiciona ao FlightsManager do Dataset
- * - Linhas inválidas são registadas em resultados/flights_errors.csv
- *
- * @param d Dataset onde adicionar os voos
- * @param data_path Caminho da pasta do dataset
- */
+// Lê e processa o ficheiro flights.csv.
+
 void parse_flights(Dataset d, const char *data_path) {
     char clean_path[512];
     strcpy(clean_path, data_path);
@@ -371,18 +305,8 @@ void parse_flights(Dataset d, const char *data_path) {
     fclose(ferror);
 }
 
-/**
- * @brief Lê e processa o ficheiro passengers.csv.
- *
- * Para cada linha:
- * - Valida sintaticamente os campos
- * - Cria objeto Passenger
- * - Adiciona ao PassengersManager do Dataset
- * - Linhas inválidas são registadas em resultados/passengers_errors.csv
- *
- * @param d Dataset onde adicionar os passageiros
- * @param data_path Caminho da pasta do dataset
- */
+// Lê e processa o ficheiro passengers.csv.
+
 void parse_passengers(Dataset d, const char *data_path) {
     char clean_path[512];
     strcpy(clean_path, data_path);
@@ -450,20 +374,8 @@ void parse_passengers(Dataset d, const char *data_path) {
 }
 
 
-/**
- * @brief Lê e processa o ficheiro reservations.csv.
- *
- * Para cada linha:
- * - Valida sintaticamente os campos
- * - Verifica a existência do passageiro
- * - Verifica a existência e ligação dos voos
- * - Cria objeto Reservation
- * - Adiciona ao ReservationsManager do Dataset
- * - Linhas inválidas são registadas em resultados/reservations_errors.csv
- *
- * @param d Dataset onde adicionar as reservas
- * @param data_path Caminho da pasta do dataset
- */
+// Lê e processa o ficheiro reservations.csv.
+
 void parse_reservations(Dataset d, const char *data_path) {
     char clean_path[512];
     strcpy(clean_path, data_path);
@@ -612,6 +524,6 @@ void parse_reservations(Dataset d, const char *data_path) {
         reservations_manager_add(rm, r);
     }
 
-    fclose(f);
+    fclose(f);oc
     fclose(ferror);
 }

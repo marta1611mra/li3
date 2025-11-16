@@ -15,16 +15,7 @@
 #include "queries/query2.h"
 #include "queries/query3.h"
 
-/**
- * @brief Abre um ficheiro de forma segura.
- *
- * Tenta abrir o ficheiro no modo especificado. Caso não consiga,
- * imprime uma mensagem de erro no stderr e retorna NULL.
- *
- * @param path Caminho para o ficheiro.
- * @param mode Modo de abertura (ex.: "r" ou "w").
- * @return Ponteiro para FILE se bem-sucedido, NULL caso contrário.
- */
+// Abre um ficheiro de forma segura.
 static FILE *safe_fopen(const char *path, const char *mode) {
     FILE *f = fopen(path, mode);
     if (!f) {
@@ -33,25 +24,8 @@ static FILE *safe_fopen(const char *path, const char *mode) {
     return f;
 }
 
-/**
- * @brief Processa todas as queries listadas num ficheiro de input.
- *
- * Para cada linha do ficheiro:
- *  - Lê o número da query (qid)
- *  - Lê argumentos opcionais
- *  - Executa a query correspondente
- *  - Cria um ficheiro de output "commandX_output.txt" com o resultado
- *
- * Queries suportadas:
- * - Query 1: 1 <airport_code>
- * - Query 2: 2 <N> [manufacturer]
- * - Query 3: 3 <start_date> <end_date>
- *
- * Queries mal formatadas ou não implementadas geram mensagens de erro no stderr.
- *
- * @param d Dataset contendo aeroportos, aeronaves, voos, passageiros e reservas.
- * @param queries_path Caminho para o ficheiro de queries.
- */
+// Processa todas as queries listadas num ficheiro de input.
+
 void process_queries(Dataset d, const char *queries_path) {
     FILE *queries_file = safe_fopen(queries_path, "r");
     if (!queries_file) return;
@@ -105,7 +79,7 @@ void process_queries(Dataset d, const char *queries_path) {
                 break;
 
             default:
-                /** Query desconhecida */
+                //  Query desconhecida 
                 fprintf(stderr, "Query %d não implementada.\n", qid);
                 fprintf(out, "\n");
                 break;
