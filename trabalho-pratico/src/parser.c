@@ -14,7 +14,7 @@
  * - Validações lógicas
  * - Criação de objetos correspondentes (Airport, Aircraft, Flight, Passenger, Reservation)
  * - Armazenamento nos respetivos managers do Dataset
- * - Registo de linhas inválidas em ficheiros resultados/*_errors.csv
+ * - Registo de linhas inválidas em ficheiros resultados/errors.csv
  */
 
 #include "parser.h"
@@ -118,7 +118,7 @@ void parse_airports(Dataset d, const char *data_path) {
     clean_path[len - 1] = '\0';
     len--;
     }
-    char path[512];
+    char path[1024];
     snprintf(path, sizeof(path), "%s/airports.csv", clean_path);
 
     FILE *f = fopen(path, "r");
@@ -202,7 +202,7 @@ void parse_aircrafts(Dataset d, const char *data_path) {
     len--;
 }
 
-    char path[512];
+    char path[1024];
     snprintf(path, sizeof(path), "%s/aircrafts.csv", clean_path);
 
     FILE *f = fopen(path, "r");
@@ -282,7 +282,7 @@ void parse_flights(Dataset d, const char *data_path) {
     len--;
 }
 
-    char path[512];
+    char path[1024];
     snprintf(path, sizeof(path), "%s/flights.csv", clean_path);
 
     FILE *f = fopen(path, "r");
@@ -392,7 +392,7 @@ void parse_passengers(Dataset d, const char *data_path) {
     len--;
 }
 
-    char path[512];
+    char path[1026];
     snprintf(path, sizeof(path), "%s/passengers.csv", clean_path);
 
     FILE *f = fopen(path, "r");
@@ -473,7 +473,7 @@ void parse_reservations(Dataset d, const char *data_path) {
     len--;
 }
 
-    char path[512];
+    char path[1026];
     snprintf(path, sizeof(path), "%s/reservations.csv", clean_path);
 
     FILE *f = fopen(path, "r");
