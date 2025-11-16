@@ -17,7 +17,7 @@
 #include "programa-testes.h"
 #include <sys/resource.h>
 
-#define MAX_QUERIES 10
+#define MAX_QUERIES 120
 
 /**
  * @brief Compara dois ficheiros linha a linha.
@@ -116,18 +116,20 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
     struct rusage usage;
     clock_gettime(CLOCK_REALTIME, &start_total);
 
-    int total_queries = 0;
+    int total_cmds = 0;
     int total_correct = 0;
 
-    double times[MAX_QUERIES];
-    int correct_flags[MAX_QUERIES];
+    double times[MAX_QUERIES] = {0};
+    int correct[MAX_QUERIES] = {0};
+    double sum_q[4] = {0}; 
+    int count_q[4] = {0};
 
-    for (int query_index = 1; query_index <= MAX_QUERIES; query_index++) {
+    for (int cmd = 1; cmd <= MAX_QUERIES; cmd++) {
         char generated[256], expected[256];
-        snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", query_index);
-        snprintf(expected, sizeof(expected), "%s/command%d_output.txt", expected_dir, query_index);
+        snprintf(generated, sizeof(generated), "resultados/command%d_output.txt", cmd);
+        snprintf(expected, sizeof(expected), "%s/command%d_output.txt", expected_dir, cmd);
 
-        printf("🔍 A comparar %s...\n", generated);
+        printf("A comparar %s...\n", generated);
 
          // Verifica se o ficheiro esperado existe
         FILE *test = fopen(expected, "r");
@@ -137,7 +139,7 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
         }
         fclose(test);
 
-        total_queries++;
+        total_cmds++;
         int diff_line = 0;
         struct timespec t_start, t_end;
         clock_gettime(CLOCK_REALTIME, &t_start);
@@ -145,41 +147,77 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
         int ok = compare_files(generated, expected, &diff_line);
 
         clock_gettime(CLOCK_REALTIME, &t_end);
-        double elapsed_query = (t_end.tv_sec - t_start.tv_sec) +
+        double elapsed = (t_end.tv_sec - t_start.tv_sec) +
                                (t_end.tv_nsec - t_start.tv_nsec) / 1e9;
 
-        times[total_queries - 1] = elapsed_query;
-        correct_flags[total_queries - 1] = ok;
+        times[total_cmds - 1] = elapsed;
+        correct[total_cmds - 1] = ok;
 
         if (ok) {
-            printf("command%d_output.txt está correto.\n\n", query_index);
-            printf("Query %d correta. Tempo: %.6f s\n", query_index, elapsed_query);
+            printf("command%d_output.txt está correto.\n\n", cmd);
+            printf("Query %d correta. Tempo: %.6f s\n", cmd, elapsed);
             total_correct++;
         } else {
-            printf("command%d_output.txt difere do esperado. Primeira diferença na linha %d.\n\n", query_index, diff_line);
-            printf("Query %d incorreta. Tempo: %.6f s\n", query_index, elapsed_query);
+            printf("command%d_output.txt difere do esperado. Primeira diferença na linha %d.\n\n", cmd, diff_line);
+            printf("Query %d incorreta. Tempo: %.6f s\n", cmd, elapsed);
         }
+
+        FILE *fcmd = fopen(commands_file, "r");
+        if (fcmd) {
+            char line[256];
+            int qtype = 0;
+            int curr = 1;
+
+            while (fgets(line, sizeof(line), fcmd)) {
+                if (curr == cmd) {
+                    sscanf(line, "%d", &qtype);
+                    break;
+                }
+                curr++;
+            }
+            fclose(fcmd);
+
+            if (qtype >= 1 && qtype <= 3) {
+                sum_q[qtype] += elapsed;
+                count_q[qtype]++;
+            }
+        }
+
+
+
+
+
     }
 
     clock_gettime(CLOCK_REALTIME, &end_total);
     getrusage(RUSAGE_SELF, &usage);
 
-    printf("\n--- Resultados dos testes ---\n");
-    for (int i = 0; i < total_queries; i++) {
-        printf("Query %d: %s, tempo = %.6f s\n",
-               i + 1,
-               correct_flags[i] ? "correta" : "incorreta",
-               times[i]);
+    printf("\n--- Tempo por comando ---\n");
+    for (int i = 0; i < total_cmds; i++) {
+        printf("Comando %d: %s, tempo = %.6f s\n",
+            i + 1,
+            correct[i] ? "correto" : "incorreto",
+            times[i]);
     }
 
-    printf("\nResultados dos testes:\n");
-    printf("   %d de %d ficheiros corretos (%.1f%%)\n",
-           total_correct, total_queries,
-           total_queries > 0 ? 100.0 * total_correct / total_queries : 0.0);
+    printf("\n--- Resultados gerais ---\n");
+    printf("%d de %d comandos corretos (%.1f%%)\n",
+        total_correct,
+        total_cmds,
+        total_cmds ? (100.0 * total_correct / total_cmds) : 0.0);
+
+
+    for (int q = 1; q <= 3; q++) {
+        if (count_q[q] > 0)
+            printf("Query %d: média = %.6f s  (%d comandos)\n",
+                   q, sum_q[q] / count_q[q], count_q[q]);
+        else
+            printf("Query %d: (nenhum comando encontrado)\n", q);
+    }
 
     print_performance_info(start_total, end_total, usage);
 
-    return (total_correct == total_queries) ? 0 : 1;
+    return (total_correct == total_cmds) ? 0 : 1;
 }
 
 /**
