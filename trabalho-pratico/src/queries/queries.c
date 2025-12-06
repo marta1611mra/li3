@@ -5,6 +5,7 @@
 #include "queries/query1.h"
 #include "queries/query2.h"
 #include "queries/query3.h"
+#include "queries/query4.h"
 
 // Abre um ficheiro de forma segura.
 static FILE *safe_fopen(const char *path, const char *mode) {
@@ -68,6 +69,9 @@ void process_queries(Dataset d, const char *queries_path) {
                 else
                     fprintf(stderr, "Query 3 mal formatada na linha %d\n", command_number);
                 break;
+            case 4:
+                /** Query 4: 4 [start_date end_date] */
+               
 
             default:
                 //  Query desconhecida 
