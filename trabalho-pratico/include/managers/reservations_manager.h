@@ -50,5 +50,12 @@ Reservation reservations_manager_get(ReservationsManager m, const char *id);
  * @return Número de reservas.
  */
 int reservations_manager_count(ReservationsManager m);
+/**
+ * @brief Obtém uma lista de todas as reservas no gestor.
+ *
+ * @param m ReservationsManager.
+ * @return GList* contendo todos os Reservation armazenados.
+ */
+GList *reservations_manager_get_all(ReservationsManager m);
 
 #endif

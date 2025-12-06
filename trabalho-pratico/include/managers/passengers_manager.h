@@ -62,4 +62,12 @@ int passengers_manager_count(PassengersManager m);
  */
 bool passengers_manager_exists(PassengersManager m, const char *document_id);
 
+/**
+ * @brief Obtém uma lista de todos os passageiros no gestor.
+ *
+ * @param m PassengersManager.
+ * @return GList* contendo todos os Passenger armazenados.
+ */
+GList *passengers_manager_get_all(PassengersManager m);
+
 #endif

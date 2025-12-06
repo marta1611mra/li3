@@ -42,4 +42,68 @@ void destroy_passenger(Passenger p);
  */
 const char *get_passenger_document_id(Passenger p);
 
+/**
+ * @brief Obtém o primeiro nome do passageiro.
+ *
+ * @param p Passenger.
+ * @return String com o primeiro nome.
+ */
+const char *get_passenger_first_name(Passenger p);  
+
+/**
+ * @brief Obtém o último nome do passageiro.
+ *
+ * @param p Passenger.
+ * @return String com o último nome.
+ */
+const char *get_passenger_last_name(Passenger p);
+
+/**
+ * @brief Obtém a data de nascimento do passageiro.
+ *
+ * @param p Passenger.
+ * @return String com a data de nascimento.
+ */
+const char *get_passenger_dob(Passenger p);
+
+/**
+ * @brief Obtém a nacionalidade do passageiro.
+ *
+ * @param p Passenger.
+ * @return String com a nacionalidade.
+ */
+const char *get_passenger_nationality(Passenger p);
+
+/**
+ * @brief Obtém o gênero do passageiro.
+ *
+ * @param p Passenger.
+ * @return String com o gênero.
+ */
+const char *get_passenger_gender(Passenger p);  
+
+/**
+ * @brief Obtém o email do passageiro.
+ *
+ * @param p Passenger.
+ * @return String com o email.
+ */
+const char *get_passenger_email(Passenger p);
+
+/**
+ * @brief Obtém o telefone do passageiro.
+ *
+ * @param p Passenger.
+ * @return String com o telefone.
+ */
+const char *get_passenger_phone(Passenger p);
+
+/**
+ * @brief Obtém o endereço do passageiro.
+ *
+ * @param p Passenger.
+ * @return String com o endereço.
+ */
+const char *get_passenger_address(Passenger p);
+
 #endif

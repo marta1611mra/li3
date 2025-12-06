@@ -19,6 +19,6 @@
  * Output: document_number;first_name;last_name;dob;nationality;count_top_10
  */
 
-void q4(Dataset d, GDate *start, GDate *end, FILE *out);
+void query4_execute(Dataset d, const char *start, const char *end);
 #endif
 
