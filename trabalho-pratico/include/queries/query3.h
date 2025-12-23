@@ -22,16 +22,8 @@
  * @param airports    AirportsManager contendo todos os aeroportos.
  * @param output      Ficheiro de output onde escrever o resultado.
  */
-typedef struct {
-    bool found;
-    char code[4];
-    char name[128];
-    char city[128];
-    char country[128];
-    char count_str[16];
-} Q3Result;
 
-Q3Result q3(const char *start_date, const char *end_date,
-        FlightsManager flights, AirportsManager airports);
+void q3(const char *start_date, const char *end_date,
+        FlightsManager flights, AirportsManager airports, FILE *output);
 
 #endif

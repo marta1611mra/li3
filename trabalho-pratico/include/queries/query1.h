@@ -15,11 +15,6 @@
  * @param out Ficheiro de output onde escrever o resultado.
  */
 
-typedef struct {
-    bool found;
-    char code[4], name[128], city[128], country[128], type[32];
-} Q1Result;
-
-Q1Result q1(AirportsManager am, const char *code);
+void q1(AirportsManager am, const char *code,FILE *out);
 
 #endif
