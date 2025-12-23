@@ -18,10 +18,22 @@
  * @param filter_manufacturer Se fornecido, apenas aeronaves do fabricante indicado são consideradas. Pode ser NULL.
  * @param out               Ficheiro de output onde escrever o resultado.
  */
-void query2(FlightsManager fm,
-                           AircraftsManager am,
-                           int N,
-                           const char *filter_manufacturer,
-                           FILE *out);
+
+/* Structs de RESULTADO → fazem parte da API */
+typedef struct {
+    char id[16];
+    char manufacturer[64];
+    char model[64];
+    char count_str[16];
+} Q2Row;
+
+typedef struct {
+    Q2Row *rows;
+    int used;
+} Q2Result;
+
+
+Q2Result q2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer);
+void free_q2_result(Q2Result *r);
 
 #endif

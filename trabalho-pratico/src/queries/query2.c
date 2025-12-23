@@ -47,9 +47,10 @@ static int compare_aircrafts(const void *a, const void *b) {
 
 // Executa a Query 2: listar o Top N de aeronaves por número de voos.
 
-void query2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
-    if (!fm || !am || N <= 0 || !out){
-        fprintf(out,"\n");
+Q2Result q2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer) {
+    Q2Result res = { .rows = NULL, .used = 0 };
+    if (!fm || !am || N <= 0 ){
+        return res;
     } else {
 
         // Contagem de voos
@@ -75,32 +76,29 @@ void query2(FlightsManager fm, AircraftsManager am, int N, const char *filter_ma
                 continue;
 
             int *cnt = g_hash_table_lookup(flight_counts, id);
-            array[used].aircraft = a;
-            array[used].count = cnt ? *cnt : 0;
-            used++;
-        }
-
-        if (used == 0) {
-            fprintf(out, "\n");
-            free(array);
-            g_hash_table_destroy(flight_counts);
-            return;
+            array[used++] = (AircraftCount){ a, cnt ? *cnt : 0 };
         }
 
         // Ordenação
         qsort(array, used, sizeof(AircraftCount), compare_aircrafts);
 
-        // Impressão do top N
         int limit = (N < used ? N : used);
+        res.rows = malloc(sizeof(Q2Row) * limit);
+        res.used = limit;
+
         for (int i = 0; i < limit; i++) {
-            fprintf(out, "%s,%s,%s,%d\n",
-                    get_aircraft_id(array[i].aircraft),
-                    get_aircraft_manufacturer(array[i].aircraft),
-                    get_aircraft_model(array[i].aircraft),
-                    array[i].count);
+        strcpy(res.rows[i].id, get_aircraft_id(array[i].aircraft));
+        strcpy(res.rows[i].manufacturer, get_aircraft_manufacturer(array[i].aircraft));
+        strcpy(res.rows[i].model, get_aircraft_model(array[i].aircraft));
+        sprintf(res.rows[i].count_str, "%d", array[i].count);
         }
 
         free(array);
         g_hash_table_destroy(flight_counts);
+        return res;
     }
 }
+
+void free_q2_result(Q2Result *r) {
+    free(r->rows);}
+

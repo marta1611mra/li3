@@ -6,20 +6,20 @@
 #include "airports_manager.h"
 
 // Executa a Query 1.
-void query1(AirportsManager am, const char *code, FILE *out) {
-    if (!am || !code || !out) return;
+Q1Result q1(AirportsManager am, const char *code) {
+    Q1Result r = { .found = false };
+
+    if (!am || !code) return r;
 
     Airport a = airports_manager_get(am, code);
+    if (!a) return r;
 
-    if(a) {
-        fprintf(out, "%s,%s,%s,%s,%s\n",
-                get_airport_code(a),
-                get_airport_name(a),
-                get_airport_city(a),
-                get_airport_country(a),
-                get_airport_type(a));
-    } else {
-        // Aeroporto não encontrado: imprime linha vazia
-        fprintf(out, "\n");
-    }
+    r.found = true;
+    strcpy(r.code, get_airport_code(a));
+    strcpy(r.name, get_airport_name(a));
+    strcpy(r.city, get_airport_city(a));
+    strcpy(r.country, get_airport_country(a));
+    strcpy(r.type, get_airport_type(a));
+
+    return r;
 }
