@@ -46,3 +46,8 @@ bool passengers_manager_exists(PassengersManager m, const char *document_id) {
     if (!m || !document_id) return false;
     return g_hash_table_contains(m->passengers, document_id);
 }
+// Obtém uma lista de todos os passageiros no gestor.
+GList *passengers_manager_get_all(PassengersManager m) {
+    return g_hash_table_get_values(m->passengers);
+}
+

@@ -4,12 +4,14 @@ CFLAGS = -Wall -g -std=gnu11 \
          $(shell pkg-config --cflags glib-2.0)
 LIBS = $(shell pkg-config --libs glib-2.0)
 
-SRC_COMMON = src/dataset.c src/parser.c src/logical_validation.c src/syntactic_validation.c \
+SRC_COMMON = src/dataset.c src/parser/parser.c src/parser/parser_aircrafts.c src/parser/parser_airports.c \
+             src/parser/parser_flights.c src/parser/parser_passangers.c src/parser/parser_reservations.c \
+             src/logical_validation.c src/syntactic_validation.c \
              src/entities/aircrafts.c src/entities/airports.c src/entities/flights.c \
              src/entities/passengers.c src/entities/reservations.c \
              src/managers/aircrafts_manager.c src/managers/airports_manager.c \
              src/managers/flights_manager.c src/managers/passengers_manager.c src/managers/reservations_manager.c \
-             src/queries/query1.c src/queries/query2.c src/queries/query3.c src/queries/queries.c
+             src/queries/query1.c src/queries/query2.c src/queries/query3.c src/queries/query4.c src/queries/queries.c
 
 OBJ_COMMON = $(SRC_COMMON:.c=.o)
 

@@ -53,3 +53,36 @@ void destroy_passenger(Passenger p) {
 const char *get_passenger_document_id(Passenger p) { 
     return p->document_id; 
 }
+
+// Obtém o primeiro nome do passageiro.
+const char *get_passenger_first_name(Passenger p) { 
+    return p->first_name;
+}
+// Obtém o último nome do passageiro.
+const char *get_passenger_last_name(Passenger p) { 
+    return p->last_name;
+}
+// Obtém a data de nascimento do passageiro.
+const char *get_passenger_dob(Passenger p) { 
+    return p->dob;
+}
+// Obtém a nacionalidade do passageiro.
+const char *get_passenger_nationality(Passenger p) { 
+    return p->nationality;
+}
+// Obtém o gênero do passageiro.
+const char *get_passenger_gender(Passenger p) { 
+    return p->gender;
+}
+// Obtém o email do passageiro.
+const char *get_passenger_email(Passenger p) { 
+    return p->email;
+}
+// Obtém o telefone do passageiro.
+const char *get_passenger_phone(Passenger p) { 
+    return p->phone;
+}
+// Obtém o endereço do passageiro.
+const char *get_passenger_address(Passenger p) { 
+    return p->address;
+} 

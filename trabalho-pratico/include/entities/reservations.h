@@ -58,4 +58,14 @@ const char *get_reservation_flight_id(Reservation r, int index);
  * @return String com o número de documento.
  */
 const char *get_reservation_document_number(Reservation r);
+
+/**
+ * @brief Obtém o preço pago na reserva para um voo específico.
+ *
+ * @param r     Reservation.
+ * @param index Índice do voo (0 ou 1).
+ * @return Preço pago para o voo correspondente.
+ */
+double get_reservation_price(Reservation r, int index);
+
 #endif

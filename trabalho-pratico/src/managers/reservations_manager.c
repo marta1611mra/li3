@@ -40,3 +40,7 @@ Reservation reservations_manager_get(ReservationsManager m, const char *id) {
 int reservations_manager_count(ReservationsManager m) {
     return g_hash_table_size(m->reservations);
 }
+// Obtém uma lista de todas as reservas no gestor.
+GList *reservations_manager_get_all(ReservationsManager m) {
+    return g_hash_table_get_values(m->reservations);
+}

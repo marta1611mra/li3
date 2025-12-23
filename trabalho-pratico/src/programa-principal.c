@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include "dataset.h"
-#include "parser.h"
+#include "parser/parser.h"
 #include "entities/flights.h"
 #include "entities/reservations.h"
 #include "entities/passengers.h"
@@ -46,11 +46,7 @@ int main(int argc, char *argv[]) {
     printf("A carregar datasets...\n");
 
     // Carrega os diferentes tipos de dados para o dataset
-    parse_airports(d, dataset_path);
-    parse_aircrafts(d, dataset_path);
-    parse_flights(d, dataset_path);
-    parse_passengers(d, dataset_path);
-    parse_reservations(d, dataset_path);
+    parse_all (d, dataset_path);
 
     // Garante que a pasta de resultados existe
     ensure_result_dir();
