@@ -22,6 +22,7 @@
  * @param airports    AirportsManager contendo todos os aeroportos.
  * @param output      Ficheiro de output onde escrever o resultado.
  */
+
 void q3(const char *start_date, const char *end_date,
         FlightsManager flights, AirportsManager airports, FILE *output);
 

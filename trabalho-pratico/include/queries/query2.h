@@ -18,10 +18,9 @@
  * @param filter_manufacturer Se fornecido, apenas aeronaves do fabricante indicado são consideradas. Pode ser NULL.
  * @param out               Ficheiro de output onde escrever o resultado.
  */
-void query2(FlightsManager fm,
-                           AircraftsManager am,
-                           int N,
-                           const char *filter_manufacturer,
-                           FILE *out);
+
+
+
+void q2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out);
 
 #endif

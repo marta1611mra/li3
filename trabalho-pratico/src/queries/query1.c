@@ -4,22 +4,27 @@
 #include "query1.h"
 #include "airports.h"
 #include "airports_manager.h"
+#include "output_format.h"
 
 // Executa a Query 1.
-void query1(AirportsManager am, const char *code, FILE *out) {
+void q1(AirportsManager am, const char *code,FILE *out) {
+
+
     if (!am || !code || !out) return;
 
     Airport a = airports_manager_get(am, code);
+    if (!a) return;
 
-    if(a) {
-        fprintf(out, "%s,%s,%s,%s,%s\n",
-                get_airport_code(a),
-                get_airport_name(a),
-                get_airport_city(a),
-                get_airport_country(a),
+    if (a) {
+        char sep = get_output_separator();
+        fprintf(out, "%s%c%s%c%s%c%s%c%s\n",
+                get_airport_code(a), sep,
+                get_airport_name(a), sep,
+                get_airport_city(a), sep,
+                get_airport_country(a), sep,
                 get_airport_type(a));
     } else {
-        // Aeroporto não encontrado: imprime linha vazia
         fprintf(out, "\n");
     }
+
 }

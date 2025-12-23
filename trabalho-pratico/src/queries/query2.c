@@ -7,6 +7,7 @@
 #include "entities/flights.h"
 #include "managers/aircrafts_manager.h"
 #include "managers/flights_manager.h"
+#include "output_format.h"
 
 typedef struct {
     Aircraft aircraft;
@@ -47,8 +48,8 @@ static int compare_aircrafts(const void *a, const void *b) {
 
 // Executa a Query 2: listar o Top N de aeronaves por número de voos.
 
-void query2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out) {
-    if (!fm || !am || N <= 0 || !out){
+void q2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer,FILE *out) {
+    if (!fm || !am || N <= 0 ){
         fprintf(out,"\n");
     } else {
 
@@ -79,28 +80,31 @@ void query2(FlightsManager fm, AircraftsManager am, int N, const char *filter_ma
             array[used].count = cnt ? *cnt : 0;
             used++;
         }
-
         if (used == 0) {
-            fprintf(out, "\n");
-            free(array);
-            g_hash_table_destroy(flight_counts);
-            return;
+        fprintf(out, "\n");
+        free(array);
+        g_hash_table_destroy(flight_counts);
+        return;
         }
 
         // Ordenação
         qsort(array, used, sizeof(AircraftCount), compare_aircrafts);
 
-        // Impressão do top N
         int limit = (N < used ? N : used);
-        for (int i = 0; i < limit; i++) {
-            fprintf(out, "%s,%s,%s,%d\n",
-                    get_aircraft_id(array[i].aircraft),
-                    get_aircraft_manufacturer(array[i].aircraft),
-                    get_aircraft_model(array[i].aircraft),
-                    array[i].count);
-        }
 
-        free(array);
-        g_hash_table_destroy(flight_counts);
+        for (int i = 0; i < limit; i++) {
+        char sep = get_output_separator();
+
+        fprintf(out, "%s%c%s%c%s%c%d\n",
+        get_aircraft_id(array[i].aircraft), sep,
+        get_aircraft_manufacturer(array[i].aircraft), sep,
+        get_aircraft_model(array[i].aircraft), sep,
+        array[i].count);
+        }
+    free(array);
+    g_hash_table_destroy(flight_counts);
+
     }
 }
+
+
