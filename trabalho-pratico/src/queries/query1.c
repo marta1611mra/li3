@@ -22,7 +22,10 @@ void q1(AirportsManager am, const char *code,FILE *out) {
                 get_airport_name(a), sep,
                 get_airport_city(a), sep,
                 get_airport_country(a), sep,
-                get_airport_type(a));
+                get_airport_type(a), sep,
+                airports_manager_get_arrivals(am, code), sep,
+                airports_manager_get_departures(am, code)
+            );
     } else {
         fprintf(out, "\n");
     }

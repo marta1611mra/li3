@@ -51,4 +51,12 @@ Airport airports_manager_get(AirportsManager m, const char *code);
  */
 int airports_manager_count(AirportsManager m);
 
+void airports_manager_departure(AirportsManager m, const char *code, int passengers);
+
+void airports_manager_arrival(AirportsManager m, const char *code, int passengers);
+
+int airports_manager_get_arrivals(AirportsManager m, const char *code);
+
+int airports_manager_get_departures(AirportsManager m, const char *code);
+
 #endif
