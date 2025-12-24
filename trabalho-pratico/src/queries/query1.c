@@ -17,7 +17,7 @@ void q1(AirportsManager am, const char *code,FILE *out) {
 
     if (a) {
         char sep = get_output_separator();
-        fprintf(out, "%s%c%s%c%s%c%s%c%s\n",
+        fprintf(out, "%s%c%s%c%s%c%s%c%s%c%d%c%d\n",
                 get_airport_code(a), sep,
                 get_airport_name(a), sep,
                 get_airport_city(a), sep,
