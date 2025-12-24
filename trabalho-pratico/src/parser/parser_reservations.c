@@ -157,7 +157,6 @@ void parse_reservations(Dataset d, const char *data_path) {
         }
     
         AirportsManager am = dataset_get_airports(d);
-        FlightsManager fm = dataset_get_flights(d);
 
         for (int i = 0; i < num_ids; i++) {
             Flight f = flights_manager_get(fm, flight_id[i]);

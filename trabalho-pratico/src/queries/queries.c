@@ -9,6 +9,7 @@
 #include "queries/query3.h"
 #include "queries/query4.h"
 #include "queries/query5.h"
+#include "queries/query6.h"
 
 // Abre um ficheiro de forma segura.
 static FILE *safe_fopen(const char *path, const char *mode) {
@@ -90,6 +91,10 @@ void process_queries(Dataset d, const char *queries_path) {
                 fprintf(stderr, "Query %d não implementada.\n", qid);
                 fprintf(out, "\n");
                 break;
+            case 6: {
+                q6(dataset_get_passengers(d),dataset_get_flights(d),dataset_get_reservations(d),arg1,out);
+                break;
+            }
         }
 
         fclose(out);
