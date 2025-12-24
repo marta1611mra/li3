@@ -155,6 +155,19 @@ void parse_reservations(Dataset d, const char *data_path) {
             fprintf(ferror, "%s", line);
             continue;
         }
+    
+        AirportsManager am = dataset_get_airports(d);
+        FlightsManager fm = dataset_get_flights(d);
+
+        for (int i = 0; i < num_ids; i++) {
+            Flight f = flights_manager_get(fm, flight_id[i]);
+            if (!f) continue;
+
+            if (get_flight_status(f) == Cancelled) continue;
+
+            airports_manager_departure(am, get_flight_orig(f), 1);
+            airports_manager_arrival(am, get_flight_dest(f), 1);
+        }
 
         ReservationsManager rm = dataset_get_reservations(d);
         reservations_manager_add(rm, r);
