@@ -50,4 +50,4 @@ programa-interativo: $(OBJ_COMMON) src/programa-interativo.o
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f programa-principal programa-testes programa-interativo src/*.o src/entities/*.o src/managers/*.o src/queries/*.o
+	rm -f programa-principal programa-testes programa-interativo src/*.o src/entities/*.o src/managers/*.o src/queries/*.o src/parser/*.o

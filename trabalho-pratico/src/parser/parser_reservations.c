@@ -137,6 +137,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         const char *dest1 = get_flight_dest(f1);
         const char *orig2 = get_flight_orig(f2);
         if (!dest1 || !orig2 || strcmp(dest1, orig2) != 0) {
+            printf("Falha na ligação de voos: %s -> %s\n", dest1, orig2);
             fprintf(ferror, "%s", line);
             continue;
         }
