@@ -35,7 +35,7 @@ SRC_COMMON = \
 
 OBJ_COMMON = $(SRC_COMMON:.c=.o)
 
-all: programa-principal programa-testes
+all: programa-principal programa-testes programa-interativo
 
 programa-principal: $(OBJ_COMMON) src/programa-principal.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
@@ -43,8 +43,11 @@ programa-principal: $(OBJ_COMMON) src/programa-principal.o
 programa-testes: $(OBJ_COMMON) src/programa-testes.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
+programa-interativo: $(OBJ_COMMON) src/programa-interativo.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f programa-principal programa-testes src/*.o src/entities/*.o src/managers/*.o src/queries/*.o
+	rm -f programa-principal programa-testes programa-interativo src/*.o src/entities/*.o src/managers/*.o src/queries/*.o

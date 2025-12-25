@@ -65,33 +65,34 @@ void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, GDate *begi
 }
 
 
-// Top n das reservas em geral
-GList *top_reservations(GList *reservations, int n) {
-    // Criar hash table para somar gastos por passageiro
+// Top n das reservas em geral num intervalo de datas
+GList *top_reservations(GList *reservations, FlightsManager fm, int n) {
+    // Criar hash table para somar gastos por passageiro, iterar reservas e somar gastos de cada passageiro
     GHashTable *spending_table = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
 
     for (GList *l = reservations; l != NULL; l = l->next) {
         Reservation r = (Reservation)l->data;
+        double total_price = 0.0;
         const char *doc = get_reservation_document_number(r);
-        double price = get_reservation_price(r);
-
-        double *total = g_hash_table_lookup(spending_table, doc);
-        if (!total) {
-            total = malloc(sizeof(double));
-            *total = 0.0;
-            g_hash_table_insert(spending_table, strdup(doc), total);
+        if (total_price > 0.0) {
+            double *current_spent = g_hash_table_lookup(spending_table, doc);
+            if (!current_spent) {
+                current_spent = malloc(sizeof(double));
+                *current_spent = 0.0;
+            }
+            total_price += get_reservation_total_price(r);
+            *current_spent += total_price;
+            g_hash_table_insert(spending_table, strdup(doc), current_spent);
         }
-        *total += price;
     }
-
-    // Criar lista de PassengerSpending
+    // Criar uma lista com os passageiros e seus gastos totais
     GList *passenger_list = NULL;
     GHashTableIter iter;
     gpointer key, value;
     g_hash_table_iter_init(&iter, spending_table);
     while (g_hash_table_iter_next(&iter, &key, &value)) {
         PassengerSpending *ps = malloc(sizeof(PassengerSpending));
-        ps->document_number = strdup((char *)key);  // cópia própria da string
+        ps->document_number = strdup((char *)key);  // cópia da string
         ps->total_spent = *(double *)value;         // copiar valor do total gasto
         passenger_list = g_list_prepend(passenger_list, ps);
     }
@@ -106,18 +107,16 @@ GList *top_reservations(GList *reservations, int n) {
         top_n = g_list_append(top_n, l->data);
     }
 
-    // Liberar lista temporária (mas não os PassengerSpending, que estão em top_n)
     g_list_free_full(passenger_list, free);
-
-    // Destruir hash table
     g_hash_table_destroy(spending_table);
 
-    return top_n;  // o chamador deve liberar com g_list_free_full(top_n, free)
+    return top_n;  
 }
 
+// Executa a query 4
 void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
-    ReservationsManager rm = dataset_get_reservations_manager(d);
-    FlightsManager fm = dataset_get_flights_manager(d);
+    ReservationsManager rm = dataset_get_reservations(d);
+    FlightsManager fm = dataset_get_flights(d);
     GList *all_reservations = reservations_manager_get_all(rm);
 
     // Hash table: chave = domingo da semana, valor = lista de reservas dessa semana
@@ -126,6 +125,8 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
     GDate week_start, week_end;
     if (begin_date && end_date) {
         GDate begin, end;
+        g_date_clear(&begin, TRUE);
+        g_date_clear(&end, TRUE);
         g_date_set_parse(&begin, begin_date);
         g_date_set_parse(&end, end_date);
         adjust_to_sunday_saturday(&begin, &end, &week_start, &week_end);
@@ -134,23 +135,23 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
     // Agrupar reservas por semana
     for (GList *l = all_reservations; l != NULL; l = l->next) {
         Reservation r = (Reservation)l->data;
-        Flight f = flights_manager_get(fm, get_reservation_flight_id(r));
-        const GDate *dep = get_flight_dep(f);
-
-        // Verifica filtro de datas
-        if (begin_date && end_date) {
-            if (g_date_compare(dep, &week_start) < 0 || g_date_compare(dep, &week_end) > 0) continue;
-        }
-
-        // Calcular domingo da semana
-        GDate week_dep = *dep;
+        const char *departure = get_flight_dep(flights_manager_get(fm, get_reservation_flight_id(r, 0)));
+        // Calcular domingo da semana para os voos da reserva
+        GDate week_dep;
+        g_date_clear(&week_dep, TRUE);
+        g_date_set_parse(&week_dep, departure);
+        if (!g_date_valid(&week_dep)) continue;
         int wd = g_date_get_weekday(&week_dep);
         g_date_subtract_days(&week_dep, (wd == 7) ? 0 : wd);
-        char *week_str = g_strdup(g_date_to_string(&week_dep));
+
+        char week_str[11];
+        g_date_strftime(week_str, sizeof(week_str), "%Y-%m-%d", &week_dep);
+
+        char *key = g_strdup(week_str);
 
         GList *week_res = g_hash_table_lookup(weeks_table, week_str);
         week_res = g_list_prepend(week_res, r);
-        g_hash_table_insert(weeks_table, week_str, week_res);
+        g_hash_table_insert(weeks_table, key, week_res);
     }
 
     // Contar presenças no top 10
@@ -161,7 +162,7 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
     g_hash_table_iter_init(&iter, weeks_table);
     while (g_hash_table_iter_next(&iter, &key, &value)) {
         GList *week_reservations = (GList *)value;
-        GList *top_10 = top_reservations(week_reservations, 10); // retorna PassengerSpending*
+        GList *top_10 = top_reservations(week_reservations, fm, 10);
 
         for (GList *t = top_10; t != NULL; t = t->next) {
             PassengerSpending *ps = (PassengerSpending *)t->data;
@@ -173,8 +174,6 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
             }
             (*count)++;
         }
-
-        // Liberar structs PassengerSpending do top 10
         g_list_free_full(top_10, free);
     }
 
@@ -190,9 +189,10 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
             top_passenger = doc;
         }
     }
-
+    
+    // Output do resultado
     if (top_passenger) {
-        PassengersManager pm = dataset_get_passengers_manager(d);
+        PassengersManager pm = dataset_get_passengers(d);
         Passenger p = passengers_manager_get(pm, top_passenger);
         printf("%s;%s;%s;%s;%s;%d\n",
                top_passenger,
@@ -203,7 +203,6 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
                max_count);
     }
 
-    // Limpeza de memória
     g_hash_table_destroy(weeks_table);
     g_hash_table_destroy(passenger_count);
 }

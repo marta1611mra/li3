@@ -8,7 +8,7 @@ struct reservation {
     char flight_id[2][10];         /**Identificadores dos voos associados (máx. 2). */
     char document_number[10];      /**Número do documento de identificação do passageiro. */
     int seat[2];                   /**Números dos assentos reservados para cada voo. */
-    double price[7];               /**Preço da reserva para cada voo (até 7?). */
+    double price[7];               /**Preço da reserva para cada voo. */
     int extra_luggage[5];          /**Indica se a reserva inclui bagagem extra (1=true, 0=false). */
     int priority_boarding[5];      /**Indica se a reserva inclui embarque prioritário (1=true, 0=false). */
     char *qr_code;            /**QR code associado à reserva. */
@@ -59,5 +59,14 @@ const char *get_reservation_document_number(Reservation r) {
 // Obtém o preço pago na reserva para um voo específico.
 double get_reservation_price(Reservation r, int index) {
     return (index >= 0 && index < 2) ? r->price[index] : 0.0;
+}
+
+// Obtém o preço total pago na reserva.
+double get_reservation_total_price(Reservation r) {
+    double total = 0.0;
+    for (int i = 0; i < 2; i++) {
+        total += r->price[i];
+    }
+    return total;
 }
 

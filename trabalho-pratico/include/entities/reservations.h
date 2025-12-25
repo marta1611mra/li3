@@ -68,4 +68,12 @@ const char *get_reservation_document_number(Reservation r);
  */
 double get_reservation_price(Reservation r, int index);
 
+/**
+ * @brief Obtém o preço total pago na reserva (soma dos voos).
+ *
+ * @param r Reservation.
+ * @return Preço total pago na reserva.
+ */
+double get_reservation_total_price(Reservation r);
+
 #endif
