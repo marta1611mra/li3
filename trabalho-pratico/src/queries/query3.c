@@ -110,4 +110,3 @@ void q3(const char *start_date, const char *end_date,
 
     g_hash_table_destroy(departures);
 }
-//utilizar o parsing aqui tambem
