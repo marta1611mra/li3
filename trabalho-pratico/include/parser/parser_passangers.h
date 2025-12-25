@@ -1,4 +1,4 @@
-#ifndef PARSER_PASSAGERS_H
+#ifndef PARSER_PASSANGERS_H
 #define PARSER_PASSANGERS_H
 
 #include "dataset.h"

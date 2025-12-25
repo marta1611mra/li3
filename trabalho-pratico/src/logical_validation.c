@@ -37,21 +37,15 @@ bool validate_arrival(const char *departure,
                       const char *arrival,
                       const char *actual_arrival,
                       flight_status status) {
+    if (compare_datetimes(arrival, departure) < 0)
+        return false;
     if (status == Cancelled) return true;
     if (!departure || !actual_departure || !arrival || !actual_arrival)
         return false;
-
-    if (compare_datetimes(arrival, departure) < 0)
-        return false;
-
+    if (strcmp(actual_departure, "N/A") == 0 || strcmp(actual_arrival, "N/A") == 0)
+    return false;
     if (compare_datetimes(actual_arrival, actual_departure) < 0)
-        return false;
-
-    if (status == Delayed || status == OnTime) {
-        if (compare_datetimes(actual_departure, departure) < 0) return false;
-        if (compare_datetimes(actual_arrival, arrival) < 0) return false;
-    }
-
+    return false;
     return true;
 }
 

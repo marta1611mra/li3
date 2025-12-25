@@ -34,45 +34,59 @@ void parse_passengers(Dataset d, const char *data_path) {
 
     wcsv_header(f, ferror);
 
-    char line[2048];
+char line[40000];
     while (fgets(line, sizeof(line), f)) {
-        char document_id[11] = "", first_name[31] = "", last_name[31] = "", dob[12] = "";
-        char nationality[21] = "", gender[11] = "", email[51] = "", phone[16] = "", address[51] = "", photo[4096] = "";
+        char line_copy[40000];
+        strcpy(line_copy, line);
 
-        int n = sscanf(line,
-                "\"%10[^\"]\",\"%30[^\"]\",\"%30[^\"]\",\"%10[^\"]\",\"%20[^\"]\",\"%10[^\"]\",\"%50[^\"]\",\"%15[^\"]\",\"%50[^\"]\",\"%4095[^\"]\"",
-                document_id, first_name, last_name, dob, nationality,
-                gender, email, phone, address, photo);
+        char *ptr = line;
+        char *fields[10];
+        int i = 0;
 
+        while (i < 10 && (fields[i] = strsep(&ptr, ",")) != NULL) {
+            i++;
+        }
 
-        if (n < 10) { fprintf(ferror, "%s", line); continue; }
+        if (i < 10) {
+            fprintf(ferror, "%s", line_copy);
+            continue;
+        }
 
-        remove_quotes(document_id); remove_spc(document_id);
-        remove_quotes(first_name); remove_spc(first_name);
-        remove_quotes(last_name); remove_spc(last_name);
-        remove_quotes(dob); remove_spc(dob);
-        remove_quotes(nationality); remove_spc(nationality);
-        remove_quotes(gender); remove_spc(gender);
-        remove_quotes(email); remove_spc(email);
-        remove_quotes(phone); remove_spc(phone);
-        remove_quotes(address); remove_spc(address);
-        remove_quotes(photo); remove_spc(photo);
+        for (int j = 0; j < 10; j++) {
+            remove_quotes(fields[j]);
+            remove_spc(fields[j]);
+        }
 
+        char *document_id = fields[0];
+        char *first_name  = fields[1];
+        char *last_name   = fields[2];
+        char *dob         = fields[3];
+        char *nationality = fields[4];
+        char *gender      = fields[5];
+        char *email       = fields[6];
+        char *phone       = fields[7];
+        char *address     = fields[8];
+        char *photo       = fields[9];
+
+        // Validação
         if (!validate_email(email) ||
             !validate_document_number(document_id) ||
             !validate_gender(gender) ||
             !validate_date(dob)) {
-            fprintf(ferror, "%s", line);
+            fprintf(ferror, "%s", line_copy);
             continue;
         }
 
         Passenger p = create_passenger(document_id, first_name, last_name, dob,
                                        nationality, gender, email, phone, address, photo);
-        if (!p) { fprintf(stderr, "create_passenger failed"); fprintf(ferror, "%s", line); continue; }
-
-        PassengersManager pm = dataset_get_passengers(d);
-        passengers_manager_add(pm, p);
+        
+        if (!p) {
+            fprintf(ferror, "%s", line_copy);
+            continue;
         }
+
+        passengers_manager_add(dataset_get_passengers(d), p);
+    }
 
     fclose(f);
     fclose(ferror);
