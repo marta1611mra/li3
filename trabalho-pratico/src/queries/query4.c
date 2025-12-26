@@ -55,8 +55,9 @@ void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, GDate *begi
 
     // Ajustar begin para domingo 
     int begin_wd = g_date_get_weekday(begin_out);
-    int days_to_subtract = (begin_wd == 7) ? 0 : begin_wd;
+    int days_to_subtract = begin_wd % 7;
     g_date_subtract_days(begin_out, days_to_subtract);
+
 
     // Ajustar end para sábado
     int end_wd = g_date_get_weekday(end_out);
@@ -72,24 +73,23 @@ GList *top_reservations(GList *reservations, FlightsManager fm, int n) {
 
     for (GList *l = reservations; l != NULL; l = l->next) {
         Reservation r = (Reservation)l->data;
-        double total_price = 0.0;
         const char *doc = get_reservation_document_number(r);
-        if (total_price > 0.0) {
-            double *current_spent = g_hash_table_lookup(spending_table, doc);
+        double price = get_reservation_total_price (r); 
+        double *current_spent = g_hash_table_lookup(spending_table, doc);
             if (!current_spent) {
                 current_spent = malloc(sizeof(double));
                 *current_spent = 0.0;
-            }
-            total_price += get_reservation_total_price(r);
-            *current_spent += total_price;
-            g_hash_table_insert(spending_table, strdup(doc), current_spent);
-        }
+            }        
+        *current_spent += price;
+        g_hash_table_insert(spending_table, strdup(doc), current_spent);
     }
+
     // Criar uma lista com os passageiros e seus gastos totais
     GList *passenger_list = NULL;
     GHashTableIter iter;
     gpointer key, value;
     g_hash_table_iter_init(&iter, spending_table);
+
     while (g_hash_table_iter_next(&iter, &key, &value)) {
         PassengerSpending *ps = malloc(sizeof(PassengerSpending));
         ps->document_number = strdup((char *)key);  // cópia da string
@@ -107,7 +107,7 @@ GList *top_reservations(GList *reservations, FlightsManager fm, int n) {
         top_n = g_list_append(top_n, l->data);
     }
 
-    g_list_free_full(passenger_list, free);
+    g_list_free(passenger_list);
     g_hash_table_destroy(spending_table);
 
     return top_n;  
@@ -135,14 +135,28 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
     // Agrupar reservas por semana
     for (GList *l = all_reservations; l != NULL; l = l->next) {
         Reservation r = (Reservation)l->data;
-        const char *departure = get_flight_dep(flights_manager_get(fm, get_reservation_flight_id(r, 0)));
-        // Calcular domingo da semana para os voos da reserva
+
+        Flight f = flights_manager_get(fm, get_reservation_flight_id(r, 0));
+        if (!f) continue;
+
+        const char *departure = get_flight_dep(f);
+
         GDate week_dep;
         g_date_clear(&week_dep, TRUE);
         g_date_set_parse(&week_dep, departure);
         if (!g_date_valid(&week_dep)) continue;
+
+        // Calcular o domingo da semana
         int wd = g_date_get_weekday(&week_dep);
-        g_date_subtract_days(&week_dep, (wd == 7) ? 0 : wd);
+        g_date_subtract_days(&week_dep, wd % 7);
+
+        // Filtrar por intervalo de datas
+        if (begin_date && end_date) {
+            if (g_date_compare(&week_dep, &week_start) < 0 ||
+                g_date_compare(&week_dep, &week_end) > 0) {
+                continue; // semana fora do intervalo
+            } 
+        }
 
         char week_str[11];
         g_date_strftime(week_str, sizeof(week_str), "%Y-%m-%d", &week_dep);
@@ -154,28 +168,35 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
         g_hash_table_insert(weeks_table, key, week_res);
     }
 
-    // Contar presenças no top 10
+    // Contar presenças no top 10./.
     GHashTable *passenger_count = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
 
     GHashTableIter iter;
     gpointer key, value;
     g_hash_table_iter_init(&iter, weeks_table);
     while (g_hash_table_iter_next(&iter, &key, &value)) {
-        GList *week_reservations = (GList *)value;
-        GList *top_10 = top_reservations(week_reservations, fm, 10);
+    GList *week_reservations = (GList *)value;
+    GList *top_10 = top_reservations(week_reservations, fm, 10);
 
-        for (GList *t = top_10; t != NULL; t = t->next) {
-            PassengerSpending *ps = (PassengerSpending *)t->data;
-            int *count = g_hash_table_lookup(passenger_count, ps->document_number);
-            if (!count) {
-                count = malloc(sizeof(int));
-                *count = 0;
-                g_hash_table_insert(passenger_count, strdup(ps->document_number), count);
-            }
-            (*count)++;
+    for (GList *t = top_10; t != NULL; t = t->next) {
+        PassengerSpending *ps = (PassengerSpending *)t->data;
+        int *count = g_hash_table_lookup(passenger_count, ps->document_number);
+        if (!count) {
+            count = malloc(sizeof(int));
+            *count = 0;
+            g_hash_table_insert(passenger_count, strdup(ps->document_number), count);
         }
-        g_list_free_full(top_10, free);
+        (*count)++;
     }
+
+    for (GList *t = top_10; t != NULL; t = t->next) {
+        PassengerSpending *ps = (PassengerSpending *)t->data;
+        free(ps->document_number);
+        free(ps);
+    }
+
+    g_list_free(top_10);
+}
 
     // Encontrar passageiro com maior contagem
     int max_count = -1;
@@ -190,18 +211,22 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
         }
     }
     
+    FILE *output = fopen("resultados/command4_output.txt", "w");
     // Output do resultado
     if (top_passenger) {
         PassengersManager pm = dataset_get_passengers(d);
         Passenger p = passengers_manager_get(pm, top_passenger);
-        printf("%s;%s;%s;%s;%s;%d\n",
+        fprintf(output, "%s;%s;%s;%s;%s;%d\n",
                top_passenger,
                get_passenger_first_name(p),
                get_passenger_last_name(p),
                get_passenger_dob(p),
                get_passenger_nationality(p),
                max_count);
-    }
+    } else {
+        fprintf(output, "\n");
+         }
+    fclose(output);
 
     g_hash_table_destroy(weeks_table);
     g_hash_table_destroy(passenger_count);
