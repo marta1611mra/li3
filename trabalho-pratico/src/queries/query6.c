@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-
 #include "query6.h"
 #include "entities/reservations.h"
 #include "entities/passengers.h"
@@ -15,6 +14,7 @@ typedef struct {
     FlightsManager fm;
     const char *nationality;
 } Q6Ctx;
+
 
 static void count_arrivals(gpointer value, gpointer user_data) {
     Reservation r = value;
@@ -29,30 +29,37 @@ static void count_arrivals(gpointer value, gpointer user_data) {
     if (strcmp(get_passenger_nationality(p), ctx->nationality) != 0)
         return;
 
-    for (int i = 0; i < 2; i++) {
-        const char *flight_id = get_reservation_flight_id(r, i);
-        if (!flight_id || flight_id[0] == '\0')
-            continue;
+    /* escolher voo final */
+    const char *flight_id = NULL;
+    const char *fid1 = get_reservation_flight_id(r, 1);
+    const char *fid0 = get_reservation_flight_id(r, 0);
 
-        Flight f = flights_manager_get(ctx->fm, flight_id);
-        if (!f) continue;
+    if (fid1 && fid1[0] != '\0')
+        flight_id = fid1;
+    else if (fid0 && fid0[0] != '\0')
+        flight_id = fid0;
+    else
+        return;
 
-        if (get_flight_status(f) == Cancelled)
-            continue;
+    Flight f = flights_manager_get(ctx->fm, flight_id);
+    if (!f) return;
 
-        const char *dest = get_flight_dest(f);
-        if (!dest) continue;
+    if (get_flight_status(f) == Cancelled)
+        return;
 
-        int *cnt = g_hash_table_lookup(ctx->arrivals, dest);
-        if (cnt) {
-            (*cnt)++;
-        } else {
-            int *c = malloc(sizeof(int));
-            *c = 1;
-            g_hash_table_insert(ctx->arrivals, g_strdup(dest), c);
-        }
+    const char *dest = get_flight_dest(f);
+    if (!dest) return;
+
+    int *cnt = g_hash_table_lookup(ctx->arrivals, dest);
+    if (cnt) {
+        (*cnt)++;
+    } else {
+        int *c = malloc(sizeof(int));
+        *c = 1;
+        g_hash_table_insert(ctx->arrivals, g_strdup(dest), c);
     }
 }
+
 
 
 void q6(PassengersManager pm,
@@ -102,6 +109,6 @@ void q6(PassengersManager pm,
         char sep = get_output_separator();
         fprintf(out, "%s%c%d\n", best, sep, max);
     }
-
+    g_list_free(reservations);
     g_hash_table_destroy(arrivals);
 }
