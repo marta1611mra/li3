@@ -12,13 +12,13 @@
  * que mais gastaram semanalmente durante o intervalo [start, end].
  *
  * @param d Dataset com todos os dados necessários (reservas e passageiros).
- * @param start Data de início do período (inclusiva), como GDate*.
- * @param end Data de fim do período (inclusiva), como GDate*.
+ * @param begin_date Data de início do período (inclusiva), como GDate*.
+ * @param end_date Data de fim do período (inclusiva), como GDate*.
  * @param out   Ficheiro de output onde escrever o resultado 
  * 
  * Output: document_number;first_name;last_name;dob;nationality;count_top_10
  */
 
-void query4_execute(Dataset d, const char *start, const char *end);
+void query4_execute(Dataset d, const char *begin_date, const char *end_date, FILE *out);
 #endif
 

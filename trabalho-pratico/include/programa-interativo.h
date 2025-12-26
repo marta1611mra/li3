@@ -17,6 +17,7 @@
 /** @brief Executa o programa interativo do sistema. 
  * Esta função permite ao utilizador carregar um dataset e executar queries interativamente, 
  * lendo inputs do terminal e exibindo os resultados diretamente no stdout.
+ * @param path Caminho opcional para o dataset (pode ser NULL)
  * @return void
-*/
-void interactive_program();
+ */
+void interactive_program(char *path);

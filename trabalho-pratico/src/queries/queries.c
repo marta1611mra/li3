@@ -79,7 +79,12 @@ void process_queries(Dataset d, const char *queries_path) {
                 break;
             }
             case 4:
-                /** Query 4: 4 [start_date end_date] */
+                if (n >= 2) {
+                    query4_execute(d, arg1, arg2, out);
+                } else {
+                    query4_execute(d, NULL, NULL, out);
+                }
+            break;
                
             case 5: {
                 int N = atoi(arg1);

@@ -114,7 +114,7 @@ GList *top_reservations(GList *reservations, FlightsManager fm, int n) {
 }
 
 // Executa a query 4
-void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
+void query4_execute(Dataset d, const char *begin_date, const char *end_date, FILE *out) {
     ReservationsManager rm = dataset_get_reservations(d);
     FlightsManager fm = dataset_get_flights(d);
     GList *all_reservations = reservations_manager_get_all(rm);
@@ -211,22 +211,18 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date) {
         }
     }
     
-    FILE *output = fopen("resultados/command4_output.txt", "w");
-    // Output do resultado
     if (top_passenger) {
-        PassengersManager pm = dataset_get_passengers(d);
-        Passenger p = passengers_manager_get(pm, top_passenger);
-        fprintf(output, "%s;%s;%s;%s;%s;%d\n",
-               top_passenger,
-               get_passenger_first_name(p),
-               get_passenger_last_name(p),
-               get_passenger_dob(p),
-               get_passenger_nationality(p),
-               max_count);
-    } else {
-        fprintf(output, "\n");
-         }
-    fclose(output);
+    PassengersManager pm = dataset_get_passengers(d);
+    Passenger p = passengers_manager_get(pm, top_passenger);
+    fprintf(out, "%s;%s;%s;%s;%s;%d\n",
+           top_passenger,
+           get_passenger_first_name(p),
+           get_passenger_last_name(p),
+           get_passenger_dob(p),
+           get_passenger_nationality(p),
+           max_count);
+        } else {
+             fprintf(out, "\n");    }
 
     g_hash_table_destroy(weeks_table);
     g_hash_table_destroy(passenger_count);
