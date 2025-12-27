@@ -10,16 +10,15 @@
 #include <glib.h>
 
 
-// Lê e processa o ficheiro passengers.csv.
-
+// Lê e processa o ficheiro passengers.csv 
 void parse_passengers(Dataset d, const char *data_path) {
     char clean_path[512];
     strcpy(clean_path, data_path);
     size_t len = strlen(clean_path);
     while (len > 0 && clean_path[len - 1] == '/') {
-    clean_path[len - 1] = '\0';
-    len--;
-}
+        clean_path[len - 1] = '\0';
+        len--;
+    }
 
     char path[1026];
     snprintf(path, sizeof(path), "%s/passengers.csv", clean_path);
@@ -34,58 +33,80 @@ void parse_passengers(Dataset d, const char *data_path) {
 
     wcsv_header(f, ferror);
 
-char line[40000];
+    // Obter manager uma única vez fora do loop
+    PassengersManager pm = dataset_get_passengers(d);
+
+    char line[4096];
+    
     while (fgets(line, sizeof(line), f)) {
-        char line_copy[40000];
-        strcpy(line_copy, line);
+        // Usar parsing manual mais eficiente
+        char document_id[16] = "";
+        char first_name[128] = "";
+        char last_name[128] = "";
+        char dob[12] = "";
+        char nationality[64] = "";
+        char gender[4] = "";
+        char email[128] = "";
+        char phone[32] = "";
+        char address[256] = "";
+        char photo[512] = "";
 
-        char *ptr = line;
-        char *fields[10];
-        int i = 0;
+        // Parsing com sscanf otimizado para CSV com aspas
+        int n = sscanf(line,
+            "\"%15[^\"]\",\"%127[^\"]\",\"%127[^\"]\",\"%11[^\"]\",\"%63[^\"]\","
+            "\"%3[^\"]\",\"%127[^\"]\",\"%31[^\"]\",\"%255[^\"]\",\"%511[^\"]\"",
+            document_id, first_name, last_name, dob, nationality,
+            gender, email, phone, address, photo);
 
-        while (i < 10 && (fields[i] = strsep(&ptr, ",")) != NULL) {
-            i++;
-        }
-
-        if (i < 10) {
-            fprintf(ferror, "%s", line_copy);
+        if (n != 10) {
+            fprintf(ferror, "%s", line);
             continue;
         }
 
-        for (int j = 0; j < 10; j++) {
-            remove_quotes(fields[j]);
-            remove_spc(fields[j]);
-        }
+        // Limpar apenas os campos necessários
+        remove_quotes(document_id); remove_spc(document_id);
+        remove_quotes(first_name); remove_spc(first_name);
+        remove_quotes(last_name); remove_spc(last_name);
+        remove_quotes(dob); remove_spc(dob);
+        remove_quotes(nationality); remove_spc(nationality);
+        remove_quotes(gender); remove_spc(gender);
+        remove_quotes(email); remove_spc(email);
+        remove_quotes(phone); remove_spc(phone);
+        remove_quotes(address); remove_spc(address);
+        remove_quotes(photo); remove_spc(photo);
 
-        char *document_id = fields[0];
-        char *first_name  = fields[1];
-        char *last_name   = fields[2];
-        char *dob         = fields[3];
-        char *nationality = fields[4];
-        char *gender      = fields[5];
-        char *email       = fields[6];
-        char *phone       = fields[7];
-        char *address     = fields[8];
-        char *photo       = fields[9];
+        // Remover newlines
+        document_id[strcspn(document_id, "\r\n")] = 0;
+        first_name[strcspn(first_name, "\r\n")] = 0;
+        last_name[strcspn(last_name, "\r\n")] = 0;
+        dob[strcspn(dob, "\r\n")] = 0;
+        nationality[strcspn(nationality, "\r\n")] = 0;
+        gender[strcspn(gender, "\r\n")] = 0;
+        email[strcspn(email, "\r\n")] = 0;
+        phone[strcspn(phone, "\r\n")] = 0;
+        address[strcspn(address, "\r\n")] = 0;
+        photo[strcspn(photo, "\r\n")] = 0;
 
-        // Validação
-        if (!validate_email(email) ||
+        // Validar na ordem mais eficiente (falhas rápidas primeiro)
+        if (!validate_gender(gender) ||
             !validate_document_number(document_id) ||
-            !validate_gender(gender) ||
-            !validate_date(dob)) {
-            fprintf(ferror, "%s", line_copy);
+            !validate_date(dob) ||
+            !validate_email(email)) {
+            fprintf(ferror, "%s", line);
             continue;
         }
 
+        // Criar passageiro
         Passenger p = create_passenger(document_id, first_name, last_name, dob,
                                        nationality, gender, email, phone, address, photo);
         
         if (!p) {
-            fprintf(ferror, "%s", line_copy);
+            fprintf(ferror, "%s", line);
             continue;
         }
 
-        passengers_manager_add(dataset_get_passengers(d), p);
+        // Usar manager já obtido
+        passengers_manager_add(pm, p);
     }
 
     fclose(f);

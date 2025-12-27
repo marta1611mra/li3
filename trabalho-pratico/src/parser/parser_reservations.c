@@ -24,6 +24,7 @@ void parse_reservations(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
+    printf("A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/reservations_errors.csv", "w");
@@ -31,22 +32,29 @@ void parse_reservations(Dataset d, const char *data_path) {
 
     wcsv_header(f, ferror);
 
+    // Obter managers uma única vez fora do loop
+    PassengersManager pm = dataset_get_passengers(d);
+    FlightsManager fm = dataset_get_flights(d);
+    ReservationsManager rm = dataset_get_reservations(d);
+    AirportsManager am = dataset_get_airports(d);
+
     char line[2048];
     while (fgets(line, sizeof(line), f)) {
 
         char reservation_id[21] = "";
         char flight_list[128] = "";
         char document_number[16] = "";
-        char seat_str[8] = "";  // Não precisamos guardar - só para validação
+        char seat_str[16] = "";
+        char price_str[32] = "";
         char extra_luggage_str[8] = "";
         char priority_boarding_str[8] = "";
-        char qr_code[4096] = "";  // Não precisamos guardar - só para validação
-        double price = 0.0;
+        char qr_code[4096] = "";
 
+        // Parsing correto: reservation_id, flight_list, document_number, seat, price, extra_luggage, priority_boarding, qr_code
         int n = sscanf(line,
-            "\"%20[^\"]\",\"%127[^\"]\",\"%15[^\"]\",\"%7[^\"]\",\"%lf\",\"%7[^\"]\",\"%7[^\"]\",\"%4095[^\"]\"",
+            "\"%20[^\"]\",\"%127[^\"]\",\"%15[^\"]\",\"%15[^\"]\",\"%31[^\"]\",\"%7[^\"]\",\"%7[^\"]\",\"%4095[^\"]\"",
             reservation_id, flight_list, document_number, seat_str,
-            &price, extra_luggage_str, priority_boarding_str, qr_code);
+            price_str, extra_luggage_str, priority_boarding_str, qr_code);
 
         if (n != 8) {
             fprintf(ferror, "%s", line);
@@ -56,15 +64,24 @@ void parse_reservations(Dataset d, const char *data_path) {
         remove_quotes(reservation_id); remove_spc(reservation_id);
         remove_quotes(flight_list); remove_spc(flight_list);
         remove_quotes(document_number); remove_spc(document_number);
+        remove_quotes(price_str); remove_spc(price_str);
         remove_quotes(extra_luggage_str); remove_spc(extra_luggage_str);
         remove_quotes(priority_boarding_str); remove_spc(priority_boarding_str);
-        // seat_str e qr_code não precisam de limpeza detalhada - só validação básica
 
         reservation_id[strcspn(reservation_id, "\r\n")] = 0;
         flight_list[strcspn(flight_list, "\r\n")] = 0;
         document_number[strcspn(document_number, "\r\n")] = 0;
+        price_str[strcspn(price_str, "\r\n")] = 0;
         extra_luggage_str[strcspn(extra_luggage_str, "\r\n")] = 0;
         priority_boarding_str[strcspn(priority_boarding_str, "\r\n")] = 0;
+
+        // Converter price para double
+        char *endptr;
+        double price = strtod(price_str, &endptr);
+        if (*endptr != '\0' || price < 0) {
+            fprintf(ferror, "%s", line);
+            continue;
+        }
 
         if (!validate_reservation_id(reservation_id) ||
             !validate_document_number(document_number) ||
@@ -73,12 +90,12 @@ void parse_reservations(Dataset d, const char *data_path) {
             continue;
         }
 
-        if (!passengers_manager_exists(dataset_get_passengers(d), document_number)) {
+        if (!passengers_manager_exists(pm, document_number)) {
             fprintf(ferror, "%s", line);
             continue;
         }
 
-        //Extrair flight IDs 
+        // Extrair flight IDs 
         char flight_id[2][10] = {{0}};
         int num_ids = 0;
 
@@ -117,19 +134,23 @@ void parse_reservations(Dataset d, const char *data_path) {
             continue;
         }
 
-        FlightsManager fm = dataset_get_flights(d);
-        for (int i = 0; i < num_ids; i++) {
-            if (!validate_flight_id(flight_id[i]) ||
-                !flights_manager_get(fm, flight_id[i])) {
-                fprintf(ferror, "%s", line);
-                goto next_line;
-            }
+        // Obter voos uma única vez e reutilizar
+        Flight f_first = flights_manager_get(fm, flight_id[0]);
+        Flight f_last = (num_ids == 2) ? flights_manager_get(fm, flight_id[1]) : f_first;
+
+        // Validar voos
+        if (!validate_flight_id(flight_id[0]) || !f_first) {
+            fprintf(ferror, "%s", line);
+            continue;
         }
 
         if (num_ids == 2) {
-            Flight f1 = flights_manager_get(fm, flight_id[0]);
-            Flight f2 = flights_manager_get(fm, flight_id[1]);
-            if (strcmp(get_flight_dest(f1), get_flight_orig(f2)) != 0) {
+            if (!validate_flight_id(flight_id[1]) || !f_last) {
+                fprintf(ferror, "%s", line);
+                continue;
+            }
+            // Validação lógica: destino do primeiro = origem do segundo
+            if (strcmp(get_flight_dest(f_first), get_flight_orig(f_last)) != 0) {
                 fprintf(ferror, "%s", line);
                 continue;
             }
@@ -139,8 +160,6 @@ void parse_reservations(Dataset d, const char *data_path) {
         int priority_boarding = (strcmp(priority_boarding_str, "true") == 0);
 
         // Criar estrutura mínima de reserva 
-        ReservationsManager rm = dataset_get_reservations(d);
-
         int *seats = malloc(2 * sizeof(int));
         double *prices = malloc(2 * sizeof(double));
         int *luggage = malloc(2 * sizeof(int));
@@ -165,7 +184,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             prices,
             luggage,
             priority,
-            "" // qr_code não é necessário para queries
+            ""
         );
 
         if (!r) {
@@ -177,54 +196,41 @@ void parse_reservations(Dataset d, const char *data_path) {
         reservations_manager_add(rm, r);
 
         /* ===== PRÉ-PROCESSAMENTO PARA QUERIES ===== */
-        PassengersManager pm = dataset_get_passengers(d);
+        
+        // Obter passageiro apenas se necessário
         Passenger p = passengers_manager_get(pm, document_number);
-
+        
         if (p) {
             const char *nat = get_passenger_nationality(p);
             
             // Q6: Atualizar índice de nacionalidade -> aeroporto de destino
-            if (nat && *nat) {
-                const char *final_flight_id = (num_ids == 2) ? flight_id[1] : flight_id[0];
-                Flight f = flights_manager_get(fm, final_flight_id);
-
-                if (f && get_flight_status(f) != Cancelled) {
-                    const char *dest = get_flight_dest(f);
-                    if (dest && *dest) {
-                        dataset_update_q6(d, nat, dest);
-                    }
+            if (nat && *nat && get_flight_status(f_last) != Cancelled) {
+                const char *dest = get_flight_dest(f_last);
+                if (dest && *dest) {
+                    dataset_update_q6(d, nat, dest);
                 }
             }
 
             // Q4: Preparar dados para cálculo de top 10 semanal
-            // Obtém a data de partida do primeiro voo
-            Flight f_first = flights_manager_get(fm, flight_id[0]);
-            if (f_first) {
-                const char *dep_str = get_flight_dep(f_first);
-                if (dep_str && strlen(dep_str) >= 10) {
-                    // Armazenar informação relevante: document_number, price, departure_date
-                    dataset_add_q4_data(d, document_number, price, dep_str);
-                }
+            const char *dep_str = get_flight_dep(f_first);
+            if (dep_str && strlen(dep_str) >= 10) {
+                dataset_add_q4_data(d, document_number, price, dep_str);
             }
         }
 
-        // Atualizar estatísticas de aeroportos (Q1 e Q3) 
-        AirportsManager am = dataset_get_airports(d);
-        for (int i = 0; i < num_ids; i++) {
-            Flight f = flights_manager_get(fm, flight_id[i]);
-            if (get_flight_status(f) != Cancelled) {
-                const char *orig = get_flight_orig(f);
-                const char *dest = get_flight_dest(f);
-                
-                if (orig && *orig) {
-                    airports_manager_departure(am, orig, 1);
-                }
-                if (dest && *dest) {
-                    airports_manager_arrival(am, dest, 1);
-                }
+        // Q1: Atualizar contadores de passageiros por aeroporto
+        // Verificar status e obter dados apenas uma vez
+        int first_valid = (get_flight_status(f_first) != Cancelled);
+        int last_valid = (get_flight_status(f_last) != Cancelled);
+        
+        if (first_valid) {
+            const char *orig = get_flight_orig(f_first);
+            if (orig && *orig) {
+                // Incrementar partidas do aeroporto de origem
+                airports_manager_departure(am, orig, 1);
                 
                 // Q3: Atualizar índice de partidas por data
-                const char *actual_dep = get_flight_actual_dep(f);
+                const char *actual_dep = get_flight_actual_dep(f_first);
                 if (actual_dep && strlen(actual_dep) >= 10) {
                     char date_only[11];
                     memcpy(date_only, actual_dep, 10);
@@ -233,11 +239,20 @@ void parse_reservations(Dataset d, const char *data_path) {
                 }
             }
         }
-
-        continue;
-
-    next_line:
-        continue;
+        
+        // Só processar se for voo diferente e válido
+        if (last_valid && f_last != f_first) {
+            const char *dest = get_flight_dest(f_last);
+            if (dest && *dest) {
+                airports_manager_arrival(am, dest, 1);
+            }
+        } else if (first_valid && f_last == f_first) {
+            // Caso de voo único: também contar chegada
+            const char *dest = get_flight_dest(f_first);
+            if (dest && *dest) {
+                airports_manager_arrival(am, dest, 1);
+            }
+        }
     }
 
     fclose(f);

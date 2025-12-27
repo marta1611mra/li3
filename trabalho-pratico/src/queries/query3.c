@@ -11,6 +11,7 @@ typedef struct {
     int best_count;
     const char *date_start;
     const char *date_end;
+    int current_count;  // Contador temporário para o aeroporto atual
 } Q3Context;
 
 // Callback interno: soma voos num range de datas 
@@ -21,7 +22,7 @@ static void q3_sum_dates_cb(gpointer key, gpointer value, gpointer user_data) {
 
     if (strcmp(date, ctx->date_start) >= 0 &&
         strcmp(date, ctx->date_end)   <= 0) {
-        ctx->best_count += count;
+        ctx->current_count += count;
     }
 }
 
@@ -31,14 +32,24 @@ static void q3_airport_cb(gpointer key, gpointer value, gpointer user_data) {
     GHashTable *dates = value;
     Q3Context *ctx = user_data;
 
-    int total = 0;
-    ctx->best_count = 0;
+    // Resetar contador do aeroporto atual
+    ctx->current_count = 0;
 
+    // Calcular total de partidas deste aeroporto no intervalo
     g_hash_table_foreach(dates, q3_sum_dates_cb, ctx);
-    total = ctx->best_count;
 
-    if (total > ctx->best_count) {
-        ctx->best_count = total;
+    // Atualizar melhor aeroporto se necessário
+    if (ctx->current_count > ctx->best_count) {
+        ctx->best_count = ctx->current_count;
+        ctx->best_airport = airport;
+    } else if (ctx->current_count == ctx->best_count && ctx->best_airport) {
+        // Em caso de empate, escolher o menor lexicograficamente
+        if (strcmp(airport, ctx->best_airport) < 0) {
+            ctx->best_airport = airport;
+        }
+    } else if (ctx->current_count > 0 && !ctx->best_airport) {
+        // Primeiro aeroporto com partidas
+        ctx->best_count = ctx->current_count;
         ctx->best_airport = airport;
     }
 }
@@ -53,7 +64,8 @@ void q3(Dataset d, char **args, FILE *output) {
         .best_airport = NULL,
         .best_count   = 0,
         .date_start   = date_start,
-        .date_end     = date_end
+        .date_end     = date_end,
+        .current_count = 0
     };
 
     GHashTable *q3_index = dataset_get_q3_index(d);
