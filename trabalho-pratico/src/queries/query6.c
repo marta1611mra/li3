@@ -3,130 +3,51 @@
 #include <string.h>
 #include <glib.h>
 #include "query6.h"
-#include "entities/reservations.h"
-#include "entities/passengers.h"
-#include "entities/flights.h"
-#include "output_format.h"
+#include "dataset.h"
 
+void q6(Dataset d, const char *nationality, FILE *out) {
+    // Verificações básicas
+    if (!d || !nationality || !out) return;
 
-typedef struct {
-    const char *best_code;
-    int best_count;
-} BestAirport;
+    // 1. Obter o índice principal usando o GETTER (sem d->...)
+    GHashTable *q6_index = dataset_get_q6_index(d);
+    if (!q6_index) return;
 
-typedef struct {
-    GHashTable *arrivals;        // airport_code -> int*
-    PassengersManager pm;
-    FlightsManager fm;
-    const char *nationality;
-} Q6Ctx;
+    // 2. Procurar a tabela de aeroportos para essa nacionalidade
+    GHashTable *airports_map = g_hash_table_lookup(q6_index, nationality);
 
-/* Escolhe o voo final com base na data de chegada */
-static Flight get_final_flight(FlightsManager fm, Reservation r) {
-    const char *fid0 = get_reservation_flight_id(r, 0);
-    const char *fid1 = get_reservation_flight_id(r, 1);
-
-    Flight f0 = fid0 ? flights_manager_get(fm, fid0) : NULL;
-    Flight f1 = fid1 ? flights_manager_get(fm, fid1) : NULL;
-
-    if (!f0 && !f1) return NULL;
-    if (!f0) return f1;
-    if (!f1) return f0;
-
-    return strcmp(
-        get_flight_arrival(f0),
-        get_flight_arrival(f1)
-    ) >= 0 ? f0 : f1;
-}
-
-
-
-/* Incrementa o contador de um aeroporto na hash table */
-static void increment_airport(GHashTable *arrivals, const char *airport) {
-    int *count = g_hash_table_lookup(arrivals, airport);
-
-    if (!count) {
-        count = malloc(sizeof(int));
-        *count = 0;
-        g_hash_table_insert(arrivals, g_strdup(airport), count);
-    }
-
-    (*count)++;
-}
-
-static void count_arrivals(gpointer value, gpointer user_data) {
-    Reservation r = value;
-    Q6Ctx *ctx = user_data;
-
-    const char *doc = get_reservation_document_number(r);
-    if (!doc) return;
-
-    Passenger p = passengers_manager_get(ctx->pm, doc);
-    if (!p) return;
-
-    if (strcmp(get_passenger_nationality(p), ctx->nationality) != 0)
-        return;
-
-    Flight final = get_final_flight(ctx->fm, r);
-    if (!final) return;
-
-    const char *airport = get_flight_dest(final);
-    if (!airport) return;
-
-    increment_airport(ctx->arrivals, airport);
-}
-
-
-static void select_best_airport(gpointer key, gpointer value, gpointer user_data) {
-    const char *airport = key;
-    int count = *(int *)value;
-    BestAirport *best = user_data;
-
-    if (!best->best_code ||
-        count > best->best_count ||
-        (count == best->best_count &&
-         strcmp(airport, best->best_code) < 0)) {
-
-        best->best_code = airport;
-        best->best_count = count;
-    }
-}
-
-void q6(PassengersManager pm,
-            FlightsManager fm,
-            ReservationsManager rm,
-            const char *nationality,
-            FILE *out) {
-
-    if (!pm || !fm || !rm || !nationality || !out) {
-        fprintf(out, "\n");
+    // Se não houver dados para a nacionalidade, não faz nada (linha vazia implícita)
+    if (!airports_map || g_hash_table_size(airports_map) == 0) {
         return;
     }
 
-    GHashTable *arrivals =
-        g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
+    // 3. Iterar para encontrar o aeroporto com mais passageiros
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init(&iter, airports_map);
 
-    Q6Ctx ctx = { arrivals, pm, fm, nationality };
+    char *best_airport = NULL;
+    int max_count = -1;
 
-    GList *list = reservations_manager_get_all(rm);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        char *current_airport = (char *)key;
+        int current_count = *(int *)value;
 
-    for (GList *l = list; l != NULL; l = l->next) {
-    Reservation r = l->data;
-    count_arrivals(r, &ctx);
+        // Se encontrarmos um valor maior, atualizamos
+        if (current_count > max_count) {
+            max_count = current_count;
+            best_airport = current_airport;
+        }
+        // Se for empate, critério lexicográfico (menor código ganha)
+        else if (current_count == max_count) {
+            if (best_airport && strcmp(current_airport, best_airport) < 0) {
+                best_airport = current_airport;
+            }
+        }
     }
 
-    g_list_free(list);
-
-
-    BestAirport best = { NULL, 0 };
-    g_hash_table_foreach(arrivals, select_best_airport, &best);
-
-    if (best.best_code) {
-        fprintf(out, "%s;%d\n", best.best_code, best.best_count);
-    } else {
-        fprintf(out, "\n");
+    // 4. Escrever o resultado: Code;Count
+    if (best_airport) {
+        fprintf(out, "%s;%d\n", best_airport, max_count);
     }
-
-    g_hash_table_destroy(arrivals);
 }
-

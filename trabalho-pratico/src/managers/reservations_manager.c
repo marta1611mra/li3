@@ -28,15 +28,12 @@ void reservations_manager_destroy(ReservationsManager m) {
 
 // Adiciona uma reserva ao gestor.
 void reservations_manager_add(ReservationsManager rm, Reservation r) {
+    if (!rm || !r) return;
+
     const char *id = get_reservation_id(r);
+    if (!id) return;
 
-    Reservation old = g_hash_table_lookup(rm->reservations, id);
-    if (old) {
-        destroy_reservation(old);
-        g_hash_table_remove(rm->reservations, id);
-    }
-
-    g_hash_table_insert(rm->reservations, g_strdup(id), r);
+    g_hash_table_replace(rm->reservations, g_strdup(id), r);
 }
 
 

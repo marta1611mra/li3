@@ -24,6 +24,14 @@ typedef struct dataset *Dataset;
  */
 Dataset dataset_create(void);
 
+GHashTable *dataset_get_q6_index(Dataset d); 
+GHashTable *dataset_get_q2_index(Dataset d);
+
+void dataset_update_q2(Dataset d, const char *aircraft_id, const char *manufacturer);
+
+void dataset_build_q6_index(Dataset d);
+
+void dataset_update_q6(Dataset d, const char *nationality, const char *airport);
 /**
  * @brief Liberta a memória associada a um Dataset.
  *
