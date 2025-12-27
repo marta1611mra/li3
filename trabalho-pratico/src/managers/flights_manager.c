@@ -45,3 +45,4 @@ GHashTable *flights_manager_get_table(FlightsManager m) {
     if (!m) return NULL;
     return m->flights;
 }
+

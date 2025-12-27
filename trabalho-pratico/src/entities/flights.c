@@ -100,3 +100,5 @@ const char *get_flight_aircraft_id(Flight f) {
 const char *get_flight_airline(Flight f) { 
     return f->airline; 
 }
+
+

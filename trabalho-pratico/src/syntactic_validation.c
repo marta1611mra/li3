@@ -132,12 +132,23 @@ bool validate_latitude_longitude(const char *latitude,const char *longitude){
 
 
 // Valida o ID do voo (formato ccddddd, 2 letras + 5 dígitos).
-bool validate_flight_id(const char *id){
-    if (!id || strlen(id) != 7) return false;
-    return (id[0] >= 'A' && id[0] <= 'Z') &&
-           (id[1] >= 'A' && id[1] <= 'Z') &&
-           isdigit(id[2]) && isdigit(id[3]) && isdigit(id[4]) &&
-           isdigit(id[5]) && isdigit(id[6]);
+bool validate_flight_id(const char *id) {
+    if (!id) return false;
+
+    size_t len = strlen(id);
+    if (len != 7 && len != 8) return false;
+
+    /* cc */
+    if (id[0] < 'A' || id[0] > 'Z') return false;
+    if (id[1] < 'A' || id[1] > 'Z') return false;
+
+    /* ddddd */
+    for (size_t i = 2; i < len; i++) {
+        if (!isdigit((unsigned char)id[i]))
+            return false;
+    }
+
+    return true;
 }
 
 

@@ -8,6 +8,12 @@
 #include "entities/flights.h"
 #include "output_format.h"
 
+
+typedef struct {
+    const char *best_code;
+    int best_count;
+} BestAirport;
+
 typedef struct {
     GHashTable *arrivals;        // airport_code -> int*
     PassengersManager pm;
@@ -15,6 +21,38 @@ typedef struct {
     const char *nationality;
 } Q6Ctx;
 
+/* Escolhe o voo final com base na data de chegada */
+static Flight get_final_flight(FlightsManager fm, Reservation r) {
+    const char *fid0 = get_reservation_flight_id(r, 0);
+    const char *fid1 = get_reservation_flight_id(r, 1);
+
+    Flight f0 = fid0 ? flights_manager_get(fm, fid0) : NULL;
+    Flight f1 = fid1 ? flights_manager_get(fm, fid1) : NULL;
+
+    if (!f0 && !f1) return NULL;
+    if (!f0) return f1;
+    if (!f1) return f0;
+
+    return strcmp(
+        get_flight_arrival(f0),
+        get_flight_arrival(f1)
+    ) >= 0 ? f0 : f1;
+}
+
+
+
+/* Incrementa o contador de um aeroporto na hash table */
+static void increment_airport(GHashTable *arrivals, const char *airport) {
+    int *count = g_hash_table_lookup(arrivals, airport);
+
+    if (!count) {
+        count = malloc(sizeof(int));
+        *count = 0;
+        g_hash_table_insert(arrivals, g_strdup(airport), count);
+    }
+
+    (*count)++;
+}
 
 static void count_arrivals(gpointer value, gpointer user_data) {
     Reservation r = value;
@@ -29,38 +67,30 @@ static void count_arrivals(gpointer value, gpointer user_data) {
     if (strcmp(get_passenger_nationality(p), ctx->nationality) != 0)
         return;
 
-    /* escolher voo final */
-    const char *flight_id = NULL;
-    const char *fid1 = get_reservation_flight_id(r, 1);
-    const char *fid0 = get_reservation_flight_id(r, 0);
+    Flight final = get_final_flight(ctx->fm, r);
+    if (!final) return;
 
-    if (fid1 && fid1[0] != '\0')
-        flight_id = fid1;
-    else if (fid0 && fid0[0] != '\0')
-        flight_id = fid0;
-    else
-        return;
+    const char *airport = get_flight_dest(final);
+    if (!airport) return;
 
-    Flight f = flights_manager_get(ctx->fm, flight_id);
-    if (!f) return;
-
-    if (get_flight_status(f) == Cancelled)
-        return;
-
-    const char *dest = get_flight_dest(f);
-    if (!dest) return;
-
-    int *cnt = g_hash_table_lookup(ctx->arrivals, dest);
-    if (cnt) {
-        (*cnt)++;
-    } else {
-        int *c = malloc(sizeof(int));
-        *c = 1;
-        g_hash_table_insert(ctx->arrivals, g_strdup(dest), c);
-    }
+    increment_airport(ctx->arrivals, airport);
 }
 
 
+static void select_best_airport(gpointer key, gpointer value, gpointer user_data) {
+    const char *airport = key;
+    int count = *(int *)value;
+    BestAirport *best = user_data;
+
+    if (!best->best_code ||
+        count > best->best_count ||
+        (count == best->best_count &&
+         strcmp(airport, best->best_code) < 0)) {
+
+        best->best_code = airport;
+        best->best_count = count;
+    }
+}
 
 void q6(PassengersManager pm,
             FlightsManager fm,
@@ -78,37 +108,25 @@ void q6(PassengersManager pm,
 
     Q6Ctx ctx = { arrivals, pm, fm, nationality };
 
-    GList *reservations = reservations_manager_get_all(rm);
-    for (GList *l = reservations; l; l = l->next) {
-        count_arrivals(l->data, &ctx);
+    GList *list = reservations_manager_get_all(rm);
+
+    for (GList *l = list; l != NULL; l = l->next) {
+    Reservation r = l->data;
+    count_arrivals(r, &ctx);
     }
 
-    char best[4] = "";
-    int max = 0;
+    g_list_free(list);
 
-    GHashTableIter iter;
-    gpointer key, value;
-    g_hash_table_iter_init(&iter, arrivals);
 
-    while (g_hash_table_iter_next(&iter, &key, &value)) {
-        char *code = key;
-        int count = *(int *)value;
+    BestAirport best = { NULL, 0 };
+    g_hash_table_foreach(arrivals, select_best_airport, &best);
 
-        if (count > max ||
-            (count == max &&
-             (best[0] == '\0' || strcmp(code, best) < 0))) {
-            strncpy(best, code, 3);
-            best[3] = '\0';
-            max = count;
-        }
-    }
-
-    if (best[0] == '\0') {
-        fprintf(out, "\n");
+    if (best.best_code) {
+        fprintf(out, "%s;%d\n", best.best_code, best.best_count);
     } else {
-        char sep = get_output_separator();
-        fprintf(out, "%s%c%d\n", best, sep, max);
+        fprintf(out, "\n");
     }
-    g_list_free(reservations);
+
     g_hash_table_destroy(arrivals);
 }
+

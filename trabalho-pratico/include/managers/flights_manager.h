@@ -61,4 +61,10 @@ int flights_manager_count(FlightsManager m);
  */
 GHashTable *flights_manager_get_table(FlightsManager m);
 
+const char *get_flight_destination(Flight f);
+
+
+const char *get_flight_schedule_arrival_date(Flight f);
+
+
 #endif

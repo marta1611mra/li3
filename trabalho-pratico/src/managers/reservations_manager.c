@@ -27,9 +27,18 @@ void reservations_manager_destroy(ReservationsManager m) {
 }
 
 // Adiciona uma reserva ao gestor.
-void reservations_manager_add(ReservationsManager m, Reservation r) {
-    g_hash_table_insert(m->reservations, strdup(get_reservation_id(r)), r);
+void reservations_manager_add(ReservationsManager rm, Reservation r) {
+    const char *id = get_reservation_id(r);
+
+    Reservation old = g_hash_table_lookup(rm->reservations, id);
+    if (old) {
+        destroy_reservation(old);
+        g_hash_table_remove(rm->reservations, id);
+    }
+
+    g_hash_table_insert(rm->reservations, g_strdup(id), r);
 }
+
 
 // Obtém uma reserva pelo seu ID.
 Reservation reservations_manager_get(ReservationsManager m, const char *id) {

@@ -112,9 +112,17 @@ void parse_reservations(Dataset d, const char *data_path) {
                 token = strtok(NULL, ",");
             }
         }
+            bool valid_ids = true;
+            for (int i = 0; i < num_ids; i++) {
+            if (!validate_flight_id(flight_id[i])) {
+            fprintf(ferror, "%s", line);
+            valid_ids = false;
+            break;
+            }
+            }
+            if (!valid_ids) continue;
 
         if (num_ids == 0) {
-            fprintf(stderr, "não encontrou flight_id em %s\n", flight_list);
             fprintf(ferror, "%s", line);
             continue;
         }
