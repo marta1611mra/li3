@@ -165,7 +165,7 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
         total_cmds ? (100.0 * total_correct / total_cmds) : 0.0);
 
 
-    for (int q = 1; q <= 7; q++) {
+    for (int q = 1; q <= 6; q++) {
         if (count_q[q] > 0)
             printf("Query %d: média = %.6f s  (%d comandos)\n",
                    q, sum_q[q] / count_q[q], count_q[q]);
