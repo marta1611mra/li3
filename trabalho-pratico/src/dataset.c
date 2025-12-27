@@ -30,6 +30,8 @@ static void calculate_week_sunday(const char *date, char out[11]) {
 
     tm.tm_year -= 1900;
     tm.tm_mon  -= 1;
+    
+    tm.tm_isdst = -1;
 
     mktime(&tm);
 
@@ -168,7 +170,7 @@ void dataset_update_q3(Dataset d,
                         GINT_TO_POINTER(count));
 }
 
-/* ===== QUERY 4  ===== */
+/* ===== QUERY 4 ===== */
 
 void dataset_add_q4_data(Dataset d,
                          const char *document,

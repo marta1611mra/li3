@@ -9,7 +9,7 @@
 #include <ctype.h>
 #include <glib.h>
 
-// Lê e processa o ficheiro reservations.csv.
+// Lê e processa o ficheiro reservations.csv 
 void parse_reservations(Dataset d, const char *data_path) {
     char clean_path[512];
     strcpy(clean_path, data_path);
@@ -25,6 +25,9 @@ void parse_reservations(Dataset d, const char *data_path) {
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
     printf("A ler ficheiro: %s\n", path);
+    
+    // Buffer de I/O maior
+    setvbuf(f, NULL, _IOFBF, 65536);
 
     exist_result();
     FILE *ferror = fopen("resultados/reservations_errors.csv", "w");
@@ -38,7 +41,7 @@ void parse_reservations(Dataset d, const char *data_path) {
     ReservationsManager rm = dataset_get_reservations(d);
     AirportsManager am = dataset_get_airports(d);
 
-    char line[2048];
+    char line[16384];  
     while (fgets(line, sizeof(line), f)) {
 
         char reservation_id[21] = "";
@@ -48,11 +51,11 @@ void parse_reservations(Dataset d, const char *data_path) {
         char price_str[32] = "";
         char extra_luggage_str[8] = "";
         char priority_boarding_str[8] = "";
-        char qr_code[4096] = "";
+        char qr_code[512] = "";  // Reduzido de 4096 para 512 (não é usado)
 
-        // Parsing correto: reservation_id, flight_list, document_number, seat, price, extra_luggage, priority_boarding, qr_code
+        // Parsing correto
         int n = sscanf(line,
-            "\"%20[^\"]\",\"%127[^\"]\",\"%15[^\"]\",\"%15[^\"]\",\"%31[^\"]\",\"%7[^\"]\",\"%7[^\"]\",\"%4095[^\"]\"",
+            "\"%20[^\"]\",\"%127[^\"]\",\"%15[^\"]\",\"%15[^\"]\",\"%31[^\"]\",\"%7[^\"]\",\"%7[^\"]\",\"%511[^\"]\"",
             reservation_id, flight_list, document_number, seat_str,
             price_str, extra_luggage_str, priority_boarding_str, qr_code);
 
@@ -67,6 +70,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         remove_quotes(price_str); remove_spc(price_str);
         remove_quotes(extra_luggage_str); remove_spc(extra_luggage_str);
         remove_quotes(priority_boarding_str); remove_spc(priority_boarding_str);
+        // qr_code não precisa de limpeza (não é usado)
 
         reservation_id[strcspn(reservation_id, "\r\n")] = 0;
         flight_list[strcspn(flight_list, "\r\n")] = 0;
@@ -176,6 +180,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         luggage[0] = extra_luggage; luggage[1] = 0;
         priority[0] = priority_boarding; priority[1] = 0;
 
+        // Passar string vazia para qr_code (não é usado)
         Reservation r = create_reservation(
             reservation_id,
             flight_id,
@@ -184,7 +189,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             prices,
             luggage,
             priority,
-            ""
+            ""  // qr_code vazio
         );
 
         if (!r) {

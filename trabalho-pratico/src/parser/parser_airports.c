@@ -9,9 +9,6 @@
 #include <ctype.h>
 #include <glib.h>
 
-
-
-
 // Lê e processa o ficheiro airports.csv.
 void parse_airports(Dataset d, const char *data_path) {
     // Normaliza o path removendo '/' no final
@@ -19,23 +16,32 @@ void parse_airports(Dataset d, const char *data_path) {
     strcpy(clean_path, data_path);
     size_t len = strlen(clean_path);
     while (len > 0 && clean_path[len - 1] == '/') {
-    clean_path[len - 1] = '\0';
-    len--;
+        clean_path[len - 1] = '\0';
+        len--;
     }
     char path[1024];
     snprintf(path, sizeof(path), "%s/airports.csv", clean_path);
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
+    
+    // Buffer de I/O 64KB para leitura mais rápida
+    setvbuf(f, NULL, _IOFBF, 65536);
+    
     printf("A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/airports_errors.csv", "w");
     if (!ferror) { perror("resultados/airports_errors.csv"); fclose(f); return; }
+    
+    // Buffer de I/O 64KB para escrita mais rápida
+    setvbuf(ferror, NULL, _IOFBF, 65536);
 
     wcsv_header(f, ferror);
 
-    char line[1500];
+    // Buffer de linha 16KB para suportar linhas maiores
+    char line[16384];
+    
     while (fgets(line, sizeof(line), f)) {
         char code[4] = "", name[101] = "", city[101] = "", country[51] = "";
         char lat_str[17] = "", long_str[17] = "", icao[5] = "", type[31] = "";
@@ -61,7 +67,8 @@ void parse_airports(Dataset d, const char *data_path) {
 
         // Validação sintática
         if (!validate_airport_code(code) ||
-            !validate_latitude_longitude(lat_str, long_str) || !validate_airport_type(type) ||
+            !validate_latitude_longitude(lat_str, long_str) || 
+            !validate_airport_type(type) ||
             strlen(name) == 0) {
             fprintf(ferror, "%s", line);
             continue;
@@ -73,7 +80,11 @@ void parse_airports(Dataset d, const char *data_path) {
 
         // Criação do objeto Airport
         Airport a = create_airport(code, name, city, country, latitude, longitude, icao, type);
-        if (!a) {fprintf(stderr, "create_airport failed\n"); fprintf(ferror, "%s", line); continue; } 
+        if (!a) {
+            fprintf(stderr, "create_airport failed\n"); 
+            fprintf(ferror, "%s", line); 
+            continue; 
+        } 
     
         AirportsManager am = dataset_get_airports(d);
         airports_manager_add(am, a);
@@ -82,6 +93,3 @@ void parse_airports(Dataset d, const char *data_path) {
     fclose(f);
     fclose(ferror);
 }
-
-
-

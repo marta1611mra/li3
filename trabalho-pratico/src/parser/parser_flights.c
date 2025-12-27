@@ -25,18 +25,30 @@ void parse_flights(Dataset d, const char *data_path) {
 
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
+    
+    // Buffer de I/O 64KB
+    setvbuf(f, NULL, _IOFBF, 65536);
+    
     printf("A ler ficheiro: %s\n", path);
 
     exist_result();
     FILE *ferror = fopen("resultados/flights_errors.csv", "w");
     if (!ferror) { perror("resultados/flights_errors.csv"); fclose(f); return; }
+    
+    // Buffer de I/O 64KB para ferror
+    setvbuf(ferror, NULL, _IOFBF, 65536);
 
     wcsv_header(f, ferror);
 
-    char line[1500];
+    // Buffer de linha 16KB
+    char line[16384];
+    
     while (fgets(line, sizeof(line), f)) {
-        char flight_id[9] = "", departure[20] = "", actual_departure[20] = "", arrival[20] = "", actual_arrival[20] = "";
-        char gate[6] = "", origin[5] = "", destination[5] = "", aircraft_id[16] = "", airline[41] = "", tracking_url[101] = "", status_str[16] = "";
+        char flight_id[9] = "", departure[20] = "", actual_departure[20] = "";
+        char arrival[20] = "", actual_arrival[20] = "";
+        char gate[6] = "", origin[5] = "", destination[5] = "";
+        char aircraft_id[16] = "", airline[41] = "", tracking_url[101] = "";
+        char status_str[16] = "";
 
         int n = sscanf(line,
                 "\"%8[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%3[^\"]\",\"%15[^\"]\",\"%4[^\"]\",\"%4[^\"]\",\"%15[^\"]\",\"%40[^\"]\",\"%100[^\"]\"",
@@ -53,22 +65,28 @@ void parse_flights(Dataset d, const char *data_path) {
         
         flight_status status;
 
-        if (strcmp(status_str, "On Time") == 0 || strcmp(status_str, "OnTime") == 0) status = OnTime;
-        else if (strcmp(status_str, "Delayed") == 0) status = Delayed;
-        else if (strcmp(status_str, "Cancelled") == 0) status = Cancelled;
-        else { fprintf(ferror, "%s", line); continue; }
+        if (strcmp(status_str, "On Time") == 0 || strcmp(status_str, "OnTime") == 0) 
+            status = OnTime;
+        else if (strcmp(status_str, "Delayed") == 0) 
+            status = Delayed;
+        else if (strcmp(status_str, "Cancelled") == 0) 
+            status = Cancelled;
+        else { 
+            fprintf(ferror, "%s", line); 
+            continue; 
+        }
 
         AircraftsManager am = dataset_get_aircrafts(d);
 
         // Validação sintática e lógica
         bool synt_ok =
-        validate_flight_id(flight_id) &&
-        validate_datetime(departure) &&
-        validate_datetime(arrival) &&
-        validate_airport_code(origin) &&
-        validate_airport_code(destination) &&
-        validate_aircraft(aircraft_id, am) &&
-        validate_destination(origin, destination);
+            validate_flight_id(flight_id) &&
+            validate_datetime(departure) &&
+            validate_datetime(arrival) &&
+            validate_airport_code(origin) &&
+            validate_airport_code(destination) &&
+            validate_aircraft(aircraft_id, am) &&
+            validate_destination(origin, destination);
 
         if (status == Cancelled) {
             synt_ok = synt_ok &&
@@ -103,8 +121,6 @@ void parse_flights(Dataset d, const char *data_path) {
         if (status != Cancelled) {
             Aircraft a = aircrafts_manager_get(am, aircraft_id);
             if (a) {
-                // Assumindo que tens um get_aircraft_manufacturer no teu módulo aircrafts
-                // Se o nome da função for diferente, ajusta aqui
                 const char *manufacturer = get_aircraft_manufacturer(a);
                 dataset_update_q2(d, aircraft_id, manufacturer);
             }

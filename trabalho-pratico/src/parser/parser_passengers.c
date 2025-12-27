@@ -11,6 +11,7 @@
 
 
 // Lê e processa o ficheiro passengers.csv 
+// Remove parsing de campos não usados: phone, address, photo
 void parse_passengers(Dataset d, const char *data_path) {
     char clean_path[512];
     strcpy(clean_path, data_path);
@@ -26,6 +27,9 @@ void parse_passengers(Dataset d, const char *data_path) {
     FILE *f = fopen(path, "r");
     if (!f) { perror(path); return; }
     printf("A ler ficheiro: %s\n", path);
+    
+    // Buffer de I/O maior
+    setvbuf(f, NULL, _IOFBF, 65536);
 
     exist_result();
     FILE *ferror = fopen("resultados/passengers_errors.csv", "w");
@@ -36,10 +40,10 @@ void parse_passengers(Dataset d, const char *data_path) {
     // Obter manager uma única vez fora do loop
     PassengersManager pm = dataset_get_passengers(d);
 
-    char line[4096];
+    char line[16384];  // Buffer maior
     
     while (fgets(line, sizeof(line), f)) {
-        // Usar parsing manual mais eficiente
+        // Parsing APENAS dos campos usados: document_id, first_name, last_name, dob, nationality, gender, email
         char document_id[16] = "";
         char first_name[128] = "";
         char last_name[128] = "";
@@ -47,11 +51,13 @@ void parse_passengers(Dataset d, const char *data_path) {
         char nationality[64] = "";
         char gender[4] = "";
         char email[128] = "";
+        
+        // Campos ignorados (lidos mas descartados)
         char phone[32] = "";
         char address[256] = "";
         char photo[512] = "";
 
-        // Parsing com sscanf otimizado para CSV com aspas
+        // Parsing com sscanf
         int n = sscanf(line,
             "\"%15[^\"]\",\"%127[^\"]\",\"%127[^\"]\",\"%11[^\"]\",\"%63[^\"]\","
             "\"%3[^\"]\",\"%127[^\"]\",\"%31[^\"]\",\"%255[^\"]\",\"%511[^\"]\"",
@@ -63,7 +69,7 @@ void parse_passengers(Dataset d, const char *data_path) {
             continue;
         }
 
-        // Limpar apenas os campos necessários
+        // Limpar APENAS os campos usados (não limpar phone, address, photo)
         remove_quotes(document_id); remove_spc(document_id);
         remove_quotes(first_name); remove_spc(first_name);
         remove_quotes(last_name); remove_spc(last_name);
@@ -71,9 +77,6 @@ void parse_passengers(Dataset d, const char *data_path) {
         remove_quotes(nationality); remove_spc(nationality);
         remove_quotes(gender); remove_spc(gender);
         remove_quotes(email); remove_spc(email);
-        remove_quotes(phone); remove_spc(phone);
-        remove_quotes(address); remove_spc(address);
-        remove_quotes(photo); remove_spc(photo);
 
         // Remover newlines
         document_id[strcspn(document_id, "\r\n")] = 0;
@@ -83,11 +86,8 @@ void parse_passengers(Dataset d, const char *data_path) {
         nationality[strcspn(nationality, "\r\n")] = 0;
         gender[strcspn(gender, "\r\n")] = 0;
         email[strcspn(email, "\r\n")] = 0;
-        phone[strcspn(phone, "\r\n")] = 0;
-        address[strcspn(address, "\r\n")] = 0;
-        photo[strcspn(photo, "\r\n")] = 0;
 
-        // Validar na ordem mais eficiente (falhas rápidas primeiro)
+        // Validar na ordem mais eficiente
         if (!validate_gender(gender) ||
             !validate_document_number(document_id) ||
             !validate_date(dob) ||
@@ -96,16 +96,17 @@ void parse_passengers(Dataset d, const char *data_path) {
             continue;
         }
 
-        // Criar passageiro
+        // IMPORTANTE: Passar strings vazias para campos não usados
+        // Isto poupa memória se a struct os guardar
         Passenger p = create_passenger(document_id, first_name, last_name, dob,
-                                       nationality, gender, email, phone, address, photo);
-        
+                                       nationality, gender, email, 
+                                       "", "", "");  // phone, address, photo vazios
+
         if (!p) {
             fprintf(ferror, "%s", line);
             continue;
         }
 
-        // Usar manager já obtido
         passengers_manager_add(pm, p);
     }
 
