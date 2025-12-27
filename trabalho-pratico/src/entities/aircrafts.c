@@ -8,9 +8,9 @@ struct aircraft {
     char id[15];          // Identificação da aeronave (tail number).
     char manufacturer[50];// Fabricante da aeronave. 
     char model[50];       // Modelo da aeronave. 
-    int year;             // Ano de fabricação. 
-    int capacity;         // Capacidade máxima de passageiros. 
-    int range;            // Alcance máximo em km. 
+    //int year;             // Ano de fabricação. 
+    //int capacity;         // Capacidade máxima de passageiros. 
+    //int range;            // Alcance máximo em km. 
 };
 
 // Cria uma nova aeronave com os dados fornecidos.
@@ -21,9 +21,6 @@ Aircraft create_aircraft(const char *id, const char *manufacturer, const char *m
     strcpy(a->id, id);
     strcpy(a->manufacturer, manufacturer);
     strcpy(a->model, model);
-    a->year = year;
-    a->capacity = capacity;
-    a->range = range;
 
     return a;
 }
@@ -50,20 +47,4 @@ const char *get_aircraft_model(Aircraft a) {
     return a->model;
 }
 
-//Obtém o ano de fabricação da aeronave.
-int get_aircraft_year(Aircraft a) {
-    if (!a) return -1;
-    return a->year;
-}
 
-//Obtém a capacidade máxima da aeronave.
-int get_aircraft_capacity(Aircraft a) {
-    if (!a) return -1;
-    return a->capacity;
-}
-
-//Obtém o alcance máximo da aeronave.
-int get_aircraft_range(Aircraft a) {
-    if (!a) return -1;
-    return a->range;
-}

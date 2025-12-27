@@ -5,18 +5,18 @@
 
 
 struct flight {
-    char flight_id[8];           // Identificador do voo. 
+    char flight_id[9];           // Identificador do voo. 
     char departure[19];          // Partida planeada (YYYY-MM-DD HH:MM). 
     char actual_departure[19];   // Partida real (YYYY-MM-DD HH:MM ou "N/A").
-    char arrival[19];            // Chegada planeada (YYYY-MM-DD HH:MM). 
-    char actual_arrival[19];     // Chegada real (YYYY-MM-DD HH:MM ou "N/A"). 
-    char gate[6];                // Portão de embarque. 
+    //char arrival[19];            // Chegada planeada (YYYY-MM-DD HH:MM). 
+    //char actual_arrival[19];     // Chegada real (YYYY-MM-DD HH:MM ou "N/A"). 
+    //char gate[6];                // Portão de embarque. 
     flight_status status;        // Status do voo (OnTime, Delayed, Cancelled). 
     char origin[4];              // Código IATA do aeroporto de origem.
     char destination[4];         // Código IATA do aeroporto de destino. 
     char aircraft_id[15];        // ID da aeronave associada. 
     char airline[40];            // Companhia aérea. 
-    char tracking_url[100];      // URL de rastreamento do voo. 
+    //char tracking_url[100];      // URL de rastreamento do voo. 
 };
 
 //Cria um novo voo com os dados fornecidos.
@@ -27,17 +27,11 @@ Flight create_flight(const char *flight_id, const char *departure, const char *a
     strcpy(f->flight_id, flight_id);
     strcpy(f->departure, departure);
     strcpy(f->actual_departure, actual_departure);
-    strcpy(f->arrival, arrival);
-    strcpy(f->actual_arrival, actual_arrival);
-    strncpy(f->gate, gate, sizeof(f->gate)-1);
-    f->gate[sizeof(f->gate)-1] = '\0';  
     f->status = status;
     strcpy(f->origin, origin);
     strcpy(f->destination, destination);
     strcpy(f->aircraft_id, aircraft_id);
     strcpy(f->airline, airline);
-    strcpy(f->tracking_url, tracking_url);
-
     return f;
 }
 
@@ -74,21 +68,6 @@ const char *get_flight_dep(Flight f) {
 //Obtém a hora de partida real do voo.
 const char *get_flight_actual_dep(Flight f) { 
     return f->actual_departure; 
-}
-
-//Obtém a hora de chegada planeada do voo.
-const char *get_flight_arrival(Flight f) { 
-    return f->arrival; 
-}
-
-// Obtém a hora de chegada real do voo.
-const char *get_flight_actual_ar(Flight f) { 
-    return f->actual_arrival; 
-}
-
-// Obtém o portão do voo.
-const char *get_flight_gate(Flight f) { 
-    return f->gate; 
 }
 
 //Obtém o ID da aeronave associada ao voo.

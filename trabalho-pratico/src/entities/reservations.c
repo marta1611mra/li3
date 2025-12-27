@@ -7,11 +7,11 @@ struct reservation {
     char reservation_id[11];       /**Número da reserva. */
     char flight_id[2][10];         /**Identificadores dos voos associados (máx. 2). */
     char document_number[10];      /**Número do documento de identificação do passageiro. */
-    int seat[2];                   /**Números dos assentos reservados para cada voo. */
-    double price[7];               /**Preço da reserva para cada voo. */
-    int extra_luggage[5];          /**Indica se a reserva inclui bagagem extra (1=true, 0=false). */
-    int priority_boarding[5];      /**Indica se a reserva inclui embarque prioritário (1=true, 0=false). */
-    char *qr_code;            /**QR code associado à reserva. */
+    //int seat[2];                   /**Números dos assentos reservados para cada voo. */
+    double price[2];               /**Preço da reserva para cada voo. */
+    //int extra_luggage[2];          /**Indica se a reserva inclui bagagem extra (1=true, 0=false). */
+    //int priority_boarding[2];      /**Indica se a reserva inclui embarque prioritário (1=true, 0=false). */
+    //char *qr_code;            /**QR code associado à reserva. */
 };
 
 
@@ -22,14 +22,10 @@ Reservation create_reservation(const char *reservation_id, const char flight_id[
 
     strcpy(r->reservation_id, reservation_id);
     strcpy(r->document_number, document_number);
-    r->qr_code =strdup(qr_code);
 
     for (int i = 0; i < 2; i++) {
         strcpy(r->flight_id[i], flight_id[i]);
-        r->seat[i] = seat[i];
         r->price[i] = price[i];
-        r->extra_luggage[i] = extra_luggage[i];
-        r->priority_boarding[i] = priority_boarding[i];
     }
 
     return r;
@@ -38,7 +34,6 @@ Reservation create_reservation(const char *reservation_id, const char flight_id[
 // Liberta a memória associada a uma reserva.
 void destroy_reservation(Reservation r) {
     if (!r) return;
-    free(r->qr_code);
     free(r);
 }
 

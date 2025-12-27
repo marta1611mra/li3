@@ -9,10 +9,13 @@ struct airport {
     char name[100];     // Nome do aeroporto. 
     char city[100];     // Cidade onde o aeroporto está localizado. 
     char country[50];   // País onde o aeroporto está localizado.
-    double latitude;    // Latitude do aeroporto. 
-    double longitude;   // Longitude do aeroporto. 
-    char icao[5];       // Código ICAO (4 letras). 
-    char type[30];      // Tipo do aeroporto. 
+    //double latitude;    // Latitude do aeroporto. 
+    //double longitude;   // Longitude do aeroporto. 
+    //char icao[5];       // Código ICAO (4 letras). 
+    char type[30];      // Tipo do aeroporto.
+    // NOVOS CAMPOS PARA OTIMIZAÇÃO:
+    int total_passengers_arrival;
+    int total_passengers_departure; 
 };
 
 // Cria um novo aeroporto com os dados fornecidos.
@@ -24,10 +27,9 @@ Airport create_airport(const char *code, const char *name, const char *city, con
     strcpy(a->name, name);
     strcpy(a->city, city);
     strcpy(a->country, country);
-    a->latitude = latitude;
-    a->longitude = longitude;
-    strcpy(a->icao, icao);
     strcpy(a->type, type);
+    a->total_passengers_arrival = 0;
+    a->total_passengers_departure = 0;
 
     return a;
 }
@@ -60,4 +62,20 @@ const char *get_airport_country(Airport a) {
 //Obtém o tipo do aeroporto.
 const char *get_airport_type(Airport a) {
     return a->type;
+}
+
+void airport_add_arrival_passengers(Airport a, int count) {
+    if (a) a->total_passengers_arrival += count;
+}
+
+void airport_add_departure_passengers(Airport a, int count) {
+    if (a) a->total_passengers_departure += count;
+}
+
+int get_airport_arrivals_count(Airport a) {
+    return a ? a->total_passengers_arrival : 0;
+}
+
+int get_airport_departures_count(Airport a) {
+    return a ? a->total_passengers_departure : 0;
 }

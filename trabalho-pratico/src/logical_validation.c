@@ -18,17 +18,7 @@ bool validate_destination(const char *orig, const char *dest) {
 // Função auxiliar para comparar duas datas no formato "YYYY-MM-DD HH:MM".
 static int compare_datetimes(const char *dt1, const char *dt2) {
     if (!dt1 || !dt2) return 0;
-    int y1, m1, d1, h1, min1;
-    int y2, m2, d2, h2, min2;
-
-    if (sscanf(dt1, "%d-%d-%d %d:%d", &y1, &m1, &d1, &h1, &min1) != 5) return 0;
-    if (sscanf(dt2, "%d-%d-%d %d:%d", &y2, &m2, &d2, &h2, &min2) != 5) return 0;
-
-    if (y1 != y2) return y1 - y2;
-    if (m1 != m2) return m1 - m2;
-    if (d1 != d2) return d1 - d2;
-    if (h1 != h2) return h1 - h2;
-    return min1 - min2;
+    return strcmp(dt1, dt2);
 }
 
 // Valida coerência entre horários planejados e reais de um voo.
@@ -42,10 +32,11 @@ bool validate_arrival(const char *departure,
     if (status == Cancelled) return true;
     if (!departure || !actual_departure || !arrival || !actual_arrival)
         return false;
-    if (strcmp(actual_departure, "N/A") == 0 || strcmp(actual_arrival, "N/A") == 0)
-    return false;
-    if (compare_datetimes(actual_arrival, actual_departure) < 0)
-    return false;
+    if (compare_datetimes(actual_departure, departure) < 0) return false;
+    if (compare_datetimes(actual_arrival, arrival) < 0) return false;
+
+    // Lógica extra: Chegada Real tem de ser depois da Partida Real
+    if (compare_datetimes(actual_arrival, actual_departure) < 0) return false;
     return true;
 }
 

@@ -77,4 +77,9 @@ const char *get_airport_country(Airport a);
  */
 const char *get_airport_type(Airport a);
 
+void airport_add_arrival_passengers(Airport a, int count);
+void airport_add_departure_passengers(Airport a, int count);
+int get_airport_arrivals_count(Airport a);
+int get_airport_departures_count(Airport a);
+
 #endif

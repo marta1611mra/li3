@@ -74,36 +74,5 @@ const char *get_passenger_dob(Passenger p);
  */
 const char *get_passenger_nationality(Passenger p);
 
-/**
- * @brief Obtém o gênero do passageiro.
- *
- * @param p Passenger.
- * @return String com o gênero.
- */
-const char *get_passenger_gender(Passenger p);  
-
-/**
- * @brief Obtém o email do passageiro.
- *
- * @param p Passenger.
- * @return String com o email.
- */
-const char *get_passenger_email(Passenger p);
-
-/**
- * @brief Obtém o telefone do passageiro.
- *
- * @param p Passenger.
- * @return String com o telefone.
- */
-const char *get_passenger_phone(Passenger p);
-
-/**
- * @brief Obtém o endereço do passageiro.
- *
- * @param p Passenger.
- * @return String com o endereço.
- */
-const char *get_passenger_address(Passenger p);
 
 #endif

@@ -11,13 +11,16 @@ void q6(Dataset d, const char *nationality, FILE *out) {
 
     // 1. Obter o índice principal usando o GETTER (sem d->...)
     GHashTable *q6_index = dataset_get_q6_index(d);
-    if (!q6_index) return;
+    if (!q6_index) {
+        fprintf(out, "\n");
+        return;}
 
     // 2. Procurar a tabela de aeroportos para essa nacionalidade
     GHashTable *airports_map = g_hash_table_lookup(q6_index, nationality);
 
     // Se não houver dados para a nacionalidade, não faz nada (linha vazia implícita)
     if (!airports_map || g_hash_table_size(airports_map) == 0) {
+        fprintf(out, "\n");
         return;
     }
 
@@ -49,5 +52,7 @@ void q6(Dataset d, const char *nationality, FILE *out) {
     // 4. Escrever o resultado: Code;Count
     if (best_airport) {
         fprintf(out, "%s;%d\n", best_airport, max_count);
+    }else{
+        fprintf(out, "\n");
     }
 }

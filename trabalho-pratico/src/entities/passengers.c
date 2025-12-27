@@ -11,11 +11,11 @@ struct passenger{
     char last_name[30];
     char dob[11];
     char nationality[20];
-    char gender[10];
-    char email[50];
-    char phone[15];
-    char address[50];
-    char *photo;
+    //char gender[10];
+    //char email[50];
+    //char phone[15];
+    //char address[50];
+    //char *photo;
 
 };
 
@@ -32,11 +32,6 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
     if (last_name)    strncpy(p->last_name,   last_name,   sizeof(p->last_name) - 1);
     if (dob)          strncpy(p->dob,         dob,         sizeof(p->dob) - 1);
     if (nationality)  strncpy(p->nationality, nationality, sizeof(p->nationality) - 1);
-    if (gender)       strncpy(p->gender,      gender,      sizeof(p->gender) - 1);
-    if (email)        strncpy(p->email,       email,       sizeof(p->email) - 1);
-    if (phone)        strncpy(p->phone,       phone,       sizeof(p->phone) - 1);
-    if (address)      strncpy(p->address,     address,     sizeof(p->address) - 1);
-    if (photo)        p->photo=strdup(photo);
 
     return p;
 }
@@ -45,7 +40,6 @@ Passenger create_passenger(const char *document_id, const char *first_name, cons
 // Liberta a memória associada a um passageiro.
 void destroy_passenger(Passenger p) {
     if (!p) return;
-    free(p->photo);
         g_free(p);
 }
 
@@ -70,19 +64,3 @@ const char *get_passenger_dob(Passenger p) {
 const char *get_passenger_nationality(Passenger p) { 
     return p->nationality;
 }
-// Obtém o gênero do passageiro.
-const char *get_passenger_gender(Passenger p) { 
-    return p->gender;
-}
-// Obtém o email do passageiro.
-const char *get_passenger_email(Passenger p) { 
-    return p->email;
-}
-// Obtém o telefone do passageiro.
-const char *get_passenger_phone(Passenger p) { 
-    return p->phone;
-}
-// Obtém o endereço do passageiro.
-const char *get_passenger_address(Passenger p) { 
-    return p->address;
-} 

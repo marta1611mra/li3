@@ -7,39 +7,52 @@
 
 // Valida uma data no formato yyyy-mm-dd.
 
-bool validate_date(const char *date){
-    int y,m,d;
-    if (!date || strlen (date) != 10) return false; 
-    if (sscanf(date,"%4d-%2d-%2d",&y,&m,&d) != 3) return false; 
-    if (m < 1 || m > 12 || d < 1 || d > 31) return false; 
-    if (y > 2025 || (y == 2025 && m > 9)) return false; 
-    for (int i = 0; i < 10; i++) {
-        if (i == 4 || i == 7) {
-            if (date[i] != '-') return false; 
-        } else {
-            if (!isdigit((unsigned char)date[i])) return false; 
-        }
+bool validate_date(const char *date) {
+    // 1. Validar tamanho e nulidade [cite: 365]
+    if (!date || strlen(date) != 10) return false;
+
+    // 2. Validar separadores '-' nas posições certas (rápido e essencial) [cite: 365]
+    if (date[4] != '-' || date[7] != '-') return false;
+
+    int y, m, d;
+
+    // 3. O sscanf faz o parsing. Se não conseguir ler 3 inteiros, retorna false.
+    if (sscanf(date, "%4d-%2d-%2d", &y, &m, &d) != 3) return false;
+
+    // 4. Regra base: Mês 1-12 e Dia 1-31 [cite: 367]
+    if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+
+    // 5. Regra da Data Atual (Limite: 2025-09-30) [cite: 269, 370]
+    if (y > 2025) return false;
+    if (y == 2025) {
+        if (m > 9) return false;            // Meses futuros (Out, Nov, Dez)
+        if (m == 9 && d > 30) return false; // Dias futuros em Setembro
     }
+
     return true;
 }
 
 // Valida um datetime no formato yyyy-mm-dd hh:mm.
-bool validate_datetime(const char *datetime){
-    int y, m, d, h, min; 
-    if (!datetime || strlen(datetime) != 16) return false; 
-    if (sscanf(datetime, "%4d-%2d-%2d %2d:%2d", &y, &m, &d, &h, &min) != 5) return false; 
-    if (m < 1 || m > 12 || d < 1 || d > 31) return false; 
+bool validate_datetime(const char *datetime) {
+    if (!datetime || strlen(datetime) != 16) return false;
+    
+    // Verifica separadores
+    if (datetime[4] != '-' || datetime[7] != '-' || 
+        datetime[10] != ' ' || datetime[13] != ':') return false;
+
+    int y, m, d, h, min;
+    if (sscanf(datetime, "%4d-%2d-%2d %2d:%2d", &y, &m, &d, &h, &min) != 5) return false;
+
+    if (m < 1 || m > 12 || d < 1 || d > 31) return false;
     if (h < 0 || h > 23 || min < 0 || min > 59) return false;
-    if (y > 2025 || (y == 2025 && m > 9)) return false; 
-    for (int i = 0; i < 16; i++) {
-        if (i == 4 || i == 7) {
-            if (datetime[i] != '-') return false; 
-        } else if (i == 10) {
-            if (datetime[i] != ' ') return false; 
-        } else if (i == 13) {
-            if (datetime[i] != ':') return false; 
-        } else if (!isdigit((unsigned char)datetime[i])) return false; 
+
+    // Data Atual: 2025/09/30
+    if (y > 2025) return false;
+    if (y == 2025) {
+        if (m > 9) return false;
+        if (m == 9 && d > 30) return false;
     }
+
     return true;
 }
 

@@ -8,8 +8,6 @@
 // Estrutura que representa um gestor de aeroportos.
 struct airports_manager {
     GHashTable *airports; // Tabela hash com chave = código do aeroporto e valor = ponteiro para Airport. 
-    GHashTable *arrivals;
-    GHashTable *departures;
 };
 
 
@@ -19,8 +17,6 @@ AirportsManager airports_manager_create() {
     if (!m) return NULL;
 
     m->airports = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify)destroy_airport);
-    m->arrivals = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
-    m->departures = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
     return m;
 }
 
@@ -29,8 +25,6 @@ AirportsManager airports_manager_create() {
 void airports_manager_destroy(AirportsManager m) {
     if (!m) return;
     g_hash_table_destroy(m->airports);
-    g_hash_table_destroy(m->arrivals);
-    g_hash_table_destroy(m->departures);
     free(m);
 }
 
@@ -41,14 +35,6 @@ void airports_manager_add(AirportsManager m, Airport a) {
     
     const char *code = get_airport_code(a);
     g_hash_table_insert(m->airports, strdup(code), a);
-
-    int *arr = malloc(sizeof(int));
-    int *dep = malloc(sizeof(int));
-    *arr = 0;
-    *dep = 0;
-
-    g_hash_table_insert(m->arrivals, strdup(code), arr);
-    g_hash_table_insert(m->departures, strdup(code), dep);
 }
 
 
@@ -63,25 +49,36 @@ int airports_manager_count(AirportsManager m) {
 }
 
 void airports_manager_arrival(AirportsManager m, const char *code, int passengers) {
-    if (!m || !code) return;
-    int *val = g_hash_table_lookup(m->arrivals, code);
-    if (val) *val += passengers;
+Airport a = airports_manager_get(m, code);
+    if (a) airport_add_arrival_passengers(a, passengers);
 }
 
 void airports_manager_departure(AirportsManager m, const char *code, int passengers) {
-    if (!m || !code) return;
-    int *val = g_hash_table_lookup(m->departures, code);
-    if (val) *val += passengers;
+Airport a = airports_manager_get(m, code);
+    if (a) airport_add_departure_passengers(a, passengers);
 }
 
+
+
+// Obtém o total de chegadas de um aeroporto
 int airports_manager_get_arrivals(AirportsManager m, const char *code) {
-    if (!m || !code) return 0;
-    int *val = g_hash_table_lookup(m->arrivals, code);
-    return val ? *val : 0;
+    // 1. Procura o aeroporto na tabela principal
+    Airport a = g_hash_table_lookup(m->airports, code);
+    
+    // 2. Se o aeroporto não existir, retorna 0
+    if (!a) return 0;
+    
+    // 3. Pede o valor à entidade (usando a função nova que criaste no airports.c)
+    return get_airport_arrivals_count(a);
 }
 
+// Obtém o total de partidas de um aeroporto
 int airports_manager_get_departures(AirportsManager m, const char *code) {
-    if (!m || !code) return 0;
-    int *val = g_hash_table_lookup(m->departures, code);
-    return val ? *val : 0;
+    // 1. Procura o aeroporto na tabela principal
+    Airport a = g_hash_table_lookup(m->airports, code);
+    
+    if (!a) return 0;
+    
+    // 2. Pede o valor à entidade
+    return get_airport_departures_count(a);
 }

@@ -98,6 +98,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             fprintf(ferror, "%s", line);
             continue;
         }
+        
 
         // Extrair flight IDs 
         char flight_id[2][10] = {{0}};
@@ -126,6 +127,9 @@ void parse_reservations(Dataset d, const char *data_path) {
             char *quote = strchr(token, '\'');
             if (quote) *quote = '\0';
 
+            size_t tlen = strlen(token);
+            while(tlen > 0 && isspace(token[tlen-1])) token[--tlen] = '\0';
+
             strncpy(flight_id[num_ids], token, 9);
             flight_id[num_ids][9] = '\0';
             num_ids++;
@@ -142,8 +146,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         Flight f_first = flights_manager_get(fm, flight_id[0]);
         Flight f_last = (num_ids == 2) ? flights_manager_get(fm, flight_id[1]) : f_first;
 
-        // Validar voos
-        if (!validate_flight_id(flight_id[0]) || !f_first) {
+        if (!f_first || !validate_flight_id(flight_id[0])) {
             fprintf(ferror, "%s", line);
             continue;
         }
@@ -153,8 +156,10 @@ void parse_reservations(Dataset d, const char *data_path) {
                 fprintf(ferror, "%s", line);
                 continue;
             }
-            // Validação lógica: destino do primeiro = origem do segundo
-            if (strcmp(get_flight_dest(f_first), get_flight_orig(f_last)) != 0) {
+            // Validação de escala
+            const char *dest1 = get_flight_dest(f_first);
+            const char *orig2 = get_flight_orig(f_last);
+            if (!dest1 || !orig2 || strcmp(dest1, orig2) != 0) {
                 fprintf(ferror, "%s", line);
                 continue;
             }
@@ -163,22 +168,10 @@ void parse_reservations(Dataset d, const char *data_path) {
         int extra_luggage = (strcmp(extra_luggage_str, "true") == 0);
         int priority_boarding = (strcmp(priority_boarding_str, "true") == 0);
 
-        // Criar estrutura mínima de reserva 
-        int *seats = malloc(2 * sizeof(int));
-        double *prices = malloc(2 * sizeof(double));
-        int *luggage = malloc(2 * sizeof(int));
-        int *priority = malloc(2 * sizeof(int));
-
-        if (!seats || !prices || !luggage || !priority) {
-            free(seats); free(prices); free(luggage); free(priority);
-            fprintf(ferror, "%s", line);
-            continue;
-        }
-
-        seats[0] = 0; seats[1] = 0;
-        prices[0] = price; prices[1] = 0.0;
-        luggage[0] = extra_luggage; luggage[1] = 0;
-        priority[0] = priority_boarding; priority[1] = 0;
+        int seats[2] = {0, 0};
+        double prices[2] = {price, 0.0}; 
+        int luggage[2] = {extra_luggage, 0};
+        int priority[2] = {priority_boarding, 0};
 
         // Passar string vazia para qr_code (não é usado)
         Reservation r = create_reservation(
@@ -193,7 +186,6 @@ void parse_reservations(Dataset d, const char *data_path) {
         );
 
         if (!r) {
-            free(seats); free(prices); free(luggage); free(priority);
             fprintf(ferror, "%s", line);
             continue;
         }
@@ -209,10 +201,19 @@ void parse_reservations(Dataset d, const char *data_path) {
             const char *nat = get_passenger_nationality(p);
             
             // Q6: Atualizar índice de nacionalidade -> aeroporto de destino
-            if (nat && *nat && get_flight_status(f_last) != Cancelled) {
-                const char *dest = get_flight_dest(f_last);
-                if (dest && *dest) {
-                    dataset_update_q6(d, nat, dest);
+            if (nat && *nat) {
+                // Voo 1: Destino
+                if (get_flight_status(f_first) != Cancelled) {
+                    const char *dest1 = get_flight_dest(f_first);
+                    if (dest1 && *dest1) dataset_update_q6(d, nat, dest1);
+                }
+
+                // Voo 2: Destino (apenas se existir e for diferente)
+                if (num_ids == 2 && f_last != f_first) {
+                    if (get_flight_status(f_last) != Cancelled) {
+                        const char *dest2 = get_flight_dest(f_last);
+                        if (dest2 && *dest2) dataset_update_q6(d, nat, dest2);
+                    }
                 }
             }
 

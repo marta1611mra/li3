@@ -98,29 +98,6 @@ const char *get_flight_dep(Flight f);
  */
 const char *get_flight_actual_dep(Flight f);
 
-/**
- * @brief Obtém a hora de chegada planeada.
- *
- * @param f Flight.
- * @return String com a hora de chegada planeada (YYYY-MM-DD HH:MM).
- */
-const char *get_flight_arrival(Flight f);
-
-/**
- * @brief Obtém a hora de chegada real.
- *
- * @param f Flight.
- * @return String com a hora de chegada real (YYYY-MM-DD HH:MM ou "N/A").
- */
-const char *get_flight_actual_ar(Flight f);
-
-/**
- * @brief Obtém o portão de embarque do voo.
- *
- * @param f Flight.
- * @return String com o portão de embarque.
- */
-const char *get_flight_gate(Flight f);
 
 /**
  * @brief Obtém o ID da aeronave utilizada no voo.

@@ -58,29 +58,6 @@ const char *get_aircraft_manufacturer(Aircraft a);
  */
 const char *get_aircraft_model(Aircraft a);
 
-/**
- * @brief Obtém o ano de fabrico da aeronave.
- *
- * @param a Aircraft.
- * @return Ano de fabrico.
- */
-int get_aircraft_year(Aircraft a);
-
-/**
- * @brief Obtém a capacidade máxima de passageiros.
- *
- * @param a Aircraft.
- * @return Capacidade em número de passageiros.
- */
-int get_aircraft_capacity(Aircraft a);
-
-/**
- * @brief Obtém o alcance máximo da aeronave.
- *
- * @param a Aircraft.
- * @return Alcance em km.
- */
-int get_aircraft_range(Aircraft a);
 
 
 #endif

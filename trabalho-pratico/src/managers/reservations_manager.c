@@ -33,7 +33,7 @@ void reservations_manager_add(ReservationsManager rm, Reservation r) {
     const char *id = get_reservation_id(r);
     if (!id) return;
 
-    g_hash_table_replace(rm->reservations, g_strdup(id), r);
+    g_hash_table_replace(rm->reservations,strdup(id), r);
 }
 
 
