@@ -1,6 +1,6 @@
 #ifndef DATASET_H
 #define DATASET_H
-
+#include <glib.h>
 #include "managers/airports_manager.h"
 #include "managers/aircrafts_manager.h"
 #include "managers/flights_manager.h"
@@ -8,77 +8,175 @@
 #include "managers/reservations_manager.h"
 
 /**
- * @brief Opaque pointer para a estrutura Dataset.
+ * @struct dataset
+ * @brief Estrutura opaca que representa o Dataset.
  *
- * Representa o conjunto de dados completo do sistema,
- * contendo todos os managers (airports, aircrafts, flights, passengers e reservations).
+ * A definição interna encontra-se em dataset.c.
  */
 typedef struct dataset *Dataset;
 
 /**
- * @brief Cria um novo Dataset.
+ * @brief Cria e inicializa um novo Dataset.
  *
- * Inicializa todos os managers internos e retorna um ponteiro para o Dataset.
+ * Inicializa todos os managers e os índices auxiliares
+ * necessários para as queries.
  *
- * @return Ponteiro para o Dataset criado. NULL se falhar a alocação.
+ * @return Dataset inicializado ou NULL em caso de erro.
  */
 Dataset dataset_create(void);
 
-GHashTable *dataset_get_q6_index(Dataset d); 
-GHashTable *dataset_get_q2_index(Dataset d);
-
-void dataset_update_q2(Dataset d, const char *aircraft_id, const char *manufacturer);
-
-void dataset_build_q6_index(Dataset d);
-
-void dataset_update_q6(Dataset d, const char *nationality, const char *airport);
 /**
- * @brief Liberta a memória associada a um Dataset.
+ * @brief Liberta toda a memória associada ao Dataset.
  *
- * Liberta todos os managers internos e a própria estrutura Dataset.
+ * Destroi todos os managers internos, índices auxiliares
+ * e a própria estrutura Dataset.
  *
- * @param d Dataset a destruir. Ignorado se for NULL.
+ * @param d Dataset a destruir.
  */
 void dataset_destroy(Dataset d);
 
 /**
- * @brief Obtém o manager de aeroportos do Dataset.
- *
+ * @brief Obtém o manager de aeroportos.
  * @param d Dataset.
- * @return AirportsManager associado ao Dataset.
+ * @return AirportsManager associado.
  */
 AirportsManager dataset_get_airports(Dataset d);
 
 /**
- * @brief Obtém o manager de aeronaves do Dataset.
- *
+ * @brief Obtém o manager de aeronaves.
  * @param d Dataset.
- * @return AircraftsManager associado ao Dataset.
+ * @return AircraftsManager associado.
  */
 AircraftsManager dataset_get_aircrafts(Dataset d);
 
 /**
- * @brief Obtém o manager de voos do Dataset.
- *
+ * @brief Obtém o manager de voos.
  * @param d Dataset.
- * @return FlightsManager associado ao Dataset.
+ * @return FlightsManager associado.
  */
 FlightsManager dataset_get_flights(Dataset d);
 
 /**
- * @brief Obtém o manager de passageiros do Dataset.
- *
+ * @brief Obtém o manager de passageiros.
  * @param d Dataset.
- * @return PassengersManager associado ao Dataset.
+ * @return PassengersManager associado.
  */
 PassengersManager dataset_get_passengers(Dataset d);
 
 /**
- * @brief Obtém o manager de reservas do Dataset.
- *
+ * @brief Obtém o manager de reservas.
  * @param d Dataset.
- * @return ReservationsManager associado ao Dataset.
+ * @return ReservationsManager associado.
  */
 ReservationsManager dataset_get_reservations(Dataset d);
 
-#endif
+/**
+ * @brief Atualiza o índice da Query 2.
+ *
+ * Estrutura:
+ *   manufacturer -> (aircraft_id -> count)
+ *
+ * Existe também uma entrada especial "__ALL__"
+ * para o total global.
+ *
+ * @param d Dataset.
+ * @param aircraft_id Identificador da aeronave.
+ * @param manufacturer Fabricante da aeronave.
+ */
+void dataset_update_q2(Dataset d,
+                       const char *aircraft_id,
+                       const char *manufacturer);
+
+/**
+ * @brief Obtém o índice da Query 2.
+ *
+ * @param d Dataset.
+ * @return GHashTable do índice da Query 2.
+ */
+GHashTable *dataset_get_q2_index(Dataset d);
+
+/**
+ * @brief Atualiza o índice da Query 3.
+ *
+ * Estrutura:
+ *   airport_code -> (date -> count)
+ *
+ * A data é considerada apenas no formato YYYY-MM-DD,
+ * permitindo comparações lexicográficas diretas.
+ *
+ * @param d Dataset.
+ * @param airport_code Código do aeroporto de origem.
+ * @param date Data de partida (YYYY-MM-DD ou com timestamp).
+ */
+void dataset_update_q3(Dataset d,
+                       const char *airport_code,
+                       const char *date);
+
+/**
+ * @brief Obtém o índice da Query 3.
+ *
+ * @param d Dataset.
+ * @return GHashTable do índice da Query 3.
+ */
+GHashTable *dataset_get_q3_index(Dataset d);
+
+/**
+ * @brief Adiciona dados agregados para a Query 4.
+ *
+ * Estrutura:
+ *   week_sunday -> (document -> total_price)
+ *
+ * A semana (domingo) é calculada apenas uma vez
+ * durante o parsing, eliminando trabalho na query.
+ *
+ * @param d Dataset.
+ * @param document Documento do passageiro.
+ * @param price Preço da reserva.
+ * @param date Data da reserva (YYYY-MM-DD).
+ */
+void dataset_add_q4_data(Dataset d,
+                         const char *document,
+                         double price,
+                         const char *date);
+
+/**
+ * @brief Obtém o índice agregado da Query 4.
+ *
+ * @param d Dataset.
+ * @return GHashTable com os dados da Query 4.
+ */
+GHashTable *dataset_get_q4_weeks(Dataset d);
+
+/**
+ * @brief Atualiza o índice da Query 6.
+ *
+ * Estrutura:
+ *   nationality -> (airport -> count)
+ *
+ * @param d Dataset.
+ * @param nationality Nacionalidade do passageiro.
+ * @param airport Aeroporto de destino.
+ */
+void dataset_update_q6(Dataset d,
+                       const char *nationality,
+                       const char *airport);
+
+/**
+ * @brief Constrói o índice da Query 6.
+ *
+ * O índice é construído incrementalmente durante o parsing,
+ * pelo que esta função existe apenas para compatibilidade.
+ *
+ * @param d Dataset.
+ */
+void dataset_build_q6_index(Dataset d);
+
+/**
+ * @brief Obtém o índice da Query 6.
+ *
+ * @param d Dataset.
+ * @return GHashTable do índice da Query 6.
+ */
+GHashTable *dataset_get_q6_index(Dataset d);
+
+#endif 

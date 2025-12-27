@@ -1,112 +1,72 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <glib.h>
+#include "queries/query3.h"
 #include "dataset.h"
-#include "flights_manager.h"
-#include "airports_manager.h"
-#include "flights.h"
-#include "airports.h"
-#include "query3.h"
 #include "output_format.h"
 
-//Função callback usada para contar partidas por aeroporto num intervalo de datas.
-static void count_departures(gpointer key, gpointer value, gpointer user_data) {
-    Flight f = (Flight)value;
-    struct {
-        GHashTable *table;
-        const char *start;
-        const char *end;
-    } *ctx = user_data;
+// Estrutura auxiliar para manter o melhor aeroporto 
+typedef struct {
+    const char *best_airport;
+    int best_count;
+    const char *date_start;
+    const char *date_end;
+} Q3Context;
 
+// Callback interno: soma voos num range de datas 
+static void q3_sum_dates_cb(gpointer key, gpointer value, gpointer user_data) {
+    const char *date = key;
+    int count = GPOINTER_TO_INT(value);
+    Q3Context *ctx = user_data;
 
-    if (get_flight_status(f) == Cancelled)
-        return;
-
-    const char *dep_full = get_flight_actual_dep(f);
-    if (!dep_full || strlen(dep_full) < 10 || dep_full[10] != ' ') return;
-    
-    // ignorar "N/A" e formatos inválidos
-    if (strlen(dep_full) < 16 || dep_full[10] != ' ')
-        return;
-    char dep_date[11];
-    memcpy(dep_date, dep_full, 10);
-    dep_date[10] = '\0';
-
-    if (strcmp(dep_date, ctx->start) < 0 || strcmp(dep_date, ctx->end) > 0)
-        return;
-
-    const char *orig = get_flight_orig(f);
-    if (!orig) return;
-
-    int *count = g_hash_table_lookup(ctx->table, orig);
-    if (count) {
-        (*count)++;
-    } else {
-        int *c = malloc(sizeof(int));
-        *c = 1;
-        g_hash_table_insert(ctx->table, g_strdup(orig), c);
+    if (strcmp(date, ctx->date_start) >= 0 &&
+        strcmp(date, ctx->date_end)   <= 0) {
+        ctx->best_count += count;
     }
 }
 
+// Callback principal: percorre aeroportos 
+static void q3_airport_cb(gpointer key, gpointer value, gpointer user_data) {
+    const char *airport = key;
+    GHashTable *dates = value;
+    Q3Context *ctx = user_data;
 
-// Executa a Query 3: encontrar o aeroporto com mais partidas num intervalo de datas especificado.
+    int total = 0;
+    ctx->best_count = 0;
 
-void q3(const char *start_date, const char *end_date,
-        FlightsManager flights, AirportsManager airports, FILE *output) {
+    g_hash_table_foreach(dates, q3_sum_dates_cb, ctx);
+    total = ctx->best_count;
 
-    if (!flights || !airports || !start_date || !end_date)
-        return ;
-
-    GHashTable *departures = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
-    // contexto de iteração
-    struct {
-        GHashTable *table;
-        const char *start;
-        const char *end;
-    } ctx = { departures, start_date, end_date };
-
-    // contar partidas
-    g_hash_table_foreach(flights_manager_get_table(flights), count_departures, &ctx);
-
-    // encontrar o aeroporto com mais partidas
-    GHashTableIter iter;
-    gpointer key, value;
-
-    char final_code[4] = {0};
-    int max_count = 0;
-
-    g_hash_table_iter_init(&iter, departures);
-    while (g_hash_table_iter_next(&iter, &key, &value)) {
-       int count = *(int *)value;
-       char *code=key;
-        if (count > max_count ||
-            (count == max_count &&
-             (final_code[0] == 0 || strcmp(code, final_code) < 0))) {
-            strncpy(final_code, code, 3);
-            final_code[3] = '\0';
-            max_count = count;
-        }
+    if (total > ctx->best_count) {
+        ctx->best_count = total;
+        ctx->best_airport = airport;
     }
-    if (final_code[0] != 0) {
-        Airport a = airports_manager_get(airports, final_code);
-        char sep = get_output_separator();
-        if (a) {
+}
 
-         fprintf(output, "%s%c%s%c%s%c%s%c%d\n",
-            get_airport_code(a), sep,
-            get_airport_name(a), sep,
-            get_airport_city(a), sep,
-            get_airport_country(a), sep,
-            max_count);
+// Executa a query 3
+void q3(Dataset d, char **args, FILE *output) {
 
-        }else {
-            fprintf(output, "%s%c%d\n", final_code, sep, max_count);
-            }
-        } 
-    else {fprintf(output, "\n");
+    const char *date_start = args[0];
+    const char *date_end   = args[1];
+
+    Q3Context ctx = {
+        .best_airport = NULL,
+        .best_count   = 0,
+        .date_start   = date_start,
+        .date_end     = date_end
+    };
+
+    GHashTable *q3_index = dataset_get_q3_index(d);
+    if (!q3_index) {
+        output_empty(output);
+        return;
     }
 
-    g_hash_table_destroy(departures);
+    g_hash_table_foreach(q3_index, q3_airport_cb, &ctx);
+
+    if (ctx.best_airport) {
+        fprintf(output, "%s;%d\n", ctx.best_airport, ctx.best_count);
+    } else {
+        output_empty(output);
+    }
 }

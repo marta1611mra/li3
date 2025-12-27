@@ -1,202 +1,237 @@
 #include "dataset.h"
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+/* ===== Estrutura interna ===== */
 
 struct dataset {
-    AirportsManager airports;       /** Gestor de aeroportos */
-    AircraftsManager aircrafts;     /** Gestor de aeronaves */
-    FlightsManager flights;         /** Gestor de voos */
-    PassengersManager passengers;   /** Gestor de passageiros */
-    ReservationsManager reservations; /** Gestor de reservas */
-    GHashTable *q6_index; // nationality -> (airport -> count)
-    GHashTable *q2_index;
+    AirportsManager airports;
+    AircraftsManager aircrafts;
+    FlightsManager flights;
+    PassengersManager passengers;
+    ReservationsManager reservations;
+
+    GHashTable *q2_index;   /* manufacturer -> (aircraft_id -> count) */
+    GHashTable *q3_index;   /* airport -> (date -> count) */
+    GHashTable *q4_weeks;   /* week_sunday -> (document -> total_price) */
+    GHashTable *q6_index;   /* nationality -> (airport -> count) */
 };
 
-// Cria e inicializa um novo Dataset.
+/* ===== Auxiliar: calcular domingo da semana ===== */
+/* Assume date no formato YYYY-MM-DD */
+static void calculate_week_sunday(const char *date, char out[11]) {
+    /* Algoritmo simples: usar struct tm */
+    struct tm tm = {0};
+
+    sscanf(date, "%4d-%2d-%2d",
+           &tm.tm_year, &tm.tm_mon, &tm.tm_mday);
+
+    tm.tm_year -= 1900;
+    tm.tm_mon  -= 1;
+
+    mktime(&tm);
+
+    int diff = tm.tm_wday; /* domingo = 0 */
+    tm.tm_mday -= diff;
+
+    mktime(&tm);
+
+    strftime(out, 11, "%Y-%m-%d", &tm);
+}
+
+/* ===== Criação / Destruição ===== */
+
 Dataset dataset_create(void) {
     Dataset d = malloc(sizeof(struct dataset));
     if (!d) return NULL;
 
-    d->airports = airports_manager_create();
-    d->aircrafts = aircrafts_manager_create();
-    d->flights = flights_manager_create();
-    d->passengers = passengers_manager_create();
+    d->airports     = airports_manager_create();
+    d->aircrafts    = aircrafts_manager_create();
+    d->flights      = flights_manager_create();
+    d->passengers   = passengers_manager_create();
     d->reservations = reservations_manager_create();
 
-    d->q6_index = g_hash_table_new_full(
-    g_str_hash,
-    g_str_equal,
-    free,                           // nationality
-    (GDestroyNotify) g_hash_table_destroy);
     d->q2_index = g_hash_table_new_full(
-    g_str_hash,
-    g_str_equal,
-    free,
-    (GDestroyNotify) g_hash_table_destroy
-);
+        g_str_hash, g_str_equal, g_free,
+        (GDestroyNotify) g_hash_table_destroy
+    );
 
+    d->q3_index = g_hash_table_new_full(
+        g_str_hash, g_str_equal, g_free,
+        (GDestroyNotify) g_hash_table_destroy
+    );
+
+    d->q4_weeks = g_hash_table_new_full(
+        g_str_hash, g_str_equal, g_free,
+        (GDestroyNotify) g_hash_table_destroy
+    );
+
+    d->q6_index = g_hash_table_new_full(
+        g_str_hash, g_str_equal, g_free,
+        (GDestroyNotify) g_hash_table_destroy
+    );
 
     return d;
 }
 
-// Liberta toda a memória associada ao Dataset.
 void dataset_destroy(Dataset d) {
     if (!d) return;
 
     g_hash_table_destroy(d->q2_index);
+    g_hash_table_destroy(d->q3_index);
+    g_hash_table_destroy(d->q4_weeks);
     g_hash_table_destroy(d->q6_index);
+
     airports_manager_destroy(d->airports);
     aircrafts_manager_destroy(d->aircrafts);
     flights_manager_destroy(d->flights);
     passengers_manager_destroy(d->passengers);
     reservations_manager_destroy(d->reservations);
-    
+
     free(d);
 }
 
-// Função auxiliar para atualizar uma tabela específica (evita repetição de código)
-static void update_q2_inner_table(GHashTable *master_index, const char *key, const char *aircraft_id) {
-    // 1. Buscar a tabela interna (do fabricante ou global)
-    GHashTable *inner_table = g_hash_table_lookup(master_index, key);
+/* ===== Getters ===== */
 
-    // 2. Se não existir, criar
-    if (!inner_table) {
-        inner_table = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
-        g_hash_table_insert(master_index, g_strdup(key), inner_table);
+AirportsManager dataset_get_airports(Dataset d) { return d->airports; }
+AircraftsManager dataset_get_aircrafts(Dataset d) { return d->aircrafts; }
+FlightsManager dataset_get_flights(Dataset d) { return d->flights; }
+PassengersManager dataset_get_passengers(Dataset d) { return d->passengers; }
+ReservationsManager dataset_get_reservations(Dataset d) { return d->reservations; }
+
+GHashTable *dataset_get_q2_index(Dataset d) { return d->q2_index; }
+GHashTable *dataset_get_q3_index(Dataset d) { return d->q3_index; }
+GHashTable *dataset_get_q4_weeks(Dataset d) { return d->q4_weeks; }
+GHashTable *dataset_get_q6_index(Dataset d) { return d->q6_index; }
+
+/* ===== QUERY 2 ===== */
+
+static void q2_update_inner(GHashTable *index,
+                            const char *key,
+                            const char *aircraft_id) {
+    GHashTable *inner = g_hash_table_lookup(index, key);
+
+    if (!inner) {
+        inner = g_hash_table_new_full(
+            g_str_hash, g_str_equal, g_free, g_free);
+        g_hash_table_insert(index, g_strdup(key), inner);
     }
 
-    // 3. Atualizar contagem da aeronave
-    int *count = g_hash_table_lookup(inner_table, aircraft_id);
-    if (count) {
-        (*count)++;
+    int *count = g_hash_table_lookup(inner, aircraft_id);
+    if (!count) {
+        count = malloc(sizeof(int));
+        *count = 1;
+        g_hash_table_insert(inner, g_strdup(aircraft_id), count);
     } else {
-        int *new_count = malloc(sizeof(int));
-        *new_count = 1;
-        g_hash_table_insert(inner_table, g_strdup(aircraft_id), new_count);
+        (*count)++;
     }
 }
 
-GHashTable *dataset_get_q2_index(Dataset d) {
-    if (!d) return NULL;
-    return d->q2_index;
-}
-
-// Getter para a tabela da Query 6
-GHashTable *dataset_get_q6_index(Dataset d) {
-    if (!d) return NULL;
-    return d->q6_index;
-}
-
-void dataset_update_q2(Dataset d, const char *aircraft_id, const char *manufacturer) {
+void dataset_update_q2(Dataset d,
+                       const char *aircraft_id,
+                       const char *manufacturer) {
     if (!d || !aircraft_id || !manufacturer) return;
 
-    // 1. Atualizar na tabela do Fabricante Específico
-    update_q2_inner_table(d->q2_index, manufacturer, aircraft_id);
+    q2_update_inner(d->q2_index, manufacturer, aircraft_id);
+    q2_update_inner(d->q2_index, "__ALL__", aircraft_id);
+}
 
-    // 2. Atualizar na tabela Global "__ALL__"
-    update_q2_inner_table(d->q2_index, "__ALL__", aircraft_id);
+/* ===== QUERY 3 ===== */
+
+void dataset_update_q3(Dataset d,
+                       const char *airport_code,
+                       const char *date) {
+    if (!d || !airport_code || !date) return;
+
+    char date_only[11];
+    strncpy(date_only, date, 10);
+    date_only[10] = '\0';
+
+    GHashTable *date_table =
+        g_hash_table_lookup(d->q3_index, airport_code);
+
+    if (!date_table) {
+        date_table = g_hash_table_new_full(
+            g_str_hash, g_str_equal, g_free, NULL);
+        g_hash_table_insert(d->q3_index,
+                            g_strdup(airport_code),
+                            date_table);
+    }
+
+    gpointer val = g_hash_table_lookup(date_table, date_only);
+    int count = val ? GPOINTER_TO_INT(val) + 1 : 1;
+
+    g_hash_table_insert(date_table,
+                        g_strdup(date_only),
+                        GINT_TO_POINTER(count));
+}
+
+/* ===== QUERY 4  ===== */
+
+void dataset_add_q4_data(Dataset d,
+                         const char *document,
+                         double price,
+                         const char *date) {
+    if (!d || !document || !date) return;
+
+    char week[11];
+    calculate_week_sunday(date, week);
+
+    GHashTable *week_table =
+        g_hash_table_lookup(d->q4_weeks, week);
+
+    if (!week_table) {
+        week_table = g_hash_table_new_full(
+            g_str_hash, g_str_equal, g_free, g_free);
+        g_hash_table_insert(d->q4_weeks,
+                            g_strdup(week),
+                            week_table);
+    }
+
+    double *total = g_hash_table_lookup(week_table, document);
+    if (!total) {
+        total = malloc(sizeof(double));
+        *total = price;
+        g_hash_table_insert(week_table,
+                            g_strdup(document),
+                            total);
+    } else {
+        *total += price;
+    }
+}
+
+/* ===== QUERY 6 ===== */
+
+void dataset_update_q6(Dataset d,
+                       const char *nationality,
+                       const char *airport) {
+    if (!d || !nationality || !airport) return;
+
+    GHashTable *nat_table =
+        g_hash_table_lookup(d->q6_index, nationality);
+
+    if (!nat_table) {
+        nat_table = g_hash_table_new_full(
+            g_str_hash, g_str_equal, g_free, g_free);
+        g_hash_table_insert(d->q6_index,
+                            g_strdup(nationality),
+                            nat_table);
+    }
+
+    int *count = g_hash_table_lookup(nat_table, airport);
+    if (!count) {
+        count = malloc(sizeof(int));
+        *count = 1;
+        g_hash_table_insert(nat_table,
+                            g_strdup(airport),
+                            count);
+    } else {
+        (*count)++;
+    }
 }
 
 void dataset_build_q6_index(Dataset d) {
-    d->q6_index = g_hash_table_new_full(
-        g_str_hash, g_str_equal, free,
-        (GDestroyNotify) g_hash_table_destroy
-    );
-
-    GList *reservations = reservations_manager_get_all(d->reservations);
-
-    for (GList *l = reservations; l; l = l->next) {
-        Reservation r = l->data;
-
-        const char *doc = get_reservation_document_number(r);
-        Passenger p = passengers_manager_get(d->passengers, doc);
-        if (!p) continue;
-
-        const char *nat = get_passenger_nationality(p);
-        if (!nat) continue;
-
-        GHashTable *by_airport =
-            g_hash_table_lookup(d->q6_index, nat);
-
-        if (!by_airport) {
-            by_airport = g_hash_table_new_full(
-                g_str_hash, g_str_equal, free, free
-            );
-            g_hash_table_insert(d->q6_index, g_strdup(nat), by_airport);
-        }
-
-        for (int i = 0; i < 2; i++) {
-            const char *fid = get_reservation_flight_id(r, i);
-            if (!fid || !*fid) continue;
-
-            Flight f = flights_manager_get(d->flights, fid);
-            if (!f || get_flight_status(f) == Cancelled) continue;
-
-            const char *dest = get_flight_dest(f);
-            if (!dest) continue;
-
-            int *cnt = g_hash_table_lookup(by_airport, dest);
-            if (!cnt) {
-                cnt = malloc(sizeof(int));
-                *cnt = 0;
-                g_hash_table_insert(by_airport, g_strdup(dest), cnt);
-            }
-            (*cnt)++;
-        }
-    }
-}
-
-void dataset_update_q6(Dataset d, const char *nationality, const char *airport) {
-    if (!d || !nationality || !airport) return;
-
-    // 1. Obter a tabela dessa nacionalidade
-    GHashTable *nat_table = g_hash_table_lookup(d->q6_index, nationality);
-
-    // 2. Se não existir tabela para esta nacionalidade, criar uma nova
-    if (!nat_table) {
-        nat_table = g_hash_table_new_full(
-            g_str_hash, 
-            g_str_equal, 
-            free,   // Liberta a chave (nome do aeroporto)
-            free    // Liberta o valor (contador)
-        );
-        // Inserimos uma cópia da string nacionalidade como chave
-        g_hash_table_insert(d->q6_index, g_strdup(nationality), nat_table);
-    }
-
-    // 3. Atualizar o contador do aeroporto
-    int *count = g_hash_table_lookup(nat_table, airport);
-    if (count) {
-        (*count)++;
-    } else {
-        int *new_count = malloc(sizeof(int));
-        *new_count = 1;
-        // Inserimos uma cópia da string aeroporto como chave
-        g_hash_table_insert(nat_table, g_strdup(airport), new_count);
-    }
-}
-
-
-// Obtém o gestor de aeroportos do Dataset.
-AirportsManager dataset_get_airports(Dataset d) { 
-    return d->airports; 
-}
-
-// Obtém o gestor de aeronaves do Dataset.
-AircraftsManager dataset_get_aircrafts(Dataset d) { 
-    return d->aircrafts; 
-}
-
-// Obtém o gestor de voos do Dataset.
-FlightsManager dataset_get_flights(Dataset d) { 
-    return d->flights; 
-}
-
-// @brief Obtém o gestor de passageiros do Dataset.
-PassengersManager dataset_get_passengers(Dataset d) { 
-    return d->passengers; 
-}
-
-// Obtém o gestor de reservas do Dataset.
-ReservationsManager dataset_get_reservations(Dataset d) { 
-    return d->reservations; 
+    (void)d; 
 }

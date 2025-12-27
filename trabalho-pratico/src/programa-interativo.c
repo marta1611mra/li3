@@ -198,10 +198,7 @@ void interactive_program(char *path) {
                 
                 FILE *temp = tmpfile();
                 if (temp) {
-                    q3(start_date, end_date,
-                       dataset_get_flights(dataset),
-                       dataset_get_airports(dataset),
-                       temp);
+                    q3(dataset, (char *[]){start_date, end_date}, temp);
                     rewind(temp);
                     
                     char result[1024];
@@ -215,10 +212,7 @@ void interactive_program(char *path) {
                     }
                     fclose(temp);
                 } else {
-                    q3(start_date, end_date,
-                       dataset_get_flights(dataset),
-                       dataset_get_airports(dataset),
-                       stdout);
+                    q3(dataset, (char *[]){start_date, end_date}, stdout);
                 }
                 break;
             }

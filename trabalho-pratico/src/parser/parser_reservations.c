@@ -37,10 +37,10 @@ void parse_reservations(Dataset d, const char *data_path) {
         char reservation_id[21] = "";
         char flight_list[128] = "";
         char document_number[16] = "";
-        char seat_str[8] = "";
+        char seat_str[8] = "";  // Não precisamos guardar - só para validação
         char extra_luggage_str[8] = "";
         char priority_boarding_str[8] = "";
-        char qr_code[4096] = "";
+        char qr_code[4096] = "";  // Não precisamos guardar - só para validação
         double price = 0.0;
 
         int n = sscanf(line,
@@ -58,14 +58,13 @@ void parse_reservations(Dataset d, const char *data_path) {
         remove_quotes(document_number); remove_spc(document_number);
         remove_quotes(extra_luggage_str); remove_spc(extra_luggage_str);
         remove_quotes(priority_boarding_str); remove_spc(priority_boarding_str);
-        remove_quotes(qr_code); remove_spc(qr_code);
+        // seat_str e qr_code não precisam de limpeza detalhada - só validação básica
 
         reservation_id[strcspn(reservation_id, "\r\n")] = 0;
         flight_list[strcspn(flight_list, "\r\n")] = 0;
         document_number[strcspn(document_number, "\r\n")] = 0;
         extra_luggage_str[strcspn(extra_luggage_str, "\r\n")] = 0;
         priority_boarding_str[strcspn(priority_boarding_str, "\r\n")] = 0;
-        qr_code[strcspn(qr_code, "\r\n")] = 0;
 
         if (!validate_reservation_id(reservation_id) ||
             !validate_document_number(document_number) ||
@@ -79,7 +78,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             continue;
         }
 
-        /* ===== Extrair flight IDs ===== */
+        //Extrair flight IDs 
         char flight_id[2][10] = {{0}};
         int num_ids = 0;
 
@@ -87,7 +86,6 @@ void parse_reservations(Dataset d, const char *data_path) {
         strncpy(list_copy, flight_list, sizeof(list_copy));
         list_copy[sizeof(list_copy) - 1] = '\0';
 
-        /* remover [ ] */
         char *start = strchr(list_copy, '[');
         char *end   = strrchr(list_copy, ']');
 
@@ -99,7 +97,6 @@ void parse_reservations(Dataset d, const char *data_path) {
         *end = '\0';
         start++;
 
-        /* agora start contém: 'FL123','FL456' */
         char *token = strtok(start, ",");
 
         while (token && num_ids < 2) {
@@ -141,7 +138,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         int extra_luggage = (strcmp(extra_luggage_str, "true") == 0);
         int priority_boarding = (strcmp(priority_boarding_str, "true") == 0);
 
-        /* Se o ID já existir, o add irá substituir a reserva antiga */
+        // Criar estrutura mínima de reserva 
         ReservationsManager rm = dataset_get_reservations(d);
 
         int *seats = malloc(2 * sizeof(int));
@@ -168,11 +165,10 @@ void parse_reservations(Dataset d, const char *data_path) {
             prices,
             luggage,
             priority,
-            qr_code
+            "" // qr_code não é necessário para queries
         );
 
         if (!r) {
-            /* se a reserva não for criada, temos de libertar porque ainda é nosso */
             free(seats); free(prices); free(luggage); free(priority);
             fprintf(ferror, "%s", line);
             continue;
@@ -180,38 +176,61 @@ void parse_reservations(Dataset d, const char *data_path) {
 
         reservations_manager_add(rm, r);
 
-        /* ===== Atualizar índice da Query 6 (CORRIGIDO) ===== */
+        /* ===== PRÉ-PROCESSAMENTO PARA QUERIES ===== */
         PassengersManager pm = dataset_get_passengers(d);
         Passenger p = passengers_manager_get(pm, document_number);
 
         if (p) {
             const char *nat = get_passenger_nationality(p);
+            
+            // Q6: Atualizar índice de nacionalidade -> aeroporto de destino
             if (nat && *nat) {
-
-                /* voo final */
-                const char *final_flight_id =
-                    (num_ids == 2) ? flight_id[1] : flight_id[0];
-
+                const char *final_flight_id = (num_ids == 2) ? flight_id[1] : flight_id[0];
                 Flight f = flights_manager_get(fm, final_flight_id);
 
                 if (f && get_flight_status(f) != Cancelled) {
                     const char *dest = get_flight_dest(f);
-                    
                     if (dest && *dest) {
-                        /* Aqui substituímos o acesso direto pela função pública */
                         dataset_update_q6(d, nat, dest);
                     }
                 }
             }
+
+            // Q4: Preparar dados para cálculo de top 10 semanal
+            // Obtém a data de partida do primeiro voo
+            Flight f_first = flights_manager_get(fm, flight_id[0]);
+            if (f_first) {
+                const char *dep_str = get_flight_dep(f_first);
+                if (dep_str && strlen(dep_str) >= 10) {
+                    // Armazenar informação relevante: document_number, price, departure_date
+                    dataset_add_q4_data(d, document_number, price, dep_str);
+                }
+            }
         }
 
-        /* ===== Atualizar estatísticas de aeroportos ===== */
+        // Atualizar estatísticas de aeroportos (Q1 e Q3) 
         AirportsManager am = dataset_get_airports(d);
         for (int i = 0; i < num_ids; i++) {
             Flight f = flights_manager_get(fm, flight_id[i]);
             if (get_flight_status(f) != Cancelled) {
-                airports_manager_departure(am, get_flight_orig(f), 1);
-                airports_manager_arrival(am, get_flight_dest(f), 1);
+                const char *orig = get_flight_orig(f);
+                const char *dest = get_flight_dest(f);
+                
+                if (orig && *orig) {
+                    airports_manager_departure(am, orig, 1);
+                }
+                if (dest && *dest) {
+                    airports_manager_arrival(am, dest, 1);
+                }
+                
+                // Q3: Atualizar índice de partidas por data
+                const char *actual_dep = get_flight_actual_dep(f);
+                if (actual_dep && strlen(actual_dep) >= 10) {
+                    char date_only[11];
+                    memcpy(date_only, actual_dep, 10);
+                    date_only[10] = '\0';
+                    dataset_update_q3(d, orig, date_only);
+                }
             }
         }
 
