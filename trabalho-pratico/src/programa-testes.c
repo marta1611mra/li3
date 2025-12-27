@@ -9,7 +9,7 @@
 #include "programa-testes.h"
 #include <sys/resource.h>
 
-#define MAX_QUERIES 120
+#define MAX_QUERIES 300
 
 
 // Compara dois ficheiros linha a linha.
@@ -84,8 +84,8 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
 
     double times[MAX_QUERIES] = {0};
     int correct[MAX_QUERIES] = {0};
-    double sum_q[4] = {0}; 
-    int count_q[4] = {0};
+    double sum_q[7] = {0}; 
+    int count_q[7] = {0};
 
     for (int cmd = 1; cmd <= MAX_QUERIES; cmd++) {
         char generated[256], expected[256];
@@ -140,7 +140,7 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
             }
             fclose(fcmd);
 
-            if (qtype >= 1 && qtype <= 3) {
+            if (qtype >= 1 && qtype <= 6) {
                 sum_q[qtype] += elapsed;
                 count_q[qtype]++;
             }
@@ -165,7 +165,7 @@ int run_programa_testes(const char *dataset_path, const char *commands_file, con
         total_cmds ? (100.0 * total_correct / total_cmds) : 0.0);
 
 
-    for (int q = 1; q <= 4; q++) {
+    for (int q = 1; q <= 7; q++) {
         if (count_q[q] > 0)
             printf("Query %d: média = %.6f s  (%d comandos)\n",
                    q, sum_q[q] / count_q[q], count_q[q]);

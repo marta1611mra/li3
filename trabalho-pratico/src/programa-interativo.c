@@ -288,7 +288,7 @@ void interactive_program(char *path) {
                 
                 FILE *temp = tmpfile();
                 if (temp) {
-                    query5(dataset_get_flights(dataset), N, temp);
+                    query5(dataset, N, temp);
                     rewind(temp);
                     
                     char line[1024];
@@ -305,7 +305,7 @@ void interactive_program(char *path) {
                     }
                     fclose(temp);
                 } else {
-                    query5(dataset_get_flights(dataset), N, stdout);
+                    query5(dataset, N, stdout);
                 }
                 break;
             }
