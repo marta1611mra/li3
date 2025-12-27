@@ -4,6 +4,7 @@
 #include <glib.h>
 #include "query6.h"
 #include "dataset.h"
+#include "output_format.h"
 
 void q6(Dataset d, const char *nationality, FILE *out) {
     // Verificações básicas
@@ -51,7 +52,8 @@ void q6(Dataset d, const char *nationality, FILE *out) {
 
     // 4. Escrever o resultado: Code;Count
     if (best_airport) {
-        fprintf(out, "%s;%d\n", best_airport, max_count);
+        char sep = get_output_separator(); // Pede o separador correto (= ou ;)
+        fprintf(out, "%s%c%d\n", best_airport, sep, max_count);
     }else{
         fprintf(out, "\n");
     }

@@ -86,15 +86,16 @@ void process_queries(Dataset d, const char *queries_path) {
                 query5(d, N, out);
                 break;
             }
+            case 6: {
+                q6(d,arg1,out);
+                break;
+            }
             default:
                 //  Query desconhecida 
                 fprintf(stderr, "Query %d não implementada.\n", qid);
                 fprintf(out, "\n");
                 break;
-            case 6: {
-                q6(d,arg1,out);
-                break;
-            }
+
         }
 
         fclose(out);
