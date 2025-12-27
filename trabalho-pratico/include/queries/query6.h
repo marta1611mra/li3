@@ -8,10 +8,8 @@
 #include "managers/reservations_manager.h"
 
 
-void q6(PassengersManager pm,
-            FlightsManager fm,
-            ReservationsManager rm,
-            const char *nationality,
-            FILE *out);
+void q6(Dataset d,
+        const char *nationality,
+        FILE *out);
 
 #endif

@@ -142,8 +142,7 @@ void interactive_program(char *path) {
                 
                 FILE *temp = tmpfile();
                 if (temp) {
-                    q2(dataset_get_flights(dataset),
-                       dataset_get_aircrafts(dataset),
+                    q2(dataset,
                        N,
                        strlen(manufacturer) > 0 ? manufacturer : NULL,
                        temp);
@@ -167,8 +166,7 @@ void interactive_program(char *path) {
                     }
                     fclose(temp);
                 } else {
-                    q2(dataset_get_flights(dataset),
-                       dataset_get_aircrafts(dataset),
+                    q2(dataset,
                        N,
                        strlen(manufacturer) > 0 ? manufacturer : NULL,
                        stdout);
@@ -328,9 +326,7 @@ void interactive_program(char *path) {
                 
                 FILE *temp = tmpfile();
                 if (temp) {
-                    q6(dataset_get_passengers(dataset),
-                       dataset_get_flights(dataset),
-                       dataset_get_reservations(dataset),
+                    q6(dataset,
                        nationality,
                        temp);
                     rewind(temp);
@@ -346,9 +342,7 @@ void interactive_program(char *path) {
                     }
                     fclose(temp);
                 } else {
-                    q6(dataset_get_passengers(dataset),
-                       dataset_get_flights(dataset),
-                       dataset_get_reservations(dataset),
+                    q6(dataset,
                        nationality,
                        stdout);
                 }

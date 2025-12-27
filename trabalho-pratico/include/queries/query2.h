@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "managers/flights_manager.h"
 #include "managers/aircrafts_manager.h"
+#include "dataset.h"
 
 /**
  * @brief Executa a Query 2: lista as N aeronaves com mais voos.
@@ -21,6 +22,6 @@
 
 
 
-void q2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer, FILE *out);
+void q2(Dataset d, int N, const char *manufacturer, FILE *out);
 
 #endif

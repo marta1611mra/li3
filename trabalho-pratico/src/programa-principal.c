@@ -16,6 +16,9 @@
 #include "query2.h"
 #include "query3.h"
 #include "query1.h"
+#include "query4.h"
+#include "query5.h"
+#include "query6.h"
 #include "queries.h"
 
 

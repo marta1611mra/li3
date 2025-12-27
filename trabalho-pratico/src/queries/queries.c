@@ -61,9 +61,7 @@ void process_queries(Dataset d, const char *queries_path) {
             case 2: {
                 int N = atoi(arg1);
                 const char *filter = (n == 3) ? arg2 : NULL;
-                q2(dataset_get_flights(d),
-                       dataset_get_aircrafts(d),
-                       N, filter, out);
+                q2(d,N, filter, out);
                 break;
             }
 
@@ -97,7 +95,7 @@ void process_queries(Dataset d, const char *queries_path) {
                 fprintf(out, "\n");
                 break;
             case 6: {
-                q6(dataset_get_passengers(d),dataset_get_flights(d),dataset_get_reservations(d),arg1,out);
+                q6(d,arg1,out);
                 break;
             }
         }

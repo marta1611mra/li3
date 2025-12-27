@@ -2,109 +2,83 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include "queries/query2.h"
-#include "entities/aircrafts.h"
-#include "entities/flights.h"
-#include "managers/aircrafts_manager.h"
-#include "managers/flights_manager.h"
-#include "output_format.h"
+
+#include "query2.h"
+#include "dataset.h"
+#include "aircrafts.h"      
+#include "output_format.h"  
 
 typedef struct {
-    Aircraft aircraft;
-    int count;         
-} AircraftCount;
+    char code[16]; 
+    int count;
+} Q2Row;
 
-// Callback para contar voos por aeronave.
-static void count_flights(gpointer key, gpointer value, gpointer user_data) {
-    Flight f = value;
-    GHashTable *table = user_data;
+static int cmp_q2(const void *a, const void *b) {
+    const Q2Row *x = a;
+    const Q2Row *y = b;
 
-    if (get_flight_status(f) == Cancelled) return;
+    if (y->count != x->count)
+        return y->count - x->count;
 
-    const char *aircraft_id = get_flight_aircraft_id(f);
-    if (!aircraft_id) return;
-
-    int *cnt = g_hash_table_lookup(table, aircraft_id);
-    if (!cnt) {
-        cnt = g_new(int, 1);
-        *cnt = 1;
-        g_hash_table_insert(table, g_strdup(aircraft_id), cnt);
-    } else {
-        (*cnt)++;
-    }
+    return strcmp(x->code, y->code);
 }
 
-// Função de comparação para ordenar aeronaves.
- 
-static int compare_aircrafts(const void *a, const void *b) {
-    const AircraftCount *x = a;
-    const AircraftCount *y = b;
-
-    if (x->count != y->count)
-        return (y->count - x->count);
-
-    return strcmp(get_aircraft_id(x->aircraft), get_aircraft_id(y->aircraft));
-}
-
-// Executa a Query 2: listar o Top N de aeronaves por número de voos.
-
-void q2(FlightsManager fm, AircraftsManager am, int N, const char *filter_manufacturer,FILE *out) {
-    if (!fm || !am || N <= 0 ){
-        fprintf(out,"\n");
-    } else {
-
-        // Contagem de voos
-        GHashTable *flight_counts = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
-        g_hash_table_foreach(flights_manager_get_table(fm), count_flights, flight_counts);
-
-        // Array auxiliar para ordenação
-        int total = aircrafts_manager_count(am);
-        AircraftCount *array = malloc(sizeof(AircraftCount) * total);
-        int used = 0;
-
-        GHashTableIter iter;
-        gpointer key, value;
-        GHashTable *air_tbl = aircrafts_manager_get_table(am);
-        g_hash_table_iter_init(&iter, air_tbl);
-
-        while (g_hash_table_iter_next(&iter, &key, &value)) {
-            Aircraft a = value;
-            const char *id = get_aircraft_id(a);
-            const char *man = get_aircraft_manufacturer(a);
-
-            if (filter_manufacturer && strcmp(man, filter_manufacturer) != 0)
-                continue;
-
-            int *cnt = g_hash_table_lookup(flight_counts, id);
-            array[used].aircraft = a;
-            array[used].count = cnt ? *cnt : 0;
-            used++;
-        }
-        if (used == 0) {
-        fprintf(out, "\n");
-        free(array);
-        g_hash_table_destroy(flight_counts);
+void q2(Dataset d, int N, const char *manufacturer, FILE *out) {
+    if (!d || !out || N <= 0) {
         return;
-        }
-
-        // Ordenação
-        qsort(array, used, sizeof(AircraftCount), compare_aircrafts);
-
-        int limit = (N < used ? N : used);
-
-        for (int i = 0; i < limit; i++) {
-        char sep = get_output_separator();
-
-        fprintf(out, "%s%c%s%c%s%c%d\n",
-        get_aircraft_id(array[i].aircraft), sep,
-        get_aircraft_manufacturer(array[i].aircraft), sep,
-        get_aircraft_model(array[i].aircraft), sep,
-        array[i].count);
-        }
-    free(array);
-    g_hash_table_destroy(flight_counts);
-
     }
+
+    const char *key = (manufacturer && *manufacturer) ? manufacturer : "__ALL__";
+
+    /* --- AQUI ESTAVA O ERRO --- */
+    /* Antigo (Erro): GHashTable *table = g_hash_table_lookup(d->q2_index, key); */
+    
+    /* Novo (Correto): Usamos a função getter */
+    GHashTable *index_q2 = dataset_get_q2_index(d); 
+    if (!index_q2) return;
+
+    GHashTable *table = g_hash_table_lookup(index_q2, key);
+    /* -------------------------- */
+
+    if (!table || g_hash_table_size(table) == 0) {
+        return;
+    }
+
+    int size = g_hash_table_size(table);
+    Q2Row *rows = malloc(size * sizeof(Q2Row));
+    if (!rows) return;
+
+    int i = 0;
+    GHashTableIter iter;
+    gpointer k, v;
+    g_hash_table_iter_init(&iter, table);
+
+    while (g_hash_table_iter_next(&iter, &k, &v)) {
+        strncpy(rows[i].code, (char *)k, 15);
+        rows[i].code[15] = '\0';
+        rows[i].count = *(int *)v;
+        i++;
+    }
+
+    qsort(rows, size, sizeof(Q2Row), cmp_q2);
+
+    AircraftsManager am = dataset_get_aircrafts(d);
+    char sep = get_output_separator(); 
+
+    for (int j = 0; j < N && j < size; j++) {
+        Aircraft a = aircrafts_manager_get(am, rows[j].code);
+        
+        if (a) {
+            fprintf(out, "%s%c%s%c%s%c%d\n",
+                    rows[j].code,
+                    sep,
+                    get_aircraft_manufacturer(a),
+                    sep,
+                    get_aircraft_model(a),
+                    sep,
+                    rows[j].count);
+        }
+    }
+
+    free(rows);
 }
-
-
