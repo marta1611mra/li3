@@ -68,10 +68,7 @@ void process_queries(Dataset d, const char *queries_path) {
             case 3:{
                 /** Query 3: 3 <start_date> <end_date> */
                 if (n == 3)
-                    q3(arg1, arg2,
-                       dataset_get_flights(d),
-                       dataset_get_airports(d),
-                       out);
+                    q3(d, (char *[]){arg1, arg2}, out);
                 else
                     fprintf(stderr, "Query 3 mal formatada na linha %d\n", command_number);
                 break;
