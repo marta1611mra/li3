@@ -11,7 +11,7 @@ SRC_COMMON = \
     src/parser/parser_aircrafts.c \
     src/parser/parser_airports.c \
     src/parser/parser_flights.c \
-    src/parser/parser_passangers.c \
+    src/parser/parser_passengers.c \
     src/parser/parser_reservations.c \
     src/logical_validation.c \
     src/syntactic_validation.c \

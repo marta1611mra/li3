@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE
 #include "query5.h"
+#include "dataset.h"
 #include "flights_manager.h"
 #include "flights.h"
 #include "output_format.h"
@@ -20,8 +21,8 @@ static int calculate_delay_min(const char *estim, const char *real) {
 
     struct tm tm_estim = {0}, tm_real = {0};
 
-    if (strptime(estim, "%Y-%m-%d %H:%M:%S", &tm_estim) == NULL) return 0;
-    if (strptime(real, "%Y-%m-%d %H:%M:%S", &tm_real) == NULL) return 0;
+    if (strptime(estim, "%Y-%m-%d %H:%M", &tm_estim) == NULL) return 0;
+    if (strptime(real, "%Y-%m-%d %H:%M", &tm_real) == NULL) return 0;
 
     time_t t_estim = mktime(&tm_estim);
     time_t t_real = mktime(&tm_real);
@@ -44,37 +45,41 @@ static int compare_stats(const void *a, const void *b) {
     return strcmp(s1->airline_name, s2->airline_name);
 }
 
-void query5(FlightsManager fm, int N, FILE *out) {
-    GHashTable *tmp_statistics = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
-    GHashTable *flights_table = flights_manager_get_table(fm);
+void query5(Dataset d, int N, FILE *out) {
+    if (!d || !out || N <= 0) return;
+    FlightsManager fm = dataset_get_flights(d);  
+    if (!fm) return;  
+    GHashTable *statistics = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+    GHashTable *flights = flights_manager_get_table(fm);
     GHashTableIter iter;
     gpointer value;
     
-    g_hash_table_iter_init(&iter, flights_table);
+    g_hash_table_iter_init(&iter, flights);
     while (g_hash_table_iter_next(&iter, NULL, &value)) {
-        Flight f = (Flight)value;
-        if (get_flight_status(f) == Delayed) {
-            const char *name = get_flight_airline(f);
-            int delay = calculate_delay_min(get_flight_dep(f), get_flight_actual_dep(f));
+        Flight f = value;
+        if (get_flight_status(f) != Delayed) continue;
 
-            if (delay > 0) {
-                AirlineStatistics *as = g_hash_table_lookup(tmp_statistics, name);
-                if (!as) {
-                    as = g_new0(AirlineStatistics, 1);
-                    strncpy(as->airline_name, name, 49);
-                    g_hash_table_insert(tmp_statistics, (gpointer)as->airline_name, as);
-                }
-                as->total_delay_min += delay;
-                as->num_delayed_flights++;
-            }
+        int delay = calculate_delay_min(get_flight_dep(f), get_flight_actual_dep(f));
+
+        if (delay <= 0) continue;
+        
+        const char *airline = get_flight_airline(f);
+        
+        AirlineStatistics *as = g_hash_table_lookup(statistics, airline);
+        if (!as) {
+            as = g_new0(AirlineStatistics, 1);
+            strncpy(as->airline_name, airline, 49);
+            g_hash_table_insert(statistics, g_strdup(airline), as);
         }
+        as->total_delay_min += delay;
+        as->num_delayed_flights++;
     }
-    GList *values = g_hash_table_get_values(tmp_statistics);
+    GList *values = g_hash_table_get_values(statistics);
     int total_airlines = g_list_length(values);
 
     if (total_airlines == 0) {
-        if (values) g_list_free(values);
-        g_hash_table_destroy(tmp_statistics);
+        g_list_free(values);
+        g_hash_table_destroy(statistics);
         return;
     }
 
@@ -89,7 +94,7 @@ void query5(FlightsManager fm, int N, FILE *out) {
     char sep = get_output_separator();
 
     for (int j = 0; j < N && j < total_airlines; j++) {
-        double avg = (double)sort_array[j].total_delay_min / sort_array[j].num_delayed_flights;
+        double avg = (sort_array[j].num_delayed_flights > 0) ? (double)sort_array[j].total_delay_min / sort_array[j].num_delayed_flights : 0.0;
         fprintf(out, "%s%c%d%c%.3f\n", 
                 sort_array[j].airline_name, sep,
                 sort_array[j].num_delayed_flights, sep,
@@ -97,7 +102,7 @@ void query5(FlightsManager fm, int N, FILE *out) {
     }
     g_list_free(values);
     free(sort_array);
-    g_hash_table_destroy(tmp_statistics);
+    g_hash_table_destroy(statistics);
 }
 
 

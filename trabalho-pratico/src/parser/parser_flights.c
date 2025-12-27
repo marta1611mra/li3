@@ -37,7 +37,7 @@ void parse_flights(Dataset d, const char *data_path) {
     char line[1500];
     while (fgets(line, sizeof(line), f)) {
         char flight_id[9] = "", departure[20] = "", actual_departure[20] = "", arrival[20] = "", actual_arrival[20] = "";
-        char gate[4] = "", origin[5] = "", destination[5] = "", aircraft_id[16] = "", airline[41] = "", tracking_url[101] = "", status_str[16] = "";
+        char gate[6] = "", origin[5] = "", destination[5] = "", aircraft_id[16] = "", airline[41] = "", tracking_url[101] = "", status_str[16] = "";
 
         int n = sscanf(line,
                 "\"%8[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%19[^\"]\",\"%3[^\"]\",\"%15[^\"]\",\"%4[^\"]\",\"%4[^\"]\",\"%15[^\"]\",\"%40[^\"]\",\"%100[^\"]\"",

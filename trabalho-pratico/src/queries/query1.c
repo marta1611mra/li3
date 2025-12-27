@@ -13,7 +13,6 @@ void q1(AirportsManager am, const char *code,FILE *out) {
     if (!am || !code || !out) return;
 
     Airport a = airports_manager_get(am, code);
-    if (!a) return;
 
     if (a) {
         char sep = get_output_separator();

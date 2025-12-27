@@ -88,7 +88,7 @@ void process_queries(Dataset d, const char *queries_path) {
                
             case 5: {
                 int N = atoi(arg1);
-                query5(dataset_get_flights(d), N, out);
+                query5(d, N, out);
                 break;
             }
             default:
