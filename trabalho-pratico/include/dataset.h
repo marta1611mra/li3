@@ -179,4 +179,12 @@ void dataset_build_q6_index(Dataset d);
  */
 GHashTable *dataset_get_q6_index(Dataset d);
 
+void dataset_update_q5(Dataset d, char *airline, char *sched_dep, char *real_dep);
+void dataset_finalize_q5(Dataset d);
+const void *dataset_get_q5_data(Dataset d, int *count);
+int dataset_q5_get_count(Dataset d);
+char *dataset_q5_get_name(Dataset d, int index);
+int dataset_q5_get_flights_count(Dataset d, int index);
+double dataset_q5_get_average(Dataset d, int index);
+
 #endif 
