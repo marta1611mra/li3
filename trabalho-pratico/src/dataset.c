@@ -1,8 +1,20 @@
+#define _XOPEN_SOURCE 700
 #include "dataset.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <glib.h>
+
+
+/* ===== Estrutura para Query 5 (Estatísticas de Atraso) ===== */
+typedef struct {
+    char *airline_name;
+    long total_delay;
+    int count;
+    double average; // Calculado no final para ordenação rápida
+} Q5Stats;
+
 
 /* ===== Estrutura interna ===== */
 
@@ -17,6 +29,9 @@ struct dataset {
     GHashTable *q3_index;   /* airport -> (date -> count) */
     GHashTable *q4_weeks;   /* week_sunday -> (document -> total_price) */
     GHashTable *q6_index;   /* nationality -> (airport -> count) */
+    GHashTable *q5_temp_map; // Temporário durante o parsing
+    Q5Stats *q5_array;       // Array final ordenado
+    int q5_count;            // Número de companhias
 };
 
 /* ===== Auxiliar: calcular domingo da semana ===== */
@@ -41,6 +56,39 @@ static void calculate_week_sunday(const char *date, char out[11]) {
     mktime(&tm);
 
     strftime(out, 11, "%Y-%m-%d", &tm);
+}
+
+// Cálculo rápido de delay em minutos (sem strptime lento)
+static int fast_delay_calc(const char *schedule, const char *real) {
+    if (!schedule || !real || !*schedule || !*real) return 0;
+    
+    struct tm tm_sch = {0}, tm_real = {0};
+    int y, M, d, h, m, s;
+
+    if (sscanf(schedule, "%d-%d-%d %d:%d:%d", &y, &M, &d, &h, &m, &s) < 5) return 0;
+    tm_sch.tm_year = y - 1900; tm_sch.tm_mon = M - 1; tm_sch.tm_mday = d;
+    tm_sch.tm_hour = h; tm_sch.tm_min = m; tm_sch.tm_sec = s;
+    tm_sch.tm_isdst = -1;
+
+    if (sscanf(real, "%d-%d-%d %d:%d:%d", &y, &M, &d, &h, &m, &s) < 5) return 0;
+    tm_real.tm_year = y - 1900; tm_real.tm_mon = M - 1; tm_real.tm_mday = d;
+    tm_real.tm_hour = h; tm_real.tm_min = m; tm_real.tm_sec = s;
+    tm_real.tm_isdst = -1;
+
+    time_t t_sch = mktime(&tm_sch);
+    time_t t_real = mktime(&tm_real);
+
+    return (int)(difftime(t_real, t_sch) / 60);
+}
+
+// Comparador para qsort da Query 5
+static int compare_q5(const void *a, const void *b) {
+    const Q5Stats *s1 = (const Q5Stats *)a;
+    const Q5Stats *s2 = (const Q5Stats *)b;
+
+    if (s2->average > s1->average) return 1;
+    if (s2->average < s1->average) return -1;
+    return strcmp(s1->airline_name, s2->airline_name);
 }
 
 /* ===== Criação / Destruição ===== */
@@ -75,6 +123,11 @@ Dataset dataset_create(void) {
         (GDestroyNotify) g_hash_table_destroy
     );
 
+    d->q5_temp_map = g_hash_table_new_full(
+        g_str_hash, g_str_equal, g_free, free);
+    d->q5_array = NULL;
+    d->q5_count = 0;
+
     return d;
 }
 
@@ -85,6 +138,12 @@ void dataset_destroy(Dataset d) {
     g_hash_table_destroy(d->q3_index);
     g_hash_table_destroy(d->q4_weeks);
     g_hash_table_destroy(d->q6_index);
+    if (d->q5_temp_map) g_hash_table_destroy(d->q5_temp_map);
+    if (d->q5_array) {
+        // Libertar strings dos nomes no array
+        for (int i=0; i < d->q5_count; i++) free(d->q5_array[i].airline_name);
+        free(d->q5_array);
+    }
 
     airports_manager_destroy(d->airports);
     aircrafts_manager_destroy(d->aircrafts);
@@ -236,4 +295,84 @@ void dataset_update_q6(Dataset d,
 
 void dataset_build_q6_index(Dataset d) {
     (void)d; 
+}
+
+/* ===== QUERY 5  ===== */
+void dataset_update_q5(Dataset d, char *airline, char *sched_dep, char *real_dep) {
+    int delay = fast_delay_calc(sched_dep, real_dep);
+    if (delay <= 0) return;
+
+    Q5Stats *stat = g_hash_table_lookup(d->q5_temp_map, airline);
+    if (!stat) {
+        stat = malloc(sizeof(Q5Stats));
+        stat->airline_name = strdup(airline);
+        stat->total_delay = 0;
+        stat->count = 0;
+        g_hash_table_insert(d->q5_temp_map, strdup(airline), stat);
+    }
+    stat->total_delay += delay;
+    stat->count++;
+}
+
+void dataset_finalize_q5(Dataset d) {
+    if (!d || !d->q5_temp_map) return;
+
+    d->q5_count = g_hash_table_size(d->q5_temp_map);
+    d->q5_array = malloc(sizeof(Q5Stats) * d->q5_count);
+
+    GHashTableIter iter;
+    gpointer key, value;
+    int i = 0;
+
+    g_hash_table_iter_init(&iter, d->q5_temp_map);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        Q5Stats *stat = (Q5Stats *)value;
+        stat->average = (double)stat->total_delay / stat->count;
+        
+        // Copia superficial do nome (transferimos a ownership do char* para o array)
+        // A tabela vai ser destruída, mas as chaves (strings) duplicadas no insert devem ser limpas
+        // O valor (Q5Stats*) não será limpo pelo destroy pois vamos mudar a função de destroy da tabela
+        
+        // Forma segura: Duplicamos a estrutura para o array
+        d->q5_array[i] = *stat;
+        d->q5_array[i].airline_name = strdup(stat->airline_name); // Copia profunda do nome para o array
+        i++;
+    }
+
+    // Agora destruímos a tabela temporária e liberta tudo lá dentro
+    g_hash_table_destroy(d->q5_temp_map);
+    d->q5_temp_map = NULL;
+
+    // Ordenar o array
+    qsort(d->q5_array, d->q5_count, sizeof(Q5Stats), compare_q5);
+}
+
+// Getter para a query 5 usar
+const void *dataset_get_q5_data(Dataset d, int *count) {
+    if (count) *count = d->q5_count;
+    return d->q5_array;
+}
+
+/* ===== GETTERS SEGUROS PARA Q5 ===== */
+
+int dataset_q5_get_count(Dataset d) {
+    return d ? d->q5_count : 0;
+}
+
+// Retorna o nome da companhia na posição 'index'
+char *dataset_q5_get_name(Dataset d, int index) {
+    if (!d || !d->q5_array || index < 0 || index >= d->q5_count) return NULL;
+    return d->q5_array[index].airline_name;
+}
+
+// Retorna o nº de voos na posição 'index'
+int dataset_q5_get_flights_count(Dataset d, int index) {
+    if (!d || !d->q5_array || index < 0 || index >= d->q5_count) return 0;
+    return d->q5_array[index].count;
+}
+
+// Retorna a média na posição 'index'
+double dataset_q5_get_average(Dataset d, int index) {
+    if (!d || !d->q5_array || index < 0 || index >= d->q5_count) return 0.0;
+    return d->q5_array[index].average;
 }

@@ -62,6 +62,7 @@ void parse_flights(Dataset d, const char *data_path) {
         remove_quotes(status_str); remove_spc(status_str);
         remove_quotes(origin); remove_spc(origin);
         remove_quotes(destination); remove_spc(destination);
+        remove_quotes(airline); remove_spc(airline);
         
         flight_status status;
 
@@ -124,9 +125,13 @@ void parse_flights(Dataset d, const char *data_path) {
                 const char *manufacturer = get_aircraft_manufacturer(a);
                 dataset_update_q2(d, aircraft_id, manufacturer);
             }
+            if (status == Delayed) {
+                dataset_update_q5(d, airline, departure, actual_departure);
+            }
         }
     }
 
     fclose(f);
     fclose(ferror);
+    dataset_finalize_q5(d);
 }

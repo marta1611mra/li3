@@ -244,19 +244,17 @@ void parse_reservations(Dataset d, const char *data_path) {
                     dataset_update_q3(d, orig, date_only);
                 }
             }
+            const char *dest1 = get_flight_dest(f_first);
+            if (dest1 && *dest1) {
+                airports_manager_arrival(am, dest1, 1);
+            }
         }
         
         // Só processar se for voo diferente e válido
         if (last_valid && f_last != f_first) {
-            const char *dest = get_flight_dest(f_last);
-            if (dest && *dest) {
-                airports_manager_arrival(am, dest, 1);
-            }
-        } else if (first_valid && f_last == f_first) {
-            // Caso de voo único: também contar chegada
-            const char *dest = get_flight_dest(f_first);
-            if (dest && *dest) {
-                airports_manager_arrival(am, dest, 1);
+            const char *dest2 = get_flight_dest(f_last);
+            if (dest2 && *dest2) {
+                airports_manager_arrival(am, dest2, 1);
             }
         }
     }
