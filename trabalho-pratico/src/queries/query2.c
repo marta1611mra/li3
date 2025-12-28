@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-
 #include "query2.h"
 #include "dataset.h"
 #include "aircrafts.h"      
@@ -25,13 +24,11 @@ static int cmp_q2(const void *a, const void *b) {
 
 void q2(Dataset d, int N, const char *manufacturer, FILE *out) {
     if (!d || !out || N <= 0) {
+        fprintf(out, "\n");
         return;
     }
 
     const char *key = (manufacturer && *manufacturer) ? manufacturer : "__ALL__";
-
-    /* --- AQUI ESTAVA O ERRO --- */
-    /* Antigo (Erro): GHashTable *table = g_hash_table_lookup(d->q2_index, key); */
     
     /* Novo (Correto): Usamos a função getter */
     GHashTable *index_q2 = dataset_get_q2_index(d); 
@@ -41,6 +38,7 @@ void q2(Dataset d, int N, const char *manufacturer, FILE *out) {
     /* -------------------------- */
 
     if (!table || g_hash_table_size(table) == 0) {
+        fprintf(out, "\n");
         return;
     }
 
@@ -77,6 +75,8 @@ void q2(Dataset d, int N, const char *manufacturer, FILE *out) {
                     get_aircraft_model(a),
                     sep,
                     rows[j].count);
+        }else{
+            fprintf(out, "\n");
         }
     }
 

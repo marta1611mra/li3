@@ -20,51 +20,17 @@ static FILE *safe_fopen(const char *path, const char *mode) {
     }
     return f;
 }
-// Função auxiliar para separar argumentos respeitando aspas
-void parse_query_line(char *line, char *cmd, char *arg1, char *arg2) {
-    cmd[0] = '\0'; arg1[0] = '\0'; arg2[0] = '\0';
-    
-    char *p = line;
-    
-    // 1. Ler Comando
-    while (*p && isspace((unsigned char)*p)) p++;
-    int i = 0;
-    while (*p && !isspace((unsigned char)*p)) {
-        cmd[i++] = *p++;
-    }
-    cmd[i] = '\0';
 
-    // 2. Ler Arg1
-    while (*p && isspace((unsigned char)*p)) p++;
-    if (*p) {
-        i = 0;
-        if (*p == '"') { // Se tiver aspas, lê até à próxima aspa
-            p++; 
-            while (*p && *p != '"') arg1[i++] = *p++;
-            if (*p == '"') p++;
-        } else { // Senão, lê até ao espaço
-            while (*p && !isspace((unsigned char)*p)) arg1[i++] = *p++;
-        }
-        arg1[i] = '\0';
-    }
-
-    // 3. Ler Arg2
-    while (*p && isspace((unsigned char)*p)) p++;
-    if (*p) {
-        i = 0;
-        if (*p == '"') {
-            p++;
-            while (*p && *p != '"') arg2[i++] = *p++;
-            if (*p == '"') p++;
-        } else {
-            while (*p && !isspace((unsigned char)*p) && *p != '\n') arg2[i++] = *p++;
-        }
-        arg2[i] = '\0';
+// Remove o \n e espaços brancos do final da string
+static void trim_end(char *str) {
+    if (!str) return;
+    size_t len = strlen(str);
+    while (len > 0 && isspace((unsigned char)str[len - 1])) {
+        str[--len] = '\0';
     }
 }
 
 // Processa todas as queries listadas num ficheiro de input.
-
 void process_queries(Dataset d, const char *queries_path) {
     FILE *queries_file = safe_fopen(queries_path, "r");
     if (!queries_file) return;
@@ -77,19 +43,42 @@ void process_queries(Dataset d, const char *queries_path) {
     while (fgets(line, sizeof(line), queries_file)) {
         if (strlen(line) == 0 || line[0] == '\n') continue;
 
+        // Limpar espaços no fim da linha (\n, \r, etc)
+        trim_end(line);
+
         char output_path[128];
         snprintf(output_path, sizeof(output_path),
                  "resultados/command%d_output.txt", command_number);
 
         FILE *out = safe_fopen(output_path, "w");
         if (!out) {
-            fprintf(stderr, "Erro ao criar o ficheiro de output da query %d\n", command_number);
+            command_number++;
             continue;
         }
 
-        /* parsing do comando */
-        char cmd[16], arg1[128] = "", arg2[128] = "";
-        parse_query_line(line, cmd, arg1, arg2);
+        char cmd[32] = {0};
+        char *args = NULL;
+
+        // Encontrar o primeiro espaço
+        char *space_ptr = strchr(line, ' ');
+
+        if (space_ptr) {
+            // Copiar o comando até ao espaço
+            size_t cmd_len = space_ptr - line;
+            if (cmd_len > 31) cmd_len = 31;
+            strncpy(cmd, line, cmd_len);
+            cmd[cmd_len] = '\0';
+
+            // O argumento é tudo o que está depois do espaço
+            args = space_ptr + 1; 
+            
+            // Ignorar espaços extra entre o comando e o argumento
+            while (*args && isspace((unsigned char)*args)) args++;
+        } else {
+            // Se não houver espaço, a linha toda é o comando (ex: "5")
+            strcpy(cmd, line);
+            args = "";
+        }
 
         int qid = atoi(cmd);
         char sep = strchr(cmd, 'S') ? '=' : ';';
@@ -97,30 +86,40 @@ void process_queries(Dataset d, const char *queries_path) {
 
         switch (qid) {
             case 1:{
-                q1(dataset_get_airports(d), arg1, out);
+                q1(dataset_get_airports(d), args, out);
                 break;
             }
 
             case 2: {
-                q2(d, atoi(arg1), (strlen(arg2) > 0 ? arg2 : NULL), out); 
+                // Tenta ler N e Filtro. Se ler 2 coisas, usa o filtro.
+                int N = 0;
+                char filter[128] = "";
+                if (sscanf(args, "%d %s", &N, filter) == 2) {
+                    q2(d, N, filter, out);
+                } else {
+                    sscanf(args, "%d", &N);
+                    q2(d, N, NULL, out);
+                }
                 break;
             }
             case 3:{
-                /** Query 3: 3 <start_date> <end_date> */
-                if (strlen(arg1) > 0 && strlen(arg2) > 0)
-                    q3(d, (char *[]){arg1, arg2}, out);
+                char d1[64], d2[64];
+                if (sscanf(args, "%s %s", d1, d2) == 2) {
+                    q3(d, (char *[]){d1, d2}, out);
+                }
                 break;
             }
             case 4:{
-                query4_execute(d, (strlen(arg1)>0 ? arg1 : NULL), (strlen(arg2)>0 ? arg2 : NULL), out); 
+                if (strlen(args) > 0) query4_execute(d, args, NULL, out);
+                else query4_execute(d, NULL, NULL, out);
                 break;
             }   
             case 5: {
-                query5(d, atoi(arg1), out); 
+                query5(d, atoi(args), out); 
                 break;
             }
             case 6: {
-                q6(d,arg1,out);
+                q6(d,args,out);
                 break;
             }
             default:
