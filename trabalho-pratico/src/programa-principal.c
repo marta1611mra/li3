@@ -31,7 +31,7 @@ static void ensure_result_dir(void) {
 // Função principal do programa.
 int main(int argc, char *argv[]) {
     // Verifica se os argumentos foram fornecidos corretamente
-    if (argc != 3) {
+    if (argc < 3) {
         fprintf(stderr, "Uso: %s <pasta_dataset> <ficheiro_comandos>\n", argv[0]);
         return 1;
     }

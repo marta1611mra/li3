@@ -13,5 +13,5 @@
  * @param queries_path Caminho para o ficheiro de input contendo as queries.
  */
 void process_queries(Dataset d, const char *queries_path);
-
+void parse_query_line(char *line, char *cmd, char *arg1, char *arg2);
 #endif

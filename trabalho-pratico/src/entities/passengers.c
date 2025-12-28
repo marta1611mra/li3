@@ -10,7 +10,7 @@ struct passenger{
     char first_name[30];
     char last_name[30];
     char dob[11];
-    char nationality[20];
+    char nationality[65];
     //char gender[10];
     //char email[50];
     //char phone[15];

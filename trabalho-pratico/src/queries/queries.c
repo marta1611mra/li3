@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 #include "output_format.h"
 #include "dataset.h"
 #include "queries/query1.h"
@@ -18,6 +19,48 @@ static FILE *safe_fopen(const char *path, const char *mode) {
         fprintf(stderr, "Erro ao abrir ficheiro: %s\n", path);
     }
     return f;
+}
+// Função auxiliar para separar argumentos respeitando aspas
+void parse_query_line(char *line, char *cmd, char *arg1, char *arg2) {
+    cmd[0] = '\0'; arg1[0] = '\0'; arg2[0] = '\0';
+    
+    char *p = line;
+    
+    // 1. Ler Comando
+    while (*p && isspace((unsigned char)*p)) p++;
+    int i = 0;
+    while (*p && !isspace((unsigned char)*p)) {
+        cmd[i++] = *p++;
+    }
+    cmd[i] = '\0';
+
+    // 2. Ler Arg1
+    while (*p && isspace((unsigned char)*p)) p++;
+    if (*p) {
+        i = 0;
+        if (*p == '"') { // Se tiver aspas, lê até à próxima aspa
+            p++; 
+            while (*p && *p != '"') arg1[i++] = *p++;
+            if (*p == '"') p++;
+        } else { // Senão, lê até ao espaço
+            while (*p && !isspace((unsigned char)*p)) arg1[i++] = *p++;
+        }
+        arg1[i] = '\0';
+    }
+
+    // 3. Ler Arg2
+    while (*p && isspace((unsigned char)*p)) p++;
+    if (*p) {
+        i = 0;
+        if (*p == '"') {
+            p++;
+            while (*p && *p != '"') arg2[i++] = *p++;
+            if (*p == '"') p++;
+        } else {
+            while (*p && !isspace((unsigned char)*p) && *p != '\n') arg2[i++] = *p++;
+        }
+        arg2[i] = '\0';
+    }
 }
 
 // Processa todas as queries listadas num ficheiro de input.
@@ -46,7 +89,7 @@ void process_queries(Dataset d, const char *queries_path) {
 
         /* parsing do comando */
         char cmd[16], arg1[128] = "", arg2[128] = "";
-        int n = sscanf(line, "%15s %127s %127s", cmd, arg1, arg2);
+        parse_query_line(line, cmd, arg1, arg2);
 
         int qid = atoi(cmd);
         char sep = strchr(cmd, 'S') ? '=' : ';';
@@ -59,31 +102,21 @@ void process_queries(Dataset d, const char *queries_path) {
             }
 
             case 2: {
-                int N = atoi(arg1);
-                const char *filter = (n == 3) ? arg2 : NULL;
-                q2(d,N, filter, out);
+                q2(d, atoi(arg1), (strlen(arg2) > 0 ? arg2 : NULL), out); 
                 break;
             }
-
             case 3:{
                 /** Query 3: 3 <start_date> <end_date> */
-                if (n == 3)
+                if (strlen(arg1) > 0 && strlen(arg2) > 0)
                     q3(d, (char *[]){arg1, arg2}, out);
-                else
-                    fprintf(stderr, "Query 3 mal formatada na linha %d\n", command_number);
                 break;
             }
-            case 4:
-                if (n >= 2) {
-                    query4_execute(d, arg1, arg2, out);
-                } else {
-                    query4_execute(d, NULL, NULL, out);
-                }
-            break;
-               
+            case 4:{
+                query4_execute(d, (strlen(arg1)>0 ? arg1 : NULL), (strlen(arg2)>0 ? arg2 : NULL), out); 
+                break;
+            }   
             case 5: {
-                int N = atoi(arg1);
-                query5(d, N, out);
+                query5(d, atoi(arg1), out); 
                 break;
             }
             case 6: {
