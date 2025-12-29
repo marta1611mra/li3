@@ -6,6 +6,7 @@
 #include "queries/query6.h"
 #include "dataset.h"
 #include "parser/parser.h"
+#include "output_format.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -45,8 +46,7 @@ void interactive_program(char *path) {
             dataset_destroy(dataset);
             return;
         }
-        
-        // 
+        // Usar valor padrão se vazio
         if (strlen(buffer) == 0) {
             strncpy(buffer, "dataset", sizeof(buffer) - 1);
             buffer[sizeof(buffer) - 1] = '\0';
@@ -99,7 +99,6 @@ void interactive_program(char *path) {
 
                 printf("\nResultado:\n");
                 
-                // Capturar output para verificar se está vazio
                 FILE *temp = tmpfile();
                 if (temp) {
                     q1(dataset_get_airports(dataset), airport_code, temp);
@@ -198,7 +197,8 @@ void interactive_program(char *path) {
                 
                 FILE *temp = tmpfile();
                 if (temp) {
-                    q3(dataset, (char *[]){start_date, end_date}, temp);
+                    char *dates[2] = {start_date, end_date};
+                    q3(dataset, dates, temp);
                     rewind(temp);
                     
                     char result[1024];
@@ -212,7 +212,8 @@ void interactive_program(char *path) {
                     }
                     fclose(temp);
                 } else {
-                    q3(dataset, (char *[]){start_date, end_date}, stdout);
+                    char *dates[2] = {start_date, end_date};
+                    q3(dataset, dates, stdout);
                 }
                 break;
             }
@@ -229,6 +230,15 @@ void interactive_program(char *path) {
                 printf("Introduza a data de fim (YYYY-MM-DD) ou deixe vazio: ");
                 if (!read_line(end_date, sizeof(end_date))) {
                     printf("Erro ao ler a data.\n");
+                    break;
+                }
+
+                // Validar: ou ambos preenchidos, ou ambos vazios
+                int has_begin = (strlen(begin_date) > 0);
+                int has_end = (strlen(end_date) > 0);
+
+                if (has_begin != has_end) {
+                    printf("Erro: Deve fornecer ambas as datas ou nenhuma.\n");
                     break;
                 }
 

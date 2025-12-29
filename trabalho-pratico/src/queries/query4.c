@@ -6,13 +6,14 @@
 #include "dataset.h"
 #include "passengers_manager.h"
 #include "passengers.h"
+#include "output_format.h"
 
 typedef struct {
     char *document_number;
     double total_spent;
 } PassengerSpending;
 
-// Comparação para ordenar passageiros
+// Comparação para ordenar passageiros (decrescente por gasto, desempate por ID)
 static gint compare_passenger_spending(gconstpointer a, gconstpointer b) {
     const PassengerSpending *pa = a;
     const PassengerSpending *pb = b;
@@ -31,7 +32,7 @@ static void free_passenger_spending(gpointer data) {
     }
 }
 
-// Ajusta intervalo para domingo-sábado
+// Ajusta intervalo para domingo-sábado (início e fim de semana)
 static void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, 
                                       GDate *begin_out, GDate *end_out) {
     if (!begin || !end || !begin_out || !end_out) return;
@@ -40,21 +41,22 @@ static void adjust_to_sunday_saturday(const GDate *begin, const GDate *end,
     *begin_out = *begin;
     *end_out = *end;
 
-    // Ajustar begin para domingo
+    // Ajustar begin para domingo (início da semana)
     GDateWeekday begin_wd = g_date_get_weekday(begin_out);
     if (begin_wd != G_DATE_SUNDAY) {
+        // Número de dias para subtrair até domingo
         guint8 days_back = begin_wd % 7;
         if (days_back > 0) {
             g_date_subtract_days(begin_out, days_back);
         }
     }
 
-    // Ajustar end para sábado
+    // Ajustar end para sábado (fim da semana)
     GDateWeekday end_wd = g_date_get_weekday(end_out);
     if (end_wd != G_DATE_SATURDAY) {
-        guint8 days_forward = (7 - end_wd) % 7;
-        if (days_forward == 0) days_forward = 6;
-        if (days_forward > 0 && days_forward < 7) {
+        // Número de dias para adicionar até sábado
+        guint8 days_forward = (G_DATE_SATURDAY - end_wd);
+        if (days_forward > 0) {
             g_date_add_days(end_out, days_forward);
         }
     }
@@ -80,9 +82,19 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
         g_date_clear(&week_date, 1);
         g_date_set_parse(&week_date, week_key);
         
-        if (!g_date_valid(&week_date) ||
-            g_date_compare(&week_date, &ctx->filter_start) < 0 ||
-            g_date_compare(&week_date, &ctx->filter_end) > 0) {
+        if (!g_date_valid(&week_date)) {
+            return;
+        }
+
+        // A semana deve estar dentro ou sobrepor o intervalo de filtro
+        // week_date é o domingo da semana
+        GDate week_end = week_date;
+        g_date_add_days(&week_end, 6); // Sábado da mesma semana
+
+        // Verificar se a semana sobrepõe o intervalo
+        // Semana válida se: week_date <= filter_end E week_end >= filter_start
+        if (g_date_compare(&week_date, &ctx->filter_end) > 0 ||
+            g_date_compare(&week_end, &ctx->filter_start) < 0) {
             return;
         }
     }
@@ -95,6 +107,7 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
     g_hash_table_iter_init(&iter, week_spending);
     while (g_hash_table_iter_next(&iter, &pkey, &pvalue)) {
         PassengerSpending *ps = malloc(sizeof(PassengerSpending));
+        if (!ps) continue;
         ps->document_number = strdup((const char *)pkey);
         ps->total_spent = *(double *)pvalue;
         passenger_list = g_list_prepend(passenger_list, ps);
@@ -111,10 +124,14 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
         int *appearances = g_hash_table_lookup(ctx->top10_counts, ps->document_number);
         if (!appearances) {
             appearances = malloc(sizeof(int));
-            *appearances = 0;
-            g_hash_table_insert(ctx->top10_counts, strdup(ps->document_number), appearances);
+            if (appearances) {
+                *appearances = 0;
+                g_hash_table_insert(ctx->top10_counts, strdup(ps->document_number), appearances);
+            }
         }
-        (*appearances)++;
+        if (appearances) {
+            (*appearances)++;
+        }
     }
     
     g_list_free_full(passenger_list, free_passenger_spending);
@@ -124,7 +141,7 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
 // Usa índice pré-agregado: week_sunday -> (document -> total_price)
 void query4_execute(Dataset d, const char *begin_date, const char *end_date, FILE *out) {
     if (!d || !out) {
-        if (out) fprintf(out, "\n");
+        if (out) output_empty(out);
         return;
     }
     
@@ -132,7 +149,7 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
     GHashTable *q4_weeks = dataset_get_q4_weeks(d);
     
     if (!pm || !q4_weeks || g_hash_table_size(q4_weeks) == 0) {
-        fprintf(out, "\n");
+        output_empty(out);
         return;
     }
     
@@ -140,8 +157,9 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
     int has_begin = (begin_date && strlen(begin_date) > 0);
     int has_end = (end_date && strlen(end_date) > 0);
     
+    // Ambos devem estar presentes ou ambos ausentes
     if (has_begin != has_end) {
-        fprintf(out, "\n");
+        output_empty(out);
         return;
     }
     
@@ -173,7 +191,7 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
     
     if (g_hash_table_size(ctx.top10_counts) == 0) {
         g_hash_table_destroy(ctx.top10_counts);
-        fprintf(out, "\n");
+        output_empty(out);
         return;
     }
     
@@ -189,26 +207,31 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
         const char *doc = (const char *)key;
         int count = *(int *)value;
         
+        // Em caso de empate, escolher o menor ID
         if (count > max_count || (count == max_count && (!best_passenger || strcmp(doc, best_passenger) < 0))) {
             best_passenger = doc;
             max_count = count;
         }
     }
     
-    // Output
+    // Output com separador correto
     if (best_passenger) {
         Passenger p = passengers_manager_get(pm, best_passenger);
         if (p) {
-            fprintf(out, "%s;%s;%s;%s;%s;%d\n",
-                   best_passenger,
-                   get_passenger_first_name(p),
-                   get_passenger_last_name(p),
-                   get_passenger_dob(p),
-                   get_passenger_nationality(p),
+            char sep = get_output_separator();
+            fprintf(out, "%s%c%s%c%s%c%s%c%s%c%d\n",
+                   best_passenger, sep,
+                   get_passenger_first_name(p), sep,
+                   get_passenger_last_name(p), sep,
+                   get_passenger_dob(p), sep,
+                   get_passenger_nationality(p), sep,
                    max_count);
-        } else { fprintf(out, "\n");}
-    } 
-        else { fprintf(out, "\n");}
+        } else { 
+            output_empty(out);
+        }
+    } else { 
+        output_empty(out);
+    }
 
     g_hash_table_destroy(ctx.top10_counts);
 }

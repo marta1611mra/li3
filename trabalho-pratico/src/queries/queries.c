@@ -102,32 +102,60 @@ void process_queries(Dataset d, const char *queries_path) {
                 }
                 break;
             }
+            
             case 3:{
-                char d1[64], d2[64];
+                char d1[64] = "";
+                char d2[64] = "";
                 if (sscanf(args, "%s %s", d1, d2) == 2) {
-                    q3(d, (char *[]){d1, d2}, out);
+                    char *dates[2] = {d1, d2};
+                    q3(d, dates, out);
+                } else {
+                    output_empty(out);
                 }
                 break;
             }
+            
             case 4:{
-                if (strlen(args) > 0) query4_execute(d, args, NULL, out);
-                else query4_execute(d, NULL, NULL, out);
+                char begin_date[64] = "";
+                char end_date[64] = "";
+                int n = sscanf(args, "%s %s", begin_date, end_date);
+                if (n == 2) {
+                    // Ambas as datas fornecidas
+                    query4_execute(d, begin_date, end_date, out);
+                } else if (n == 0 || strlen(args) == 0) {
+                    // Nenhuma data fornecida
+                    query4_execute(d, NULL, NULL, out);
+                } else {
+                    // Apenas uma data fornecida (inválido)
+                    output_empty(out);
+                }
                 break;
-            }   
+            }
+            
             case 5: {
-                query5(d, atoi(args), out); 
+                int N = atoi(args);
+                if (N > 0) {
+                    query5(d, N, out);
+                } else {
+                    output_empty(out);
+                }
                 break;
             }
+            
             case 6: {
-                q6(d,args,out);
+                if (args && strlen(args) > 0) {
+                    q6(d, args, out);
+                } else {
+                    output_empty(out);
+                }
                 break;
             }
+            
             default:
-                //  Query desconhecida 
+                // Query desconhecida 
                 fprintf(stderr, "Query %d não implementada.\n", qid);
-                fprintf(out, "\n");
+                output_empty(out);
                 break;
-
         }
 
         fclose(out);
@@ -137,4 +165,3 @@ void process_queries(Dataset d, const char *queries_path) {
     fclose(queries_file);
     printf("Todas as queries foram processadas.\n");
 }
-

@@ -63,13 +63,13 @@ static int fast_delay_calc(const char *schedule, const char *real) {
     if (!schedule || !real || !schedule) return 0;
 
     struct tm tm_sch = {0}, tm_real = {0};
-    int y=0, M=0, d=0, h=0, m=0, s=0; 
+    int y=0, M=0, d=0, h=0, m=0; 
 
     if (sscanf(schedule, "%d-%d-%d %d:%d", &y, &M, &d, &h, &m) < 5) return 0;
     tm_sch.tm_year = y - 1900; tm_sch.tm_mon = M - 1; tm_sch.tm_mday = d;
     tm_sch.tm_hour = h; tm_sch.tm_min = m; tm_sch.tm_sec = 0; tm_sch.tm_isdst = -1;
 
-    y=0; M=0; d=0; h=0; m=0; s=0;
+    y=0; M=0; d=0; h=0; m=0; 
 
     if (sscanf(real, "%d-%d-%d %d:%d", &y, &M, &d, &h, &m) < 5) return 0;
     tm_real.tm_year = y - 1900; tm_real.tm_mon = M - 1; tm_real.tm_mday = d;
