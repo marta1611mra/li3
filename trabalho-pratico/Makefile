@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -g -std=gnu11 \
          -Iinclude -Iinclude/entities -Iinclude/managers -Iinclude/queries \
          $(shell pkg-config --cflags glib-2.0)
-LIBS = $(shell pkg-config --libs glib-2.0)
+LIBS = $(shell pkg-config --libs glib-2.0) -lm
 
 SRC_COMMON = \
     src/dataset.c \
