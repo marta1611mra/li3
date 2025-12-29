@@ -3,6 +3,8 @@ CFLAGS = -Wall -g -std=gnu11 \
          -Iinclude -Iinclude/entities -Iinclude/managers -Iinclude/queries \
          $(shell pkg-config --cflags glib-2.0)
 LIBS = $(shell pkg-config --libs glib-2.0) -lm
+PTHREAD_LIBS = -lpthread
+NCURSES_LIBS = -lncurses
 
 SRC_COMMON = \
     src/dataset.c \
@@ -35,7 +37,8 @@ SRC_COMMON = \
 
 OBJ_COMMON = $(SRC_COMMON:.c=.o)
 
-all: programa-principal programa-testes programa-interativo
+# Target padrão compila apenas principal e testes (conforme enunciado)
+all: programa-principal programa-testes
 
 programa-principal: $(OBJ_COMMON) src/programa-principal.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
@@ -43,11 +46,16 @@ programa-principal: $(OBJ_COMMON) src/programa-principal.o
 programa-testes: $(OBJ_COMMON) src/programa-testes.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-programa-interativo: $(OBJ_COMMON) src/programa-interativo.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+# Programa interativo com interface NCURSES (terminal)
+programa-interativo: src/programa-interativo.c $(OBJ_COMMON)
+	$(CC) $(CFLAGS) -o $@ $< $(OBJ_COMMON) $(LIBS) $(NCURSES_LIBS)
 
+# Regra geral para compilar .c em .o
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f programa-principal programa-testes programa-interativo src/*.o src/entities/*.o src/managers/*.o src/queries/*.o src/parser/*.o
+	rm -f programa-principal programa-testes programa-interativo \
+	      src/*.o src/entities/*.o src/managers/*.o src/queries/*.o src/parser/*.o
+
+.PHONY: all clean

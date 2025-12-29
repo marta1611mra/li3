@@ -1,23 +1,76 @@
-#include "queries/query1.h"
-#include "queries/query2.h"
-#include "queries/query3.h"
-#include "queries/query4.h"
-#include "queries/query5.h"
-#include "queries/query6.h"
-#include "dataset.h"
-#include <glib.h>
-#include "flights_manager.h"
-#include "airports_manager.h"
-#include "aircrafts_manager.h"
-#include "reservations_manager.h"
-#include "passengers_manager.h"
-#include <stdio.h>
-#include <string.h>
+#ifndef PROGRAMA_INTERATIVO_NCURSES_H
+#define PROGRAMA_INTERATIVO_NCURSES_H
 
-/** @brief Executa o programa interativo do sistema. 
- * Esta função permite ao utilizador carregar um dataset e executar queries interativamente, 
- * lendo inputs do terminal e exibindo os resultados diretamente no stdout.
- * @param path Caminho opcional para o dataset (pode ser NULL)
- * @return void
+#include "dataset.h"
+#include <ncurses.h>
+
+#define QUERY_INPUT_SIZE 256
+
+/**
+ * @brief Estrutura para armazenar inputs das queries
  */
-void interactive_program(char *path);
+typedef struct {
+    char code[QUERY_INPUT_SIZE];           // Query 1: código do aeroporto
+    int n;                                 // Query 2, 5: número N
+    char manufacturer[QUERY_INPUT_SIZE];    // Query 2: fabricante
+    char start_date[QUERY_INPUT_SIZE];     // Query 3: data início
+    char end_date[QUERY_INPUT_SIZE];       // Query 3, 4: data fim
+    char begin_date[QUERY_INPUT_SIZE];     // Query 4: data início
+    char nationality[QUERY_INPUT_SIZE];    // Query 6: nacionalidade
+} QueryInputs;
+
+/**
+ * @brief Desenha o cabeçalho da interface
+ * @param win Janela ncurses onde desenhar
+ */
+void draw_header(WINDOW *win);
+
+/**
+ * @brief Desenha o menu com as queries disponíveis
+ * @param win Janela ncurses onde desenhar
+ * @param selected Índice da query selecionada (0-5)
+ */
+void draw_menu(WINDOW *win, int selected);
+
+/**
+ * @brief Desenha a opção de alternar separador
+ * @param win Janela ncurses onde desenhar
+ * @param y Posição Y onde desenhar
+ * @param current_sep Separador atual
+ */
+void draw_separator_option(WINDOW *win, int y, char current_sep);
+
+/**
+ * @brief Obtém input do usuário
+ * @param win Janela ncurses
+ * @param y Posição Y onde mostrar o input
+ * @param label Label a mostrar
+ * @param buffer Buffer onde guardar o input
+ * @param max_len Tamanho máximo do input
+ */
+void get_input(WINDOW *win, int y, const char *label, char *buffer, int max_len);
+
+/**
+ * @brief Mostra os resultados de uma query
+ * @param win Janela ncurses onde mostrar
+ * @param result String com os resultados
+ */
+void show_results(WINDOW *win, const char *result);
+
+/**
+ * @brief Executa uma query e mostra os resultados
+ * @param win Janela ncurses
+ * @param dataset Dataset carregado
+ * @param query_num Número da query (0-5)
+ * @param inputs Estrutura com os inputs
+ * @param separator Separador a usar no output
+ */
+void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inputs, char separator);
+
+/**
+ * @brief Desenha o rodapé com instruções
+ * @param win Janela ncurses onde desenhar
+ */
+void draw_footer(WINDOW *win);
+
+#endif // PROGRAMA_INTERATIVO_NCURSES_H
