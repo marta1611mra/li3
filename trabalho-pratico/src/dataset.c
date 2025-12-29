@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 #include <glib.h>
 
 
@@ -58,27 +59,28 @@ static void calculate_week_sunday(const char *date, char out[11]) {
     strftime(out, 11, "%Y-%m-%d", &tm);
 }
 
-// Cálculo rápido de delay em minutos (sem strptime lento)
 static int fast_delay_calc(const char *schedule, const char *real) {
-    if (!schedule || !real || !*schedule || !*real) return 0;
-    
+    if (!schedule || !real || !schedule) return 0;
+
     struct tm tm_sch = {0}, tm_real = {0};
-    int y, M, d, h, m, s;
+    int y=0, M=0, d=0, h=0, m=0, s=0; 
 
-    if (sscanf(schedule, "%d-%d-%d %d:%d:%d", &y, &M, &d, &h, &m, &s) < 5) return 0;
+    if (sscanf(schedule, "%d-%d-%d %d:%d:%d", &y, &M, &d, &h, &m, &s) < 6) return 0;
     tm_sch.tm_year = y - 1900; tm_sch.tm_mon = M - 1; tm_sch.tm_mday = d;
-    tm_sch.tm_hour = h; tm_sch.tm_min = m; tm_sch.tm_sec = s;
-    tm_sch.tm_isdst = -1;
+    tm_sch.tm_hour = h; tm_sch.tm_min = m; tm_sch.tm_sec = s; tm_sch.tm_isdst = -1;
 
-    if (sscanf(real, "%d-%d-%d %d:%d:%d", &y, &M, &d, &h, &m, &s) < 5) return 0;
+    y=0; M=0; d=0; h=0; m=0; s=0;
+
+    if (sscanf(real, "%d-%d-%d %d:%d:%d", &y, &M, &d, &h, &m, &s) < 6) return 0;
     tm_real.tm_year = y - 1900; tm_real.tm_mon = M - 1; tm_real.tm_mday = d;
-    tm_real.tm_hour = h; tm_real.tm_min = m; tm_real.tm_sec = s;
-    tm_real.tm_isdst = -1;
+    tm_real.tm_hour = h; tm_real.tm_min = m; tm_real.tm_sec = s; tm_real.tm_isdst = -1;
 
     time_t t_sch = mktime(&tm_sch);
     time_t t_real = mktime(&tm_real);
 
-    return (int)(difftime(t_real, t_sch) / 60);
+    if (t_sch == -1 || t_real == -1) return 0;
+
+    return (int)(difftime(t_real, t_sch) / 60.0);
 }
 
 // Comparador para qsort da Query 5
@@ -140,8 +142,9 @@ void dataset_destroy(Dataset d) {
     g_hash_table_destroy(d->q6_index);
     if (d->q5_temp_map) g_hash_table_destroy(d->q5_temp_map);
     if (d->q5_array) {
-        // Libertar strings dos nomes no array
-        for (int i=0; i < d->q5_count; i++) free(d->q5_array[i].airline_name);
+        for (int i=0; i < d->q5_count; i++) {
+        free(d->q5_array[i].airline_name);
+        }
         free(d->q5_array);
     }
 
@@ -327,23 +330,26 @@ void dataset_finalize_q5(Dataset d) {
     g_hash_table_iter_init(&iter, d->q5_temp_map);
     while (g_hash_table_iter_next(&iter, &key, &value)) {
         Q5Stats *stat = (Q5Stats *)value;
-        stat->average = (double)stat->total_delay / stat->count;
-        
-        // Copia superficial do nome (transferimos a ownership do char* para o array)
-        // A tabela vai ser destruída, mas as chaves (strings) duplicadas no insert devem ser limpas
-        // O valor (Q5Stats*) não será limpo pelo destroy pois vamos mudar a função de destroy da tabela
-        
-        // Forma segura: Duplicamos a estrutura para o array
-        d->q5_array[i] = *stat;
-        d->q5_array[i].airline_name = strdup(stat->airline_name); // Copia profunda do nome para o array
+        // Calcula a média antes de passar para o array
+        if (stat->count > 0) {
+            stat->average = (double)stat->total_delay / stat->count;
+            stat->average = round(stat->average * 1000.0) / 1000.0;
+        } else {
+            stat->average = 0;
+        }
+
+        d->q5_array[i].airline_name = strdup(stat->airline_name);
+        d->q5_array[i].total_delay = stat->total_delay;
+        d->q5_array[i].count = stat->count;
+        d->q5_array[i].average = stat->average;
         i++;
     }
 
-    // Agora destruímos a tabela temporária e liberta tudo lá dentro
+    // Limpeza correta da tabela temporária
     g_hash_table_destroy(d->q5_temp_map);
     d->q5_temp_map = NULL;
 
-    // Ordenar o array
+    // Ordenação final
     qsort(d->q5_array, d->q5_count, sizeof(Q5Stats), compare_q5);
 }
 
