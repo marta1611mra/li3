@@ -207,10 +207,19 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
         const char *doc = (const char *)key;
         int count = *(int *)value;
         
-        // Em caso de empate, escolher o menor ID
-        if (count > max_count || (count == max_count && (!best_passenger || strcmp(doc, best_passenger) < 0))) {
+        // Em caso de empate, escolher o menor ID (ordem lexicográfica)
+        if (count > max_count) {
+            // Este tem mais aparições - sempre escolhe
             best_passenger = doc;
             max_count = count;
+        } else if (count == max_count && best_passenger != NULL) {
+            // Empate - escolher o menor lexicograficamente
+            if (strcmp(doc, best_passenger) < 0) {
+                best_passenger = doc;
+            }
+        } else if (count == max_count && best_passenger == NULL) {
+            // Primeiro passageiro com este count
+            best_passenger = doc;
         }
     }
     
