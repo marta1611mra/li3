@@ -17,7 +17,7 @@ static void clear_input_buffer(void) {
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
-// lê uma linha do stdin 
+// Lê uma linha do stdin 
 static int read_line(char *buffer, size_t size) {
     if (!fgets(buffer, size, stdin)) {
         return 0;
@@ -26,7 +26,23 @@ static int read_line(char *buffer, size_t size) {
     return 1;
 }
 
-// Exexuta o programa interativo
+// Pergunta ao utilizador se quer usar formato alternativo
+static char ask_format(void) {
+    char choice;
+    printf("Usar formato alternativo (separador '=')? (s/n): ");
+    if (scanf(" %c", &choice) != 1) {
+        clear_input_buffer();
+        return ';';
+    }
+    clear_input_buffer();
+    
+    if (choice == 's' || choice == 'S') {
+        return '=';
+    }
+    return ';';
+}
+
+// Executa o programa interativo
 void interactive_program(char *path) {
     char buffer[256];
     Dataset dataset = NULL;
@@ -46,6 +62,7 @@ void interactive_program(char *path) {
             dataset_destroy(dataset);
             return;
         }
+        
         // Usar valor padrão se vazio
         if (strlen(buffer) == 0) {
             strncpy(buffer, "dataset", sizeof(buffer) - 1);
@@ -60,11 +77,22 @@ void interactive_program(char *path) {
     parse_all(dataset, buffer);
     printf("Dataset carregado...\n");
 
-    // loop para executar queries
+    // Loop principal para executar queries
     while (1) {
         int query_number;
         
-        printf("\nQue query deseja executar (1-6, 0 para sair)? ");
+        printf("\n========================================\n");
+        printf("        MENU DE QUERIES\n");
+        printf("========================================\n");
+        printf("1 - Resumo de aeroporto\n");
+        printf("2 - Top N aeronaves com mais voos\n");
+        printf("3 - Aeroporto com mais partidas\n");
+        printf("4 - Passageiro mais frequente no top 10\n");
+        printf("5 - Top N companhias com mais atraso\n");
+        printf("6 - Aeroporto de destino mais comum\n");
+        printf("0 - Sair\n");
+        printf("========================================\n");
+        printf("Escolha uma opção: ");
         
         if (scanf("%d", &query_number) != 1) {
             printf("Entrada inválida. Por favor, introduza um número.\n");
@@ -83,10 +111,21 @@ void interactive_program(char *path) {
             continue;
         }
 
+        // Perguntar formato de output
+        char sep = ask_format();
+        set_output_separator(sep);
+        
+        if (sep == '=') {
+            printf("→ Usando formato alternativo (separador '=')\n");
+        } else {
+            printf("→ Usando formato padrão (separador ';')\n");
+        }
+
         switch (query_number) {
             case 1: {
                 char airport_code[10];
-                printf("Introduza o código do aeroporto: ");
+                printf("\n--- QUERY 1: Resumo de Aeroporto ---\n");
+                printf("Código do aeroporto: ");
                 if (!read_line(airport_code, sizeof(airport_code))) {
                     printf("Erro ao ler o código.\n");
                     break;
@@ -97,7 +136,7 @@ void interactive_program(char *path) {
                     break;
                 }
 
-                printf("\nResultado:\n");
+                printf("\n→ Resultado:\n");
                 
                 FILE *temp = tmpfile();
                 if (temp) {
@@ -106,10 +145,10 @@ void interactive_program(char *path) {
                     
                     char result[1024];
                     if (fgets(result, sizeof(result), temp)) {
-                        if (strlen(result) <= 1) {  // apenas '\n' ou vazio
-                            printf("Nenhum resultado encontrado para o código '%s'.\n", airport_code);
+                        if (strlen(result) <= 1) {
+                            printf("✗ Nenhum resultado encontrado para '%s'\n", airport_code);
                         } else {
-                            printf("%s", result);
+                            printf("✓ %s", result);
                         }
                     }
                     fclose(temp);
@@ -123,21 +162,22 @@ void interactive_program(char *path) {
                 int N;
                 char manufacturer[100];
                 
-                printf("Introduza o número N: ");
+                printf("\n--- QUERY 2: Top N Aeronaves ---\n");
+                printf("Número N: ");
                 if (scanf("%d", &N) != 1 || N <= 0) {
-                    printf("N inválido. Deve ser um número positivo.\n");
+                    printf("✗ N inválido. Deve ser um número positivo.\n");
                     clear_input_buffer();
                     break;
                 }
                 clear_input_buffer();
 
-                printf("Introduza o fabricante (ou deixe vazio): ");
+                printf("Fabricante (deixe vazio para todos): ");
                 if (!read_line(manufacturer, sizeof(manufacturer))) {
                     printf("Erro ao ler o fabricante.\n");
                     break;
                 }
 
-                printf("\nResultado:\n");
+                printf("\n→ Resultado:\n");
                 
                 FILE *temp = tmpfile();
                 if (temp) {
@@ -149,18 +189,19 @@ void interactive_program(char *path) {
                     
                     char line[1024];
                     int has_results = 0;
-                    while (fgets(line, sizeof(line), temp)) {
+                    int count = 0;
+                    while (fgets(line, sizeof(line), temp) && count < N) {
                         if (strlen(line) > 1) {
-                            printf("%s", line);
+                            printf("%d. %s", ++count, line);
                             has_results = 1;
                         }
                     }
                     
                     if (!has_results) {
                         if (strlen(manufacturer) > 0) {
-                            printf("Nenhum resultado encontrado para o fabricante '%s'.\n", manufacturer);
+                            printf("✗ Nenhum resultado para fabricante '%s'\n", manufacturer);
                         } else {
-                            printf("Nenhuma aeronave encontrada.\n");
+                            printf("✗ Nenhuma aeronave encontrada\n");
                         }
                     }
                     fclose(temp);
@@ -176,24 +217,25 @@ void interactive_program(char *path) {
             case 3: {
                 char start_date[20], end_date[20];
 
-                printf("Introduza a data de início (YYYY-MM-DD): ");
+                printf("\n--- QUERY 3: Aeroporto com Mais Partidas ---\n");
+                printf("Data de início (YYYY-MM-DD): ");
                 if (!read_line(start_date, sizeof(start_date))) {
                     printf("Erro ao ler a data.\n");
                     break;
                 }
 
-                printf("Introduza a data de fim (YYYY-MM-DD): ");
+                printf("Data de fim (YYYY-MM-DD): ");
                 if (!read_line(end_date, sizeof(end_date))) {
                     printf("Erro ao ler a data.\n");
                     break;
                 }
 
                 if (strlen(start_date) == 0 || strlen(end_date) == 0) {
-                    printf("Datas não podem estar vazias.\n");
+                    printf("✗ Datas não podem estar vazias.\n");
                     break;
                 }
 
-                printf("\nResultado:\n");
+                printf("\n→ Resultado:\n");
                 
                 FILE *temp = tmpfile();
                 if (temp) {
@@ -204,10 +246,10 @@ void interactive_program(char *path) {
                     char result[1024];
                     if (fgets(result, sizeof(result), temp)) {
                         if (strlen(result) <= 1) {
-                            printf("Nenhum voo encontrado no intervalo de %s a %s.\n", 
+                            printf("✗ Nenhum voo no intervalo %s a %s\n", 
                                    start_date, end_date);
                         } else {
-                            printf("%s", result);
+                            printf("✓ %s", result);
                         }
                     }
                     fclose(temp);
@@ -221,13 +263,14 @@ void interactive_program(char *path) {
             case 4: {
                 char begin_date[20], end_date[20];
 
-                printf("Introduza a data de início (YYYY-MM-DD) ou deixe vazio: ");
+                printf("\n--- QUERY 4: Passageiro Mais Frequente no Top 10 ---\n");
+                printf("Data de início (YYYY-MM-DD, deixe vazio para sem filtro): ");
                 if (!read_line(begin_date, sizeof(begin_date))) {
                     printf("Erro ao ler a data.\n");
                     break;
                 }
 
-                printf("Introduza a data de fim (YYYY-MM-DD) ou deixe vazio: ");
+                printf("Data de fim (YYYY-MM-DD, deixe vazio para sem filtro): ");
                 if (!read_line(end_date, sizeof(end_date))) {
                     printf("Erro ao ler a data.\n");
                     break;
@@ -238,11 +281,11 @@ void interactive_program(char *path) {
                 int has_end = (strlen(end_date) > 0);
 
                 if (has_begin != has_end) {
-                    printf("Erro: Deve fornecer ambas as datas ou nenhuma.\n");
+                    printf("✗ Erro: Forneça ambas as datas ou nenhuma.\n");
                     break;
                 }
 
-                printf("\nResultado:\n");
+                printf("\n→ Resultado:\n");
                 
                 FILE *temp = tmpfile();
                 if (temp) {
@@ -255,14 +298,14 @@ void interactive_program(char *path) {
                     char result[1024];
                     if (fgets(result, sizeof(result), temp)) {
                         if (strlen(result) <= 1) {
-                            if (strlen(begin_date) > 0 && strlen(end_date) > 0) {
-                                printf("Nenhum passageiro encontrado no intervalo de %s a %s.\n", 
+                            if (has_begin) {
+                                printf("✗ Nenhum passageiro no intervalo %s a %s\n", 
                                        begin_date, end_date);
                             } else {
-                                printf("Nenhum passageiro encontrado.\n");
+                                printf("✗ Nenhum passageiro encontrado\n");
                             }
                         } else {
-                            printf("%s", result);
+                            printf("✓ %s", result);
                         }
                     }
                     fclose(temp);
@@ -278,15 +321,16 @@ void interactive_program(char *path) {
             case 5: {
                 int N;
                 
-                printf("Introduza o número N: ");
+                printf("\n--- QUERY 5: Top N Companhias com Mais Atraso ---\n");
+                printf("Número N: ");
                 if (scanf("%d", &N) != 1 || N <= 0) {
-                    printf("N inválido. Deve ser um número positivo.\n");
+                    printf("✗ N inválido. Deve ser um número positivo.\n");
                     clear_input_buffer();
                     break;
                 }
                 clear_input_buffer();
 
-                printf("\nResultado:\n");
+                printf("\n→ Resultado:\n");
                 
                 FILE *temp = tmpfile();
                 if (temp) {
@@ -295,15 +339,16 @@ void interactive_program(char *path) {
                     
                     char line[1024];
                     int has_results = 0;
-                    while (fgets(line, sizeof(line), temp)) {
+                    int count = 0;
+                    while (fgets(line, sizeof(line), temp) && count < N) {
                         if (strlen(line) > 1) {
-                            printf("%s", line);
+                            printf("%d. %s", ++count, line);
                             has_results = 1;
                         }
                     }
                     
                     if (!has_results) {
-                        printf("Nenhuma companhia aérea com atrasos encontrada.\n");
+                        printf("✗ Nenhuma companhia aérea com atrasos\n");
                     }
                     fclose(temp);
                 } else {
@@ -315,40 +360,37 @@ void interactive_program(char *path) {
             case 6: {
                 char nationality[100];
                 
-                printf("Introduza a nacionalidade: ");
+                printf("\n--- QUERY 6: Aeroporto de Destino Mais Comum ---\n");
+                printf("Nacionalidade: ");
                 if (!read_line(nationality, sizeof(nationality))) {
                     printf("Erro ao ler a nacionalidade.\n");
                     break;
                 }
 
                 if (strlen(nationality) == 0) {
-                    printf("Nacionalidade não pode estar vazia.\n");
+                    printf("✗ Nacionalidade não pode estar vazia.\n");
                     break;
                 }
 
-                printf("\nResultado:\n");
+                printf("\n→ Resultado:\n");
                 
                 FILE *temp = tmpfile();
                 if (temp) {
-                    q6(dataset,
-                       nationality,
-                       temp);
+                    q6(dataset, nationality, temp);
                     rewind(temp);
                     
                     char result[1024];
                     if (fgets(result, sizeof(result), temp)) {
                         if (strlen(result) <= 1) {
-                            printf("Nenhum passageiro encontrado com a nacionalidade '%s'.\n", 
+                            printf("✗ Nenhum passageiro com nacionalidade '%s'\n", 
                                    nationality);
                         } else {
-                            printf("%s", result);
+                            printf("✓ %s", result);
                         }
                     }
                     fclose(temp);
                 } else {
-                    q6(dataset,
-                       nationality,
-                       stdout);
+                    q6(dataset, nationality, stdout);
                 }
                 break;
             }
@@ -359,7 +401,8 @@ void interactive_program(char *path) {
         }
 
         // Perguntar se deseja executar outra query
-        printf("\nDeseja executar outra query? (s/n): ");
+        printf("\n========================================\n");
+        printf("Deseja executar outra query? (s/n): ");
         char choice;
         if (scanf(" %c", &choice) != 1) {
             break;
@@ -367,7 +410,8 @@ void interactive_program(char *path) {
         clear_input_buffer();
         
         if (choice != 's' && choice != 'S') {
-            printf("A sair...\n");
+            printf("\nA sair do programa...\n");
+            printf("Obrigado por usar o sistema! 👋\n");
             break;
         }
     }
@@ -376,6 +420,10 @@ void interactive_program(char *path) {
 }
 
 int main(void) {
+    printf("========================================\n");
+    printf("    SISTEMA DE GESTÃO DE VOOS\n");
+    printf("========================================\n\n");
+    
     interactive_program(NULL);
     return 0;
 }
