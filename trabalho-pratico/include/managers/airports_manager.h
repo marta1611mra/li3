@@ -51,12 +51,46 @@ Airport airports_manager_get(AirportsManager m, const char *code);
  */
 int airports_manager_count(AirportsManager m);
 
+/**
+ * @brief Regista uma partida no aeroporto em questão.
+ * 
+ * Incrementa o contador de partidas do aeroporto identificado pelo código.
+ * Usado durante o parsing para juntar estatísticas.
+ * 
+ * @param a AirportsManager.
+ * @param code Código do aeroporto.
+ * @param passengers Número de passageiros na partida.
+ */
 void airports_manager_departure(AirportsManager m, const char *code, int passengers);
 
+/**
+ * @brief Regista uma chegada no aeroporto em questão.
+ * 
+ * Incrementa o contador de chegadas do aeroporto identificado pelo código.
+ * Usado durante o parsing para juntar estatísticas.
+ * 
+ * @param a AirportsManager.
+ * @param code Código do aeroporto.
+ * @param passengers Número de passageiros na chegada.
+ */
 void airports_manager_arrival(AirportsManager m, const char *code, int passengers);
 
+/**
+ * @brief Obtém o número total de chegadas a um aeroporto.
+ * 
+ * @param a AirportsManager.
+ * @param code Código do aeroporto.
+ * @param passengers Número total de passageiros em chegadas, ou 0 se o aeroporto não existir.
+ */
 int airports_manager_get_arrivals(AirportsManager m, const char *code);
 
+/**
+ * @brief Obtém o número total de partidas de um aeroporto.
+ * 
+ * @param a AirportsManager.
+ * @param code Código do aeroporto.
+ * @param passengers Número total de passageiros em partidas, ou 0 se o aeroporto não existir.
+ */
 int airports_manager_get_departures(AirportsManager m, const char *code);
 
 #endif

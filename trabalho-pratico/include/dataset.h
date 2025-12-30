@@ -179,12 +179,79 @@ void dataset_build_q6_index(Dataset d);
  */
 GHashTable *dataset_get_q6_index(Dataset d);
 
+/**
+ * @brief Atualiza os dados da Query 5 durante o parsing de voos.
+ *
+ * Calcula o atraso de um voo e acumula nas estatísticas da companhia aérea. 
+ * Apenas atrasos positivos são contabilizados.
+ *
+ * @param d Dataset onde os dados serão armazenados.
+ * @param airline Nome da companhia aérea.
+ * @param sched_dep Data e hora programada de partida (formato: "YYYY-MM-DD HH:MM").
+ * @param real_dep Data e hora real de partida (formato: "YYYY-MM-DD HH:MM").
+ */
 void dataset_update_q5(Dataset d, char *airline, char *sched_dep, char *real_dep);
+
+/**
+ * @brief Finaliza o processamento dos dados da Query 5.
+ *
+ * Converte os dados temporários num array ordenado, calcula médias e ordena as companhias por atraso médio decrescente.
+ * É chamada após todo o parsing estar completo.
+ *
+ * @param d Dataset a finalizar.
+ */
 void dataset_finalize_q5(Dataset d);
+
+/**
+ * @brief Obtém os dados completos da Query 5.
+ *
+ * Retorna um apontador para o array interno de estatísticas das companhias, já ordenado e processado.
+ *
+ * @param d Dataset.
+ * @param count Apontador onde será armazenado o número total de companhias.
+ * @return Apontador para os dados internos, ou NULL se não houver dados.
+ */
 const void *dataset_get_q5_data(Dataset d, int *count);
+
+/**
+ * @brief Obtém o número total de companhias aéreas nos dados da Query 5.
+ *
+ * @param d Dataset.
+ * @return Número de companhias aéreas processadas.
+ */
 int dataset_q5_get_count(Dataset d);
+
+/**
+ * @brief Obtém o nome de uma companhia aérea na posição em questão.
+ *
+ * Acede ao array ordenado da Query 5 e retorna o nome da companhia na posição index.
+ *
+ * @param d Dataset.
+ * @param index Índice da companhia no array ordenado.
+ * @return Nome da companhia aérea, ou NULL se index inválido.
+ */
 char *dataset_q5_get_name(Dataset d, int index);
+
+/**
+ * @brief Obtém o número de voos de uma companhia aérea na posição em questão.
+ *
+ * Acede ao array ordenado da Query 5 e retorna o total de voos com atraso da companhia na posição index.
+ *
+ * @param d Dataset.
+ * @param index Índice da companhia no array ordenado.
+ * @return Número de voos com atraso, ou 0 se index inválido.
+ */
 int dataset_q5_get_flights_count(Dataset d, int index);
+
+/**
+ * @brief Obtém o atraso médio de uma companhia aérea na posição especificada.
+ *
+ * Acede ao array ordenado da Query 5 e retorna o atraso médio (em minutos) da companhia na posição index.
+ *
+ * @param d Dataset.
+ * @param index Índice da companhia no array ordenado.
+ * @return Atraso médio em minutos (arredondado a 3 casas decimais), ou 0.0 se index inválido.
+ */
 double dataset_q5_get_average(Dataset d, int index);
 
 #endif 

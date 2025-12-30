@@ -14,7 +14,6 @@
  * @param code Código IATA do aeroporto a pesquisar.
  * @param out Ficheiro de output onde escrever o resultado.
  */
-
 void q1(AirportsManager am, const char *code,FILE *out);
 
 #endif

@@ -61,9 +61,20 @@ int flights_manager_count(FlightsManager m);
  */
 GHashTable *flights_manager_get_table(FlightsManager m);
 
+/**
+ * @brief Obtém o código do aeroporto de destino do voo.
+ *
+ * @param f Flight.
+ * @return String com o código do aeroporto de destino, ou NULL se não existir.
+ */
 const char *get_flight_destination(Flight f);
 
-
+/**
+ * @brief Obtém a data e hora de chegada do voo.
+ *
+ * @param f Flight.
+ * @return String com a data e hora no formato "YYYY-MM-DD HH:MM", ou NULL se não existir.
+ */
 const char *get_flight_schedule_arrival_date(Flight f);
 
 
