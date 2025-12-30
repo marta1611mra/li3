@@ -35,6 +35,13 @@ struct dataset {
     int q5_count;            // Número de companhias
 };
 
+static void free_q5_stat(void *data) {
+    Q5Stats *stat = (Q5Stats *)data;
+    if (stat) {
+        free(stat->airline_name);
+    }
+    free(stat);
+}
 /* ===== Auxiliar: calcular domingo da semana ===== */
 /* Assume date no formato YYYY-MM-DD */
 static void calculate_week_sunday(const char *date, char out[11]) {
@@ -126,7 +133,7 @@ Dataset dataset_create(void) {
     );
 
     d->q5_temp_map = g_hash_table_new_full(
-        g_str_hash, g_str_equal, g_free, free);
+        g_str_hash, g_str_equal, NULL, (GDestroyNotify)free_q5_stat);
     d->q5_array = NULL;
     d->q5_count = 0;
 
@@ -311,7 +318,7 @@ void dataset_update_q5(Dataset d, char *airline, char *sched_dep, char *real_dep
         stat->airline_name = strdup(airline);
         stat->total_delay = 0;
         stat->count = 0;
-        g_hash_table_insert(d->q5_temp_map, strdup(airline), stat);
+        g_hash_table_insert(d->q5_temp_map, stat->airline_name, stat);
     }
     stat->total_delay += delay;
     stat->count++;
@@ -358,8 +365,6 @@ const void *dataset_get_q5_data(Dataset d, int *count) {
     if (count) *count = d->q5_count;
     return d->q5_array;
 }
-
-/* ===== GETTERS SEGUROS PARA Q5 ===== */
 
 int dataset_q5_get_count(Dataset d) {
     return d ? d->q5_count : 0;
