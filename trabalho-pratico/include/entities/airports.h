@@ -77,9 +77,42 @@ const char *get_airport_country(Airport a);
  */
 const char *get_airport_type(Airport a);
 
+/**
+ * @brief Adiciona passageiros a uma chegada ao aeroporto.
+ * 
+ * Incrementa o contador de passageiros que chegaram ao aeroporto.
+ * Usado durante o parsing de voos para juntar estatísticas.
+ * 
+ * @param a Airport onde os passageiros chegaram.
+ * @param count Número de passageiros a adicionar.
+ */
 void airport_add_arrival_passengers(Airport a, int count);
+
+/**
+ * @brief Adiciona passageiros a uma partida ao aeroporto.
+ * 
+ * Incrementa o contador de passageiros que partiram do aeroporto.
+ * Usado durante o parsing de voos para juntar estatísticas.
+ * 
+ * @param a Airport de onde os passageiros partiram.
+ * @param count Número de passageiros a adicionar.
+ */
 void airport_add_departure_passengers(Airport a, int count);
+
+/**
+ * @brief Obtém o número total de passageiros que chegaram ao aeroporto.
+ * 
+ * @param a Airport.
+ * @param count Número total de passageiros em chegadas.
+ */
 int get_airport_arrivals_count(Airport a);
+
+/**
+ * @brief Obtém o número total de passageiros que partiram do aeroporto.
+ * 
+ * @param a Airport.
+ * @param count Número total de passageiros em partidas.
+ */
 int get_airport_departures_count(Airport a);
 
 #endif

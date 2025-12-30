@@ -22,7 +22,6 @@
  * @param airports    AirportsManager contendo todos os aeroportos.
  * @param output      Ficheiro de output onde escrever o resultado.
  */
-
 void q3(Dataset d, char **args, FILE *output);
 
 

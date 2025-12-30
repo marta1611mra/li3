@@ -18,7 +18,6 @@
  * 
  * Output: document_number;first_name;last_name;dob;nationality;count_top_10
  */
-
 void query4_execute(Dataset d, const char *begin_date, const char *end_date, FILE *out);
 #endif
 

@@ -19,9 +19,6 @@
  * @param filter_manufacturer Se fornecido, apenas aeronaves do fabricante indicado são consideradas. Pode ser NULL.
  * @param out               Ficheiro de output onde escrever o resultado.
  */
-
-
-
 void q2(Dataset d, int N, const char *manufacturer, FILE *out);
 
 #endif
