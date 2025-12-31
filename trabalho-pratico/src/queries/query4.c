@@ -18,8 +18,11 @@ static gint compare_passenger_spending(gconstpointer a, gconstpointer b) {
     const PassengerSpending *pa = a;
     const PassengerSpending *pb = b;
     
+    // Ordenar por gasto (decrescente)
     if (pa->total_spent > pb->total_spent) return -1;
     if (pa->total_spent < pb->total_spent) return 1;
+
+    // Desempate por ID (crescente/lexicográfico)
     return strcmp(pa->document_number, pb->document_number);
 }
 
@@ -87,17 +90,18 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
         }
 
         // A semana deve estar dentro ou sobrepor o intervalo de filtro
-        // week_date é o domingo da semana
         GDate week_end = week_date;
         g_date_add_days(&week_end, 6); // Sábado da mesma semana
 
         // Verificar se a semana sobrepõe o intervalo
-        // Semana válida se: week_date <= filter_end E week_end >= filter_start
         if (g_date_compare(&week_date, &ctx->filter_end) > 0 ||
             g_date_compare(&week_end, &ctx->filter_start) < 0) {
             return;
         }
     }
+    
+    // Verificar se há passageiros nesta semana
+    if (g_hash_table_size(week_spending) == 0) return;
     
     // Converter GHashTable em lista ordenada
     GList *passenger_list = NULL;
@@ -108,10 +112,18 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
     while (g_hash_table_iter_next(&iter, &pkey, &pvalue)) {
         PassengerSpending *ps = malloc(sizeof(PassengerSpending));
         if (!ps) continue;
+        
         ps->document_number = strdup((const char *)pkey);
+        if (!ps->document_number) {
+            free(ps);
+            continue;
+        }
+        
         ps->total_spent = *(double *)pvalue;
         passenger_list = g_list_prepend(passenger_list, ps);
     }
+    
+    if (!passenger_list) return;
     
     // Ordenar e pegar top 10
     passenger_list = g_list_sort(passenger_list, compare_passenger_spending);
@@ -125,11 +137,10 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
         if (!appearances) {
             appearances = malloc(sizeof(int));
             if (appearances) {
-                *appearances = 0;
+                *appearances = 1;
                 g_hash_table_insert(ctx->top10_counts, strdup(ps->document_number), appearances);
             }
-        }
-        if (appearances) {
+        } else {
             (*appearances)++;
         }
     }
@@ -138,7 +149,6 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
 }
 
 // Executa a query 4 
-// Usa índice pré-agregado: week_sunday -> (document -> total_price)
 void query4_execute(Dataset d, const char *begin_date, const char *end_date, FILE *out) {
     if (!d || !out) {
         if (out) output_empty(out);
@@ -186,7 +196,7 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
         }
     }
     
-    // Processar todas as semanas em uma única iteração
+    // Processar todas as semanas
     g_hash_table_foreach(q4_weeks, process_week, &ctx);
     
     if (g_hash_table_size(ctx.top10_counts) == 0) {
@@ -207,23 +217,15 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
         const char *doc = (const char *)key;
         int count = *(int *)value;
         
-        // Em caso de empate, escolher o menor ID (ordem lexicográfica)
-        if (count > max_count) {
-            // Este tem mais aparições - sempre escolhe
+        // Escolher baseado em: mais aparições OU (empate E menor ID)
+        if (count > max_count || 
+            (count == max_count && (best_passenger == NULL || strcmp(doc, best_passenger) < 0))) {
             best_passenger = doc;
             max_count = count;
-        } else if (count == max_count && best_passenger != NULL) {
-            // Empate - escolher o menor lexicograficamente
-            if (strcmp(doc, best_passenger) < 0) {
-                best_passenger = doc;
-            }
-        } else if (count == max_count && best_passenger == NULL) {
-            // Primeiro passageiro com este count
-            best_passenger = doc;
         }
     }
     
-    // Output com separador correto
+    // Output
     if (best_passenger) {
         Passenger p = passengers_manager_get(pm, best_passenger);
         if (p) {
