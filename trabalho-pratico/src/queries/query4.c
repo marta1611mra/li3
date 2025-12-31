@@ -26,6 +26,7 @@ static gint compare_passenger_spending(gconstpointer a, gconstpointer b) {
     return strcmp(pa->document_number, pb->document_number);
 }
 
+
 // Liberta memória de PassengerSpending
 static void free_passenger_spending(gpointer data) {
     PassengerSpending *ps = data;
