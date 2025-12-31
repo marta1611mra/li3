@@ -8,6 +8,7 @@
 #include "passengers.h"
 #include "output_format.h"
 
+ 
 typedef struct {
     char *document_number;
     double total_spent;
@@ -17,15 +18,12 @@ typedef struct {
 static gint compare_passenger_spending(gconstpointer a, gconstpointer b) {
     const PassengerSpending *pa = a;
     const PassengerSpending *pb = b;
-    
     // Ordenar por gasto (decrescente)
     if (pa->total_spent > pb->total_spent) return -1;
     if (pa->total_spent < pb->total_spent) return 1;
-
     // Desempate por ID (crescente/lexicográfico)
     return strcmp(pa->document_number, pb->document_number);
 }
-
 
 // Liberta memória de PassengerSpending
 static void free_passenger_spending(gpointer data) {
@@ -37,41 +35,33 @@ static void free_passenger_spending(gpointer data) {
 }
 
 // Ajusta intervalo para domingo-sábado (início e fim de semana)
-static void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, 
-                                      GDate *begin_out, GDate *end_out) {
+static void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, GDate *begin_out, GDate *end_out) {
     if (!begin || !end || !begin_out || !end_out) return;
     if (!g_date_valid(begin) || !g_date_valid(end)) return;
-    
     *begin_out = *begin;
     *end_out = *end;
 
     // Ajustar begin para domingo (início da semana)
     GDateWeekday begin_wd = g_date_get_weekday(begin_out);
     if (begin_wd != G_DATE_SUNDAY) {
-        // Número de dias para subtrair até domingo
-        guint8 days_back = begin_wd % 7;
-        if (days_back > 0) {
-            g_date_subtract_days(begin_out, days_back);
-        }
+        guint8 days_back = begin_wd % 7; // Número de dias para subtrair até domingo
+        if (days_back > 0) { g_date_subtract_days(begin_out, days_back);}
     }
 
     // Ajustar end para sábado (fim da semana)
     GDateWeekday end_wd = g_date_get_weekday(end_out);
     if (end_wd != G_DATE_SATURDAY) {
-        // Número de dias para adicionar até sábado
-        guint8 days_forward = (G_DATE_SATURDAY - end_wd);
-        if (days_forward > 0) {
-            g_date_add_days(end_out, days_forward);
-        }
+        guint8 days_forward = (G_DATE_SATURDAY - end_wd); // Número de dias para adicionar até sábado
+        if (days_forward > 0) { g_date_add_days(end_out, days_forward);}
     }
 }
 
 // Contexto para callback de filtro de semanas
 typedef struct {
-    int use_filter;
-    GDate filter_start;
-    GDate filter_end;
-    GHashTable *top10_counts;
+    int use_filter; // indica se o filtro de datas está ativo
+    GDate filter_start; // data de início do intervalo de filtro
+    GDate filter_end; // data de fim do intervalo de filtro
+    GHashTable *top10_counts; // contagem de aparições dos top 10 passageiros
 } FilterContext;
 
 // Callback para processar cada semana e extrair top 10
@@ -80,148 +70,155 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
     GHashTable *week_spending = (GHashTable *)value;
     FilterContext *ctx = (FilterContext *)user_data;
     
-    // Aplicar filtro de datas se necessário
+    // Aplicar filtro de datas se necessário 
     if (ctx->use_filter) {
         GDate week_date;
         g_date_clear(&week_date, 1);
-        g_date_set_parse(&week_date, week_key);
         
-        if (!g_date_valid(&week_date)) {
-            return;
+        // Usar sscanf para garantir leitura correta
+        int y, m, d;
+        if (sscanf(week_key, "%d-%d-%d", &y, &m, &d) == 3) {
+             g_date_set_dmy(&week_date, d, m, y);
+        } else {
+             return; // data inválida ou formato inesperado
         }
+        
+        if (!g_date_valid(&week_date)) { return;} // data inválida
+        
+        GDate week_end = week_date; // domingo da semana
+        g_date_add_days(&week_end, 6); // sábado da mesma semana
 
-        // A semana deve estar dentro ou sobrepor o intervalo de filtro
-        GDate week_end = week_date;
-        g_date_add_days(&week_end, 6); // Sábado da mesma semana
-
-        // Verificar se a semana sobrepõe o intervalo
-        if (g_date_compare(&week_date, &ctx->filter_end) > 0 ||
-            g_date_compare(&week_end, &ctx->filter_start) < 0) {
-            return;
-        }
+        // Verificar sobreposição com o intervalo de filtro
+        if (g_date_compare(&week_date, &ctx->filter_end) > 0 || g_date_compare(&week_end, &ctx->filter_start) < 0) {
+            return;}
     }
     
-    // Verificar se há passageiros nesta semana
-    if (g_hash_table_size(week_spending) == 0) return;
+    if (g_hash_table_size(week_spending) == 0) return; // Verificar se há passageiros nesta semana
     
-    // Converter GHashTable em lista ordenada
-    GList *passenger_list = NULL;
+    // Converter GHashTable em lista ordenada 
+    GList *passenger_list = NULL; 
     GHashTableIter iter;
-    gpointer pkey, pvalue;
+    gpointer pkey, pvalue; 
     
-    g_hash_table_iter_init(&iter, week_spending);
-    while (g_hash_table_iter_next(&iter, &pkey, &pvalue)) {
-        PassengerSpending *ps = malloc(sizeof(PassengerSpending));
+    g_hash_table_iter_init(&iter, week_spending); // Iterar sobre passageiros e seus gastos
+    while (g_hash_table_iter_next(&iter, &pkey, &pvalue)) { // pkey: document_number, pvalue: total_spent
+        PassengerSpending *ps = malloc(sizeof(PassengerSpending)); 
         if (!ps) continue;
         
-        ps->document_number = strdup((const char *)pkey);
-        if (!ps->document_number) {
+        ps->document_number = strdup((const char *)pkey); // duplicar ID do passageiro 
+        if (!ps->document_number) { // falha na duplicação
             free(ps);
             continue;
         }
         
-        ps->total_spent = *(double *)pvalue;
-        passenger_list = g_list_prepend(passenger_list, ps);
+        ps->total_spent = *(double *)pvalue; // copiar gasto total
+        passenger_list = g_list_prepend(passenger_list, ps); // adicionar à lista 
     }
     
-    if (!passenger_list) return;
+    if (!passenger_list) return; // Nenhum passageiro processado
     
-    // Ordenar e pegar top 10
-    passenger_list = g_list_sort(passenger_list, compare_passenger_spending);
+    passenger_list = g_list_sort(passenger_list, compare_passenger_spending); // Ordenar e obter o top 10
     
-    int count = 0;
+    int count = 0; // Contador para os top 10
     for (GList *l = passenger_list; l != NULL && count < 10; l = l->next, count++) {
-        PassengerSpending *ps = l->data;
+        PassengerSpending *ps = l->data; 
         
         // Incrementar contador deste passageiro
-        int *appearances = g_hash_table_lookup(ctx->top10_counts, ps->document_number);
+        int *appearances = g_hash_table_lookup(ctx->top10_counts, ps->document_number); 
         if (!appearances) {
-            appearances = malloc(sizeof(int));
+            appearances = malloc(sizeof(int)); // alocar novo contador
             if (appearances) {
-                *appearances = 1;
-                g_hash_table_insert(ctx->top10_counts, strdup(ps->document_number), appearances);
-            }
-        } else {
-            (*appearances)++;
-        }
-    }
-    
-    g_list_free_full(passenger_list, free_passenger_spending);
+                *appearances = 1; // primeira aparição
+                g_hash_table_insert(ctx->top10_counts, strdup(ps->document_number), appearances); // inserir na tabela 
+                }
+        } else { (*appearances)++;} 
+    } g_list_free_full(passenger_list, free_passenger_spending); 
 }
 
 // Executa a query 4 
 void query4_execute(Dataset d, const char *begin_date, const char *end_date, FILE *out) {
-    if (!d || !out) {
+    if (!d || !out) { 
         if (out) output_empty(out);
         return;
     }
     
-    PassengersManager pm = dataset_get_passengers(d);
-    GHashTable *q4_weeks = dataset_get_q4_weeks(d);
+    PassengersManager pm = dataset_get_passengers(d); // Obter manager de passageiros
+    GHashTable *q4_weeks = dataset_get_q4_weeks(d);  // Obter dados 
     
     if (!pm || !q4_weeks || g_hash_table_size(q4_weeks) == 0) {
-        output_empty(out);
+        output_empty(out); 
         return;
     }
     
-    // Verificar filtro de datas
-    int has_begin = (begin_date && strlen(begin_date) > 0);
-    int has_end = (end_date && strlen(end_date) > 0);
+    int has_begin = (begin_date && strlen(begin_date) > 0); // verificar presença de data de início
+    int has_end = (end_date && strlen(end_date) > 0); // verificar presença de data de fim
     
-    // Ambos devem estar presentes ou ambos ausentes
+    // Ambas as datas devem estar presentes ou ambos ausentes
     if (has_begin != has_end) {
         output_empty(out);
         return;
     }
     
     // Preparar contexto de filtro
-    FilterContext ctx;
-    ctx.use_filter = 0;
-    ctx.top10_counts = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
+    FilterContext ctx; 
+    ctx.use_filter = 0;// indicador de uso de filtro de datas
+    ctx.top10_counts = g_hash_table_new_full(g_str_hash, g_str_equal, free, free); // tabela para contagem de aparições dos top 10
     
-    if (has_begin && has_end) {
+    if (has_begin && has_end) { // se tiver intervalo de datas
         GDate temp_begin, temp_end;
-        g_date_clear(&temp_begin, 1);
+        g_date_clear(&temp_begin, 1); 
         g_date_clear(&temp_end, 1);
-        g_date_set_parse(&temp_begin, begin_date);
-        g_date_set_parse(&temp_end, end_date);
         
-        if (g_date_valid(&temp_begin) && g_date_valid(&temp_end)) {
+        int y, m, d;
+        int parsed_begin = 0, parsed_end = 0;
+
+        if (sscanf(begin_date, "%d/%d/%d", &y, &m, &d) == 3 || sscanf(begin_date, "%d-%d-%d", &y, &m, &d) == 3) {
+            g_date_set_dmy(&temp_begin, d, m, y);
+            parsed_begin = 1;
+        }
+        
+        if (sscanf(end_date, "%d/%d/%d", &y, &m, &d) == 3 || sscanf(end_date, "%d-%d-%d", &y, &m, &d) == 3) {
+            g_date_set_dmy(&temp_end, d, m, y);
+            parsed_end = 1;
+        }
+
+        if (parsed_begin && parsed_end && g_date_valid(&temp_begin) && g_date_valid(&temp_end)) { 
             g_date_clear(&ctx.filter_start, 1);
             g_date_clear(&ctx.filter_end, 1);
-            adjust_to_sunday_saturday(&temp_begin, &temp_end, &ctx.filter_start, &ctx.filter_end);
-            
+            adjust_to_sunday_saturday(&temp_begin, &temp_end, &ctx.filter_start, &ctx.filter_end); // usar ajuste para domingo-sábado
             if (g_date_valid(&ctx.filter_start) && g_date_valid(&ctx.filter_end)) {
-                ctx.use_filter = 1;
+                ctx.use_filter = 1; // ativar uso de filtro
             }
+        } else {
+             // Se as datas forem inválidas, o comportamento esperado é geralmente output vazio
+             g_hash_table_destroy(ctx.top10_counts);
+             output_empty(out);
+             return;
         }
     }
-    
-    // Processar todas as semanas
-    g_hash_table_foreach(q4_weeks, process_week, &ctx);
-    
-    if (g_hash_table_size(ctx.top10_counts) == 0) {
-        g_hash_table_destroy(ctx.top10_counts);
+
+    g_hash_table_foreach(q4_weeks, process_week, &ctx); // processar todas as semanas
+
+    if (g_hash_table_size(ctx.top10_counts) == 0) {  
+        g_hash_table_destroy(ctx.top10_counts); 
         output_empty(out);
         return;
     }
     
-    // Encontrar o passageiro com mais aparições
-    const char *best_passenger = NULL;
-    int max_count = 0;
+    const char *best_passenger = NULL; // passageiro com mais aparições no top 10
+    int max_count = 0; // contador máximo de aparições
     
     GHashTableIter iter;
     gpointer key, value;
-    g_hash_table_iter_init(&iter, ctx.top10_counts);
+    g_hash_table_iter_init(&iter, ctx.top10_counts); // iterar sobre contadores de aparições
     
-    while (g_hash_table_iter_next(&iter, &key, &value)) {
+    while (g_hash_table_iter_next(&iter, &key, &value)) { 
         const char *doc = (const char *)key;
         int count = *(int *)value;
         
         // Escolher baseado em: mais aparições OU (empate E menor ID)
-        if (count > max_count || 
-            (count == max_count && (best_passenger == NULL || strcmp(doc, best_passenger) < 0))) {
-            best_passenger = doc;
+        if (count > max_count || (count == max_count && (best_passenger == NULL || strcmp(doc, best_passenger) < 0))) {
+            best_passenger = doc; 
             max_count = count;
         }
     }
@@ -231,12 +228,18 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
         Passenger p = passengers_manager_get(pm, best_passenger);
         if (p) {
             char sep = get_output_separator();
+            // Proteção contra campos NULL para evitar Segmentation Fault
+            char *fname = get_passenger_first_name(p) ? get_passenger_first_name(p) : "";
+            char *lname = get_passenger_last_name(p) ? get_passenger_last_name(p) : "";
+            char *dob = get_passenger_dob(p) ? get_passenger_dob(p) : "";
+            char *nat = get_passenger_nationality(p) ? get_passenger_nationality(p) : "";
+
             fprintf(out, "%s%c%s%c%s%c%s%c%s%c%d\n",
                    best_passenger, sep,
-                   get_passenger_first_name(p), sep,
-                   get_passenger_last_name(p), sep,
-                   get_passenger_dob(p), sep,
-                   get_passenger_nationality(p), sep,
+                   fname, sep,
+                   lname, sep,
+                   dob, sep,
+                   nat, sep,
                    max_count);
         } else { 
             output_empty(out);
