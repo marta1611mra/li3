@@ -18,18 +18,17 @@ typedef struct {
     GHashTable *airport_counts;  // airport_code -> count
 } Q3Context;
 
+// Conta as partidas de voos não cancelados por aeroporto dentro do intervalo de datas
 static void count_flight_departures(gpointer key, gpointer value, gpointer user_data) {
-    (void)key;  // flight_id não usado
+    (void)key; 
     Flight f = (Flight)value;
     Q3Context *ctx = (Q3Context *)user_data;
     
-    // Ignorar voos cancelados
-    if (get_flight_status(f) == Cancelled) {
+    if (get_flight_status(f) == Cancelled) {     // Ignorar voos cancelados
         return;
     }
     
-    // Obter data real de partida
-    const char *actual_dep = get_flight_actual_dep(f);
+    const char *actual_dep = get_flight_actual_dep(f);     // Obter data real de partida
     if (!actual_dep || strlen(actual_dep) < 10) {
         return;
     }
@@ -38,22 +37,20 @@ static void count_flight_departures(gpointer key, gpointer value, gpointer user_
     char date_only[11];
     memcpy(date_only, actual_dep, 10);
     date_only[10] = '\0';
-    
-    // Verificar se está no intervalo
-    if (strcmp(date_only, ctx->start_date) < 0 || strcmp(date_only, ctx->end_date) > 0) {
-        return;
+
+    if (strcmp(date_only, ctx->start_date) < 0 || 
+    strcmp(date_only, ctx->end_date) > 0) {  // Verificar se está no intervalo
+        return;    
     }
     
-    // Obter aeroporto de origem
-    const char *orig = get_flight_orig(f);
+    const char *orig = get_flight_orig(f);   // Obtem aeroporto de origem
     if (!orig || strlen(orig) == 0) {
         return;
     }
     
-    // Incrementar contador para este aeroporto
-    int *count = g_hash_table_lookup(ctx->airport_counts, orig);
+    int *count = g_hash_table_lookup(ctx->airport_counts, orig);   
     if (count) {
-        (*count)++;
+        (*count)++; 
     } else {
         int *new_count = malloc(sizeof(int));
         if (new_count) {
@@ -73,8 +70,7 @@ void q3(Dataset d, char *args[], FILE *output) {
     const char *start_date = args[0];
     const char *end_date = args[1];
 
-    // Obter manager de voos
-    FlightsManager fm = dataset_get_flights(d);
+    FlightsManager fm = dataset_get_flights(d);     // Obter manager de voos
     if (!fm) {
         output_empty(output);
         return;
