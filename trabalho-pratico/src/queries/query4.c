@@ -52,8 +52,6 @@ static void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, GDat
     // 2. Ajustar data final para Sábado
     GDateWeekday end_wd = g_date_get_weekday(end_out);
     
-    // CORREÇÃO CRÍTICA AQUI:
-    // Queremos chegar a Sábado (6).
     // Fórmula segura para avançar até ao próximo Sábado:
     // (6 - dia_atual + 7) % 7
     int days_forward = (6 - (int)end_wd + 7) % 7;
