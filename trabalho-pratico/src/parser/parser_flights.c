@@ -2,6 +2,7 @@
 #include "dataset.h"
 #include "syntactic_validation.h"
 #include "logical_validation.h"
+#include "parser/parser_flights.h"
 #include "flights.h"
 #include "aircrafts.h" // Necessário para obter o fabricante
 #include <stdio.h>
