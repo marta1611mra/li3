@@ -6,6 +6,7 @@
 #include "queries/query6.h"
 #include "dataset.h"
 #include "parser/parser.h"
+#include "programa-interativo.h"
 #include "output_format.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,17 +15,6 @@
 #include <locale.h>
 #include <unistd.h>
 
-#define QUERY_INPUT_SIZE 256
-
-typedef struct {
-    char code[QUERY_INPUT_SIZE];
-    int n;
-    char manufacturer[QUERY_INPUT_SIZE];
-    char start_date[QUERY_INPUT_SIZE];
-    char end_date[QUERY_INPUT_SIZE];
-    char begin_date[QUERY_INPUT_SIZE];
-    char nationality[QUERY_INPUT_SIZE];
-} QueryInputs;
 
 void draw_header(WINDOW *win) {
     wattron(win, COLOR_PAIR(1) | A_BOLD);

@@ -2,6 +2,7 @@
 #include "dataset.h"
 #include "syntactic_validation.h"
 #include "logical_validation.h"
+#include "parser/parser_reservations.h"
 #include "reservations.h"
 #include <stdio.h>
 #include <stdlib.h>

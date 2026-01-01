@@ -45,25 +45,31 @@ static void free_q5_stat(void *data) {
 /* ===== Auxiliar: calcular domingo da semana ===== */
 /* Assume date no formato YYYY-MM-DD */
 static void calculate_week_sunday(const char *date, char out[11]) {
-    /* Algoritmo simples: usar struct tm */
-    struct tm tm = {0};
+    int y, m, d;
+    // Ler a data YYYY-MM-DD
+    if (sscanf(date, "%d-%d-%d", &y, &m, &d) != 3) {
+        return;
+    }
 
-    sscanf(date, "%4d-%2d-%2d",
-           &tm.tm_year, &tm.tm_mon, &tm.tm_mday);
+    // Usar GDate para evitar problemas de fuso horário do mktime
+    GDate gdate;
+    g_date_clear(&gdate, 1);
+    g_date_set_dmy(&gdate, d, m, y);
 
-    tm.tm_year -= 1900;
-    tm.tm_mon  -= 1;
-    
-    tm.tm_isdst = -1;
+    if (!g_date_valid(&gdate)) return;
 
-    mktime(&tm);
+    // Obter dia da semana (Domingo=7, Segunda=1, etc.)
+    GDateWeekday wd = g_date_get_weekday(&gdate);
 
-    int diff = tm.tm_wday; /* domingo = 0 */
-    tm.tm_mday -= diff;
+    // Calcular quantos dias recuar até Domingo
+    // Se for Domingo (7): 7 % 7 = 0 dias
+    // Se for Segunda (1): 1 % 7 = 1 dia
+    int days_to_subtract = wd % 7; 
 
-    mktime(&tm);
+    g_date_subtract_days(&gdate, days_to_subtract);
 
-    strftime(out, 11, "%Y-%m-%d", &tm);
+    // Escrever o resultado
+    g_date_strftime(out, 11, "%Y-%m-%d", &gdate);
 }
 
 static int fast_delay_calc(const char *schedule, const char *real) {

@@ -41,18 +41,25 @@ static void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, GDat
     *begin_out = *begin;
     *end_out = *end;
 
-    // Ajustar begin para domingo (início da semana)
+    // 1. Ajustar data inicial para Domingo
     GDateWeekday begin_wd = g_date_get_weekday(begin_out);
-    if (begin_wd != G_DATE_SUNDAY) {
-        guint8 days_back = begin_wd % 7; // Número de dias para subtrair até domingo
-        if (days_back > 0) { g_date_subtract_days(begin_out, days_back);}
+    // Se for Domingo (7), 7%7=0 (não mexe). Se for Segunda (1), recua 1.
+    guint8 days_back = begin_wd % 7; 
+    if (days_back > 0) { 
+        g_date_subtract_days(begin_out, days_back);
     }
 
-    // Ajustar end para sábado (fim da semana)
+    // 2. Ajustar data final para Sábado
     GDateWeekday end_wd = g_date_get_weekday(end_out);
-    if (end_wd != G_DATE_SATURDAY) {
-        guint8 days_forward = (G_DATE_SATURDAY - end_wd); // Número de dias para adicionar até sábado
-        if (days_forward > 0) { g_date_add_days(end_out, days_forward);}
+    
+    // CORREÇÃO CRÍTICA AQUI:
+    // Queremos chegar a Sábado (6).
+    // Fórmula segura para avançar até ao próximo Sábado:
+    // (6 - dia_atual + 7) % 7
+    int days_forward = (6 - (int)end_wd + 7) % 7;
+    
+    if (days_forward > 0) { 
+        g_date_add_days(end_out, days_forward);
     }
 }
 
@@ -229,10 +236,10 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
         if (p) {
             char sep = get_output_separator();
             // Proteção contra campos NULL para evitar Segmentation Fault
-            char *fname = get_passenger_first_name(p) ? get_passenger_first_name(p) : "";
-            char *lname = get_passenger_last_name(p) ? get_passenger_last_name(p) : "";
-            char *dob = get_passenger_dob(p) ? get_passenger_dob(p) : "";
-            char *nat = get_passenger_nationality(p) ? get_passenger_nationality(p) : "";
+            const char *fname = get_passenger_first_name(p) ? get_passenger_first_name(p) : "";
+            const char *lname = get_passenger_last_name(p) ? get_passenger_last_name(p) : "";
+            const char *dob = get_passenger_dob(p) ? get_passenger_dob(p) : "";
+            const char *nat = get_passenger_nationality(p) ? get_passenger_nationality(p) : "";
 
             fprintf(out, "%s%c%s%c%s%c%s%c%s%c%d\n",
                    best_passenger, sep,

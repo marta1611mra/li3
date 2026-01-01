@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include "syntactic_validation.h"
 
 
 // Valida uma data no formato yyyy-mm-dd.

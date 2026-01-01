@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "output_format.h"
 #include "dataset.h"
+#include"queries/queries.h"
 #include "queries/query1.h"
 #include "queries/query2.h"
 #include "queries/query3.h"
