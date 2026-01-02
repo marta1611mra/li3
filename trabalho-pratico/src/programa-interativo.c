@@ -14,6 +14,8 @@
 #include <ncurses.h>
 #include <locale.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <sys/stat.h>
 
 
 void draw_header(WINDOW *win) {
@@ -110,12 +112,20 @@ void show_results(WINDOW *win, const char *result) {
     mvwprintw(win, start_y, COLS/2 - 5, " RESULTADO ");
     wattroff(win, COLOR_PAIR(1));
     
-    if (strlen(result) == 0) {
+    // Verificar se é mensagem de erro
+    if (strncmp(result, "ERRO:", 5) == 0) {
+        wattron(win, COLOR_PAIR(3));
+        mvwprintw(win, start_y + 2, 4, "%s", result);
+        wattroff(win, COLOR_PAIR(3));
+    }
+    // Verificar se é mensagem de "nenhum resultado"
+    else if (strcmp(result, "Nenhum resultado encontrado") == 0) {
         wattron(win, COLOR_PAIR(2));
-        mvwprintw(win, start_y + 2, 4, "Nenhum resultado encontrado");
+        mvwprintw(win, start_y + 2, 4, "%s", result);
         wattroff(win, COLOR_PAIR(2));
-    } else {
-        // Copiar string para não modificar original
+    }
+    // Mostrar resultados normais
+    else {
         char *result_copy = strdup(result);
         char *line = strtok(result_copy, "\n");
         int line_num = 0;
@@ -138,6 +148,33 @@ void show_results(WINDOW *win, const char *result) {
     }
 }
 
+// Verifica se um diretório existe
+bool directory_exists(const char *path) {
+    struct stat info;
+    if (stat(path, &info) != 0) return false;
+    return (info.st_mode & S_IFDIR) != 0;
+}
+
+// Valida se uma string contém apenas dígitos
+bool is_numeric(const char *str) {
+    if (!str || strlen(str) == 0) return false;
+    for (int i = 0; str[i]; i++) {
+        if (!isdigit((unsigned char)str[i])) return false;
+    }
+    return true;
+}
+
+// Valida formato de data básico (YYYY-MM-DD)
+bool is_valid_date_format(const char *date) {
+    if (!date || strlen(date) != 10) return false;
+    if (date[4] != '-' || date[7] != '-') return false;
+    for (int i = 0; i < 10; i++) {
+        if (i == 4 || i == 7) continue;
+        if (!isdigit((unsigned char)date[i])) return false;
+    }
+    return true;
+}
+
 void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inputs, char separator) {
     set_output_separator(separator);
     
@@ -158,29 +195,55 @@ void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inp
     wattroff(win, COLOR_PAIR(4) | A_BOLD);
     wrefresh(win);
     
+    bool input_invalid = false;
+    
     switch(query_num) {
         case 0: // Query 1
             get_input(win, 15, "Codigo do Aeroporto (ex: OPO)", inputs->code, QUERY_INPUT_SIZE);
-            if (strlen(inputs->code) > 0) {
-                q1(dataset_get_airports(dataset), inputs->code, temp);
+            if (strlen(inputs->code) == 0) {
+                input_invalid = true;
+            } else if (strlen(inputs->code) != 3) {
+                input_invalid = true;
+            } else {
+                for (int i = 0; i < 3; i++) {
+                    if (!isupper(inputs->code[i])) {
+                        input_invalid = true;
+                        break;
+                    }
+                }
+                if (!input_invalid) {
+                    q1(dataset_get_airports(dataset), inputs->code, temp);
+                }
             }
             break;
             
         case 1: // Query 2
             get_input(win, 15, "Numero N", inputs->manufacturer, QUERY_INPUT_SIZE);
-            inputs->n = atoi(inputs->manufacturer);
-            get_input(win, 18, "Fabricante (opcional, ex: Boeing)", inputs->manufacturer, QUERY_INPUT_SIZE);
-            if (inputs->n > 0) {
-                q2(dataset, inputs->n, 
-                   strlen(inputs->manufacturer) > 0 ? inputs->manufacturer : NULL, 
-                   temp);
+            if (!is_numeric(inputs->manufacturer)) {
+                input_invalid = true;
+            } else {
+                inputs->n = atoi(inputs->manufacturer);
+                if (inputs->n <= 0) {
+                    input_invalid = true;
+                } else {
+                    get_input(win, 18, "Fabricante (opcional, ex: Boeing)", inputs->manufacturer, QUERY_INPUT_SIZE);
+                    q2(dataset, inputs->n, 
+                       strlen(inputs->manufacturer) > 0 ? inputs->manufacturer : NULL, 
+                       temp);
+                }
             }
             break;
             
         case 2: // Query 3
             get_input(win, 15, "Data Inicio (YYYY-MM-DD)", inputs->start_date, QUERY_INPUT_SIZE);
             get_input(win, 18, "Data Fim (YYYY-MM-DD)", inputs->end_date, QUERY_INPUT_SIZE);
-            if (strlen(inputs->start_date) > 0 && strlen(inputs->end_date) > 0) {
+            
+            if (strlen(inputs->start_date) == 0 || strlen(inputs->end_date) == 0) {
+                input_invalid = true;
+            } else if (!is_valid_date_format(inputs->start_date) || 
+                       !is_valid_date_format(inputs->end_date)) {
+                input_invalid = true;
+            } else {
                 char *dates[2] = {inputs->start_date, inputs->end_date};
                 q3(dataset, dates, temp);
             }
@@ -189,23 +252,39 @@ void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inp
         case 3: // Query 4
             get_input(win, 15, "Data Inicio (opcional, YYYY-MM-DD)", inputs->begin_date, QUERY_INPUT_SIZE);
             get_input(win, 18, "Data Fim (opcional, YYYY-MM-DD)", inputs->end_date, QUERY_INPUT_SIZE);
-            query4_execute(dataset,
-                          strlen(inputs->begin_date) > 0 ? inputs->begin_date : NULL,
-                          strlen(inputs->end_date) > 0 ? inputs->end_date : NULL,
-                          temp);
+            
+            // Validar apenas se não estiver vazio
+            if (strlen(inputs->begin_date) > 0 && !is_valid_date_format(inputs->begin_date)) {
+                input_invalid = true;
+            } else if (strlen(inputs->end_date) > 0 && !is_valid_date_format(inputs->end_date)) {
+                input_invalid = true;
+            } else {
+                query4_execute(dataset,
+                              strlen(inputs->begin_date) > 0 ? inputs->begin_date : NULL,
+                              strlen(inputs->end_date) > 0 ? inputs->end_date : NULL,
+                              temp);
+            }
             break;
             
         case 4: // Query 5
             get_input(win, 15, "Numero N", inputs->manufacturer, QUERY_INPUT_SIZE);
-            inputs->n = atoi(inputs->manufacturer);
-            if (inputs->n > 0) {
-                query5(dataset, inputs->n, temp);
+            if (!is_numeric(inputs->manufacturer)) {
+                input_invalid = true;
+            } else {
+                inputs->n = atoi(inputs->manufacturer);
+                if (inputs->n <= 0) {
+                    input_invalid = true;
+                } else {
+                    query5(dataset, inputs->n, temp);
+                }
             }
             break;
             
         case 5: // Query 6
             get_input(win, 15, "Nacionalidade (ex: Brazil)", inputs->nationality, QUERY_INPUT_SIZE);
-            if (strlen(inputs->nationality) > 0) {
+            if (strlen(inputs->nationality) == 0) {
+                input_invalid = true;
+            } else {
                 q6(dataset, inputs->nationality, temp);
             }
             break;
@@ -220,7 +299,14 @@ void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inp
     }
     fclose(temp);
     
-    show_results(win, result);
+    // Mostrar resultado ou mensagem apropriada
+    if (input_invalid) {
+        show_results(win, "ERRO: Input invalido");
+    } else if (strlen(result) == 0) {
+        show_results(win, "Nenhum resultado encontrado");
+    } else {
+        show_results(win, result);
+    }
 }
 
 void draw_footer(WINDOW *win) {
@@ -236,8 +322,67 @@ void draw_footer(WINDOW *win) {
 }
 
 int main(int argc, char **argv) {
-    // Configurar locale para UTF-8
+    // Configurar para UTF-8
     setlocale(LC_ALL, "");
+    
+    // Pedir caminho do dataset ao utilizador
+    char dataset_path[512];
+    bool path_valid = false;
+    
+    while (!path_valid) {
+        printf("Introduza o caminho dos ficheiros de dados: ");
+        fflush(stdout);
+        
+        if (fgets(dataset_path, sizeof(dataset_path), stdin) == NULL) {
+            fprintf(stderr, "Erro ao ler caminho\n");
+            return 1;
+        }
+        
+        // Remover newline
+        dataset_path[strcspn(dataset_path, "\n")] = 0;
+        
+        // Se vazio, usar default
+        if (strlen(dataset_path) == 0) {
+            strcpy(dataset_path, "./dataset");
+        }
+        
+        // Verificar se o diretório existe
+        if (!directory_exists(dataset_path)) {
+            printf("Erro: O caminho '%s' nao existe ou nao e um diretorio.\n", dataset_path);
+            printf("Por favor, tente novamente.\n\n");
+            continue;
+        }
+        
+        // Verificar se os ficheiros CSV necessários existem
+        const char *required_files[] = {
+            "airports.csv",
+            "aircrafts.csv", 
+            "flights.csv",
+            "passengers.csv",
+            "reservations.csv"
+        };
+        
+        bool all_files_exist = true;
+        for (int i = 0; i < 5; i++) {
+            char test_path[1024];
+            snprintf(test_path, sizeof(test_path), "%s/%s", dataset_path, required_files[i]);
+            FILE *test_file = fopen(test_path, "r");
+            if (!test_file) {
+                printf("Erro: Ficheiro '%s' nao encontrado em '%s'.\n", 
+                       required_files[i], dataset_path);
+                all_files_exist = false;
+                break;
+            }
+            fclose(test_file);
+        }
+        
+        if (!all_files_exist) {
+            printf("Certifique-se de que o caminho contem todos os ficheiros CSV necessarios.\n\n");
+            continue;
+        }
+        
+        path_valid = true;
+    }
     
     // Carregar dataset
     Dataset dataset = dataset_create();
@@ -246,11 +391,10 @@ int main(int argc, char **argv) {
         return 1;
     }
     
-    char *dataset_path = (argc > 1) ? argv[1] : "./src/dataset-errors";
-    printf("Carregando dataset de: %s\n", dataset_path);
+    printf("\nA carregar dataset de: %s\n", dataset_path);
     parse_all(dataset, dataset_path);
-    printf("Dataset carregado!\n");
-    printf("Iniciando interface...\n");
+    printf("Dataset carregado...\n");
+    printf("A iniciar interface...\n");
     sleep(1);
     
     // Inicializar ncurses
@@ -260,7 +404,7 @@ int main(int argc, char **argv) {
     noecho();
     curs_set(0);
     
-    // Cores melhoradas
+    // Cores
     init_pair(1, COLOR_CYAN, COLOR_BLACK);      // Título
     init_pair(2, COLOR_WHITE, COLOR_BLACK);     // Info
     init_pair(3, COLOR_YELLOW, COLOR_BLACK);    // Separadores
@@ -270,7 +414,7 @@ int main(int argc, char **argv) {
     init_pair(7, COLOR_GREEN, COLOR_BLACK);     // Resultados
     
     WINDOW *main_win = newwin(LINES, COLS, 0, 0);
-    keypad(main_win, TRUE);  // IMPORTANTE: keypad na janela, não no stdscr
+    keypad(main_win, TRUE);  
     box(main_win, 0, 0);
     
     int selected = 0;
@@ -289,10 +433,6 @@ int main(int argc, char **argv) {
         wrefresh(main_win);
         
         int ch = wgetch(main_win);
-        
-        // Debug: descomentar para ver o código da tecla
-        // mvwprintw(main_win, 1, 1, "Tecla: %d", ch);
-        // wrefresh(main_win);
         
         if (ch == KEY_UP || ch == 'k' || ch == 'K') {
             selected = (selected - 1 + 6) % 6;
