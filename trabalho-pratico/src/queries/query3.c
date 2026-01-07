@@ -24,22 +24,22 @@ static void count_flight_departures(gpointer key, gpointer value, gpointer user_
     Flight f = (Flight)value;
     Q3Context *ctx = (Q3Context *)user_data;
     
-    if (get_flight_status(f) == Cancelled) {     // Ignorar voos cancelados
+    if (get_flight_status(f) == Cancelled) { // Ignora voos cancelados
         return;
     }
     
-    const char *actual_dep = get_flight_actual_dep(f);     // Obter data real de partida
+    const char *actual_dep = get_flight_actual_dep(f);  // Obtem data real de partida
     if (!actual_dep || strlen(actual_dep) < 10) {
         return;
     }
     
-    // Extrair apenas a data (YYYY-MM-DD)
+    // Extrai apenas a data (YYYY-MM-DD)
     char date_only[11];
     memcpy(date_only, actual_dep, 10);
     date_only[10] = '\0';
 
     if (strcmp(date_only, ctx->start_date) < 0 || 
-    strcmp(date_only, ctx->end_date) > 0) {  // Verificar se está no intervalo
+    strcmp(date_only, ctx->end_date) > 0) {  // Verifica se está no intervalo
         return;    
     }
     
@@ -70,25 +70,25 @@ void q3(Dataset d, char *args[], FILE *output) {
     const char *start_date = args[0];
     const char *end_date = args[1];
 
-    FlightsManager fm = dataset_get_flights(d);     // Obter manager de voos
+    FlightsManager fm = dataset_get_flights(d);  // Obtem manager de voos
     if (!fm) {
         output_empty(output);
         return;
     }
 
-    // Criar contexto e tabela de contagem
+    // Cria contexto e tabela de contagem
     Q3Context ctx;
     ctx.start_date = start_date;
     ctx.end_date = end_date;
     ctx.airport_counts = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
 
-    // Processar todos os voos
+    // Processa todos os voos
     GHashTable *flights_table = flights_manager_get_table(fm);
     if (flights_table) {
         g_hash_table_foreach(flights_table, count_flight_departures, &ctx);
     }
 
-    // Encontrar aeroporto com mais partidas
+    // Encontra aeroporto com mais partidas
     char best_airport[4] = {0};
     int max_count = 0;
 
@@ -100,7 +100,7 @@ void q3(Dataset d, char *args[], FILE *output) {
         const char *airport_code = (const char *)key;
         int count = *(int *)value;
 
-        // Atualizar se: mais partidas OU (mesmo número e código menor)
+        // Atualiza se: tiver mais partidas OU o mesmo número e código menor
         if (count > max_count ||
             (count == max_count && (best_airport[0] == 0 || strcmp(airport_code, best_airport) < 0))) {
             strncpy(best_airport, airport_code, 3);
@@ -109,7 +109,7 @@ void q3(Dataset d, char *args[], FILE *output) {
         }
     }
 
-    // Limpar tabela de contagem
+    // Limpa tabela de contagem
     g_hash_table_destroy(ctx.airport_counts);
 
     // Output do resultado

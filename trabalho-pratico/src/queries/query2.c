@@ -30,12 +30,10 @@ void q2(Dataset d, int N, const char *manufacturer, FILE *out) {
 
     const char *key = (manufacturer && *manufacturer) ? manufacturer : "__ALL__";
     
-    /* Novo (Correto): Usamos a função getter */
     GHashTable *index_q2 = dataset_get_q2_index(d); 
     if (!index_q2) return;
 
     GHashTable *table = g_hash_table_lookup(index_q2, key);
-    /* -------------------------- */
 
     if (!table || g_hash_table_size(table) == 0) {
         fprintf(out, "\n");

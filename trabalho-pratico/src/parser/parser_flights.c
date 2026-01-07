@@ -118,8 +118,7 @@ void parse_flights(Dataset d, const char *data_path) {
         FlightsManager fm = dataset_get_flights(d);
         flights_manager_add(fm, fv);
 
-        /* ===== ATUALIZAÇÃO DO ÍNDICE Q2 ===== */
-        // Apenas contabilizar voos NÃO cancelados
+        // Apenas contabiliza voos NÃO cancelados
         if (status != Cancelled) {
             Aircraft a = aircrafts_manager_get(am, aircraft_id);
             if (a) {

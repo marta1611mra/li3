@@ -7,12 +7,11 @@
 
 
 // Valida uma data no formato yyyy-mm-dd.
-
 bool validate_date(const char *date) {
-    // 1. Validar tamanho e nulidade [cite: 365]
+    // 1. Validar tamanho e nulidade
     if (!date || strlen(date) != 10) return false;
 
-    // 2. Validar separadores '-' nas posições certas (rápido e essencial) [cite: 365]
+    // 2. Validar separadores '-' nas posições certas (rápido e essencial)
     if (date[4] != '-' || date[7] != '-') return false;
 
     int y, m, d;
@@ -20,10 +19,10 @@ bool validate_date(const char *date) {
     // 3. O sscanf faz o parsing. Se não conseguir ler 3 inteiros, retorna false.
     if (sscanf(date, "%4d-%2d-%2d", &y, &m, &d) != 3) return false;
 
-    // 4. Regra base: Mês 1-12 e Dia 1-31 [cite: 367]
+    // 4. Regra base: Mês 1-12 e Dia 1-31
     if (m < 1 || m > 12 || d < 1 || d > 31) return false;
 
-    // 5. Regra da Data Atual (Limite: 2025-09-30) [cite: 269, 370]
+    // 5. Regra da Data Atual 
     if (y > 2025) return false;
     if (y == 2025) {
         if (m > 9) return false;            // Meses futuros (Out, Nov, Dez)
@@ -47,7 +46,6 @@ bool validate_datetime(const char *datetime) {
     if (m < 1 || m > 12 || d < 1 || d > 31) return false;
     if (h < 0 || h > 23 || min < 0 || min > 59) return false;
 
-    // Data Atual: 2025/09/30
     if (y > 2025) return false;
     if (y == 2025) {
         if (m > 9) return false;
@@ -197,7 +195,7 @@ bool validate_airport_type(const char *type) {
 }
 
 
-// Valida listas CSV delimitadas por colchetes [ ... ].
+// Valida listas CSV delimitadas por parênteses retos [ ... ].
 bool validate_csv_lists(const char *s) {
     size_t n = strlen(s);
     return n >= 2 && s[0]=='[' && s[n-1]==']';

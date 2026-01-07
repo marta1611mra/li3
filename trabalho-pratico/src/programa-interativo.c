@@ -44,7 +44,7 @@ void draw_menu(WINDOW *win, int selected) {
         "6. Aeroporto de Destino Mais Comum"
     };
     
-    // Título da seção
+    // Título da secção
     wattron(win, COLOR_PAIR(1) | A_BOLD);
     mvwprintw(win, 5, 4, "QUERIES DISPONIVEIS:");
     wattroff(win, COLOR_PAIR(1) | A_BOLD);

@@ -44,7 +44,7 @@ void process_queries(Dataset d, const char *queries_path) {
     while (fgets(line, sizeof(line), queries_file)) {
         if (strlen(line) == 0 || line[0] == '\n') continue;
 
-        // Limpar espaços no fim da linha (\n, \r, etc)
+        // Limpa espaços no fim da linha (\n, \r, etc)
         trim_end(line);
 
         char output_path[128];
@@ -60,11 +60,11 @@ void process_queries(Dataset d, const char *queries_path) {
         char cmd[32] = {0};
         char *args = NULL;
 
-        // Encontrar o primeiro espaço
+        // Encontra o primeiro espaço
         char *space_ptr = strchr(line, ' ');
 
         if (space_ptr) {
-            // Copiar o comando até ao espaço
+            // Copia o comando até ao espaço
             size_t cmd_len = space_ptr - line;
             if (cmd_len > 31) cmd_len = 31;
             strncpy(cmd, line, cmd_len);
@@ -73,7 +73,7 @@ void process_queries(Dataset d, const char *queries_path) {
             // O argumento é tudo o que está depois do espaço
             args = space_ptr + 1; 
             
-            // Ignorar espaços extra entre o comando e o argumento
+            // Ignora espaços extra entre o comando e o argumento
             while (*args && isspace((unsigned char)*args)) args++;
         } else {
             // Se não houver espaço, a linha toda é o comando (ex: "5")

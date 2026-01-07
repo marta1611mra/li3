@@ -44,7 +44,7 @@ void parse_passengers(Dataset d, const char *data_path) {
     char line[16384];  // Buffer maior
     
     while (fgets(line, sizeof(line), f)) {
-        // Parsing APENAS dos campos usados: document_id, first_name, last_name, dob, nationality, gender, email
+        // Parsing apenas dos campos usados
         char document_id[16] = "";
         char first_name[128] = "";
         char last_name[128] = "";
@@ -70,7 +70,7 @@ void parse_passengers(Dataset d, const char *data_path) {
             continue;
         }
 
-        // Limpar APENAS os campos usados (não limpar phone, address, photo)
+        // Limpa apenas os campos usados
         remove_quotes(document_id); remove_spc(document_id);
         remove_quotes(first_name); remove_spc(first_name);
         remove_quotes(last_name); remove_spc(last_name);
@@ -79,7 +79,7 @@ void parse_passengers(Dataset d, const char *data_path) {
         remove_quotes(gender); remove_spc(gender);
         remove_quotes(email); remove_spc(email);
 
-        // Remover newlines
+        // Remove newlines
         document_id[strcspn(document_id, "\r\n")] = 0;
         first_name[strcspn(first_name, "\r\n")] = 0;
         last_name[strcspn(last_name, "\r\n")] = 0;
@@ -88,7 +88,7 @@ void parse_passengers(Dataset d, const char *data_path) {
         gender[strcspn(gender, "\r\n")] = 0;
         email[strcspn(email, "\r\n")] = 0;
 
-        // Validar na ordem mais eficiente
+        // Validações na ordem mais eficiente
         if (!validate_gender(gender) ||
             !validate_document_number(document_id) ||
             !validate_date(dob) ||
@@ -97,8 +97,7 @@ void parse_passengers(Dataset d, const char *data_path) {
             continue;
         }
 
-        // IMPORTANTE: Passar strings vazias para campos não usados
-        // Isto poupa memória se a struct os guardar
+        // Passa strings vazias para campos que não são usados, poupando memória caso a struct os guarde
         Passenger p = create_passenger(document_id, first_name, last_name, dob,
                                        nationality, gender, email, 
                                        "", "", "");  // phone, address, photo vazios

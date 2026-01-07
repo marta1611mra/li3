@@ -26,10 +26,10 @@ struct dataset {
     PassengersManager passengers;
     ReservationsManager reservations;
 
-    GHashTable *q2_index;   /* manufacturer -> (aircraft_id -> count) */
-    GHashTable *q3_index;   /* airport -> (date -> count) */
-    GHashTable *q4_weeks;   /* week_sunday -> (document -> total_price) */
-    GHashTable *q6_index;   /* nationality -> (airport -> count) */
+    GHashTable *q2_index;   // manufacturer -> (aircraft_id -> count) 
+    GHashTable *q3_index;   // airport -> (date -> count) 
+    GHashTable *q4_weeks;   // week_sunday -> (document -> total_price) 
+    GHashTable *q6_index;   // nationality -> (airport -> count) 
     GHashTable *q5_temp_map; // Temporário durante o parsing
     Q5Stats *q5_array;       // Array final ordenado
     int q5_count;            // Número de companhias
@@ -42,33 +42,32 @@ static void free_q5_stat(void *data) {
     }
     free(stat);
 }
-/* ===== Auxiliar: calcular domingo da semana ===== */
-/* Assume date no formato YYYY-MM-DD */
+// Calcula domingo da semana, assumindo date no formato YYYY-MM-DD
 static void calculate_week_sunday(const char *date, char out[11]) {
     int y, m, d;
-    // Ler a data YYYY-MM-DD
+    // Lê a data YYYY-MM-DD
     if (sscanf(date, "%d-%d-%d", &y, &m, &d) != 3) {
         return;
     }
 
-    // Usar GDate para evitar problemas de fuso horário do mktime
+    // Usa GDate para evitar problemas de fuso horário do mktime
     GDate gdate;
     g_date_clear(&gdate, 1);
     g_date_set_dmy(&gdate, d, m, y);
 
     if (!g_date_valid(&gdate)) return;
 
-    // Obter dia da semana (Domingo=7, Segunda=1, etc.)
+    // Obtém dia da semana (Domingo=7, Segunda=1, etc.)
     GDateWeekday wd = g_date_get_weekday(&gdate);
 
-    // Calcular quantos dias recuar até Domingo
+    // Calcula quantos dias recuar até Domingo
     // Se for Domingo (7): 7 % 7 = 0 dias
     // Se for Segunda (1): 1 % 7 = 1 dia
     int days_to_subtract = wd % 7; 
 
     g_date_subtract_days(&gdate, days_to_subtract);
 
-    // Escrever o resultado
+    // Escreve o resultado
     g_date_strftime(out, 11, "%Y-%m-%d", &gdate);
 }
 
@@ -106,8 +105,8 @@ static int compare_q5(const void *a, const void *b) {
     return strcmp(s1->airline_name, s2->airline_name);
 }
 
-/* ===== Criação / Destruição ===== */
 
+// Funções de criação/destruição do Dataset
 Dataset dataset_create(void) {
     Dataset d = malloc(sizeof(struct dataset));
     if (!d) return NULL;
@@ -170,7 +169,7 @@ void dataset_destroy(Dataset d) {
     free(d);
 }
 
-/* ===== Getters ===== */
+// Getters para os managers e índices
 
 AirportsManager dataset_get_airports(Dataset d) { return d->airports; }
 AircraftsManager dataset_get_aircrafts(Dataset d) { return d->aircrafts; }
@@ -183,8 +182,8 @@ GHashTable *dataset_get_q3_index(Dataset d) { return d->q3_index; }
 GHashTable *dataset_get_q4_weeks(Dataset d) { return d->q4_weeks; }
 GHashTable *dataset_get_q6_index(Dataset d) { return d->q6_index; }
 
-/* ===== QUERY 2 ===== */
 
+// Query 2
 static void q2_update_inner(GHashTable *index,
                             const char *key,
                             const char *aircraft_id) {
@@ -215,8 +214,8 @@ void dataset_update_q2(Dataset d,
     q2_update_inner(d->q2_index, "__ALL__", aircraft_id);
 }
 
-/* ===== QUERY 3 ===== */
 
+// Query 3
 void dataset_update_q3(Dataset d,
                        const char *airport_code,
                        const char *date) {
@@ -245,8 +244,8 @@ void dataset_update_q3(Dataset d,
                         GINT_TO_POINTER(count));
 }
 
-/* ===== QUERY 4 ===== */
 
+// Query 4
 void dataset_add_q4_data(Dataset d,
                          const char *document,
                          double price,
@@ -279,8 +278,8 @@ void dataset_add_q4_data(Dataset d,
     }
 }
 
-/* ===== QUERY 6 ===== */
 
+// Query 6
 void dataset_update_q6(Dataset d,
                        const char *nationality,
                        const char *airport) {
@@ -313,7 +312,7 @@ void dataset_build_q6_index(Dataset d) {
     (void)d; 
 }
 
-/* ===== QUERY 5  ===== */
+// Query 5
 void dataset_update_q5(Dataset d, char *airline, char *sched_dep, char *real_dep) {
     int delay = fast_delay_calc(sched_dep, real_dep);
     if (delay <= 0) return;
@@ -358,7 +357,7 @@ void dataset_finalize_q5(Dataset d) {
         i++;
     }
 
-    // Limpeza correta da tabela temporária
+    // Limpeza da tabela temporária
     g_hash_table_destroy(d->q5_temp_map);
     d->q5_temp_map = NULL;
 
@@ -366,7 +365,7 @@ void dataset_finalize_q5(Dataset d) {
     qsort(d->q5_array, d->q5_count, sizeof(Q5Stats), compare_q5);
 }
 
-// Getter para a query 5 usar
+// Getter para dados necessários para a Query 5
 const void *dataset_get_q5_data(Dataset d, int *count) {
     if (count) *count = d->q5_count;
     return d->q5_array;

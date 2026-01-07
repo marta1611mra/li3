@@ -36,7 +36,7 @@ void parse_reservations(Dataset d, const char *data_path) {
 
     wcsv_header(f, ferror);
 
-    // Obter managers uma única vez fora do loop
+    // Obtem managers uma única vez fora do loop
     PassengersManager pm = dataset_get_passengers(d);
     FlightsManager fm = dataset_get_flights(d);
     ReservationsManager rm = dataset_get_reservations(d);
@@ -52,9 +52,8 @@ void parse_reservations(Dataset d, const char *data_path) {
         char price_str[32] = "";
         char extra_luggage_str[8] = "";
         char priority_boarding_str[8] = "";
-        char qr_code[512] = "";  // Reduzido de 4096 para 512 (não é usado)
+        char qr_code[512] = "";  
 
-        // Parsing correto
         int n = sscanf(line,
             "\"%20[^\"]\",\"%127[^\"]\",\"%15[^\"]\",\"%15[^\"]\",\"%31[^\"]\",\"%7[^\"]\",\"%7[^\"]\",\"%511[^\"]\"",
             reservation_id, flight_list, document_number, seat_str,
@@ -64,14 +63,13 @@ void parse_reservations(Dataset d, const char *data_path) {
             fprintf(ferror, "%s", line);
             continue;
         }
-
+        // qr_code não precisa de limpeza 
         remove_quotes(reservation_id); remove_spc(reservation_id);
         remove_quotes(flight_list); remove_spc(flight_list);
         remove_quotes(document_number); remove_spc(document_number);
         remove_quotes(price_str); remove_spc(price_str);
         remove_quotes(extra_luggage_str); remove_spc(extra_luggage_str);
         remove_quotes(priority_boarding_str); remove_spc(priority_boarding_str);
-        // qr_code não precisa de limpeza (não é usado)
 
         reservation_id[strcspn(reservation_id, "\r\n")] = 0;
         flight_list[strcspn(flight_list, "\r\n")] = 0;
@@ -80,7 +78,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         extra_luggage_str[strcspn(extra_luggage_str, "\r\n")] = 0;
         priority_boarding_str[strcspn(priority_boarding_str, "\r\n")] = 0;
 
-        // Converter price para double
+        // Converte price para double
         char *endptr;
         double price = strtod(price_str, &endptr);
         if (*endptr != '\0' || price < 0) {
@@ -101,7 +99,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         }
         
 
-        // Extrair flight IDs 
+        // Extrai flight IDs 
         char flight_id[2][10] = {{0}};
         int num_ids = 0;
 
@@ -143,7 +141,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             continue;
         }
 
-        // Obter voos uma única vez e reutilizar
+        // Obtem voos uma única vez e reutiliza
         Flight f_first = flights_manager_get(fm, flight_id[0]);
         Flight f_last = (num_ids == 2) ? flights_manager_get(fm, flight_id[1]) : f_first;
 
@@ -174,7 +172,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         int luggage[2] = {extra_luggage, 0};
         int priority[2] = {priority_boarding, 0};
 
-        // Passar string vazia para qr_code (não é usado)
+        // Passa string vazia para qr_code, uma vez que não é usado
         Reservation r = create_reservation(
             reservation_id,
             flight_id,
@@ -192,10 +190,8 @@ void parse_reservations(Dataset d, const char *data_path) {
         }
 
         reservations_manager_add(rm, r);
-
-        /* ===== PRÉ-PROCESSAMENTO PARA QUERIES ===== */
         
-        // Obter passageiro apenas se necessário
+        // Obtem passageiro apenas se necessário
         Passenger p = passengers_manager_get(pm, document_number);
         
         if (p) {
@@ -230,7 +226,7 @@ void parse_reservations(Dataset d, const char *data_path) {
         int first_valid = (get_flight_status(f_first) != Cancelled);
         int last_valid  = (get_flight_status(f_last)  != Cancelled);
 
-        // ===== VOO 1 =====
+        // 1º voo
         if (first_valid) {
             const char *orig1 = get_flight_orig(f_first);
             const char *dest1 = get_flight_dest(f_first);
@@ -248,7 +244,7 @@ void parse_reservations(Dataset d, const char *data_path) {
             }
         }
 
-        // ===== VOO 2 (se existir e for diferente) =====
+        // 2º voo, se existir e for diferente
         if (num_ids == 2 && last_valid && f_last != f_first) {
             const char *orig2 = get_flight_orig(f_last);
             const char *dest2 = get_flight_dest(f_last);
