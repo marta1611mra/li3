@@ -203,17 +203,6 @@ void dataset_update_q5(Dataset d, char *airline, char *sched_dep, char *real_dep
 void dataset_finalize_q5(Dataset d);
 
 /**
- * @brief Obtém os dados completos da Query 5.
- *
- * Retorna um apontador para o array interno de estatísticas das companhias, já ordenado e processado.
- *
- * @param d Dataset.
- * @param count Apontador onde será armazenado o número total de companhias.
- * @return Apontador para os dados internos, ou NULL se não houver dados.
- */
-const void *dataset_get_q5_data(Dataset d, int *count);
-
-/**
  * @brief Obtém o número total de companhias aéreas nos dados da Query 5.
  *
  * @param d Dataset.

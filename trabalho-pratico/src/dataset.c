@@ -365,12 +365,6 @@ void dataset_finalize_q5(Dataset d) {
     qsort(d->q5_array, d->q5_count, sizeof(Q5Stats), compare_q5);
 }
 
-// Getter para dados necessários para a Query 5
-const void *dataset_get_q5_data(Dataset d, int *count) {
-    if (count) *count = d->q5_count;
-    return d->q5_array;
-}
-
 int dataset_q5_get_count(Dataset d) {
     return d ? d->q5_count : 0;
 }
