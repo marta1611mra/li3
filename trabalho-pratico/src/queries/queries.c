@@ -13,7 +13,7 @@
 #include "queries/query5.h"
 #include "queries/query6.h"
 
-// Abre um ficheiro de forma segura.
+// Abre um ficheiro de forma segura
 static FILE *safe_fopen(const char *path, const char *mode) {
     FILE *f = fopen(path, mode);
     if (!f) {

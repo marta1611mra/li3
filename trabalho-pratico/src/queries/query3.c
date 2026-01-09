@@ -33,7 +33,7 @@ static void count_flight_departures(gpointer key, gpointer value, gpointer user_
         return;
     }
     
-    // Extrai apenas a data (YYYY-MM-DD)
+    // Extrai apenas a data (YYYY-MM-DD) ignorando hora
     char date_only[11];
     memcpy(date_only, actual_dep, 10);
     date_only[10] = '\0';
@@ -47,12 +47,13 @@ static void count_flight_departures(gpointer key, gpointer value, gpointer user_
     if (!orig || strlen(orig) == 0) {
         return;
     }
-    
+
+    // Incrementa contador do aeroporto ou cria novo se não existir
     int *count = g_hash_table_lookup(ctx->airport_counts, orig);   
     if (count) {
         (*count)++; 
     } else {
-        int *new_count = malloc(sizeof(int));
+        int *new_count = malloc(sizeof(int)); // Primeiro voo deste aeroporto, criar novo contador
         if (new_count) {
             *new_count = 1;
             g_hash_table_insert(ctx->airport_counts, g_strdup(orig), new_count);
@@ -76,7 +77,7 @@ void q3(Dataset d, char *args[], FILE *output) {
         return;
     }
 
-    // Cria contexto e tabela de contagem
+    // Cria contexto e tabela de contagem de aeroportos
     Q3Context ctx;
     ctx.start_date = start_date;
     ctx.end_date = end_date;
@@ -92,6 +93,7 @@ void q3(Dataset d, char *args[], FILE *output) {
     char best_airport[4] = {0};
     int max_count = 0;
 
+    // Itera sobre a tabela de contagem
     GHashTableIter iter;
     gpointer key, value;
     g_hash_table_iter_init(&iter, ctx.airport_counts);
@@ -100,7 +102,7 @@ void q3(Dataset d, char *args[], FILE *output) {
         const char *airport_code = (const char *)key;
         int count = *(int *)value;
 
-        // Atualiza se: tiver mais partidas OU o mesmo número e código menor
+        // Atualiza se: tiver mais partidas OU o mesmo número E código menor lexicograficamente
         if (count > max_count ||
             (count == max_count && (best_airport[0] == 0 || strcmp(airport_code, best_airport) < 0))) {
             strncpy(best_airport, airport_code, 3);
@@ -127,10 +129,10 @@ void q3(Dataset d, char *args[], FILE *output) {
                     get_airport_country(a), sep,
                     max_count);
         } else {
-            // Aeroporto não encontrado (improvável)
+            // Aeroporto não encontrado 
             fprintf(output, "%s%c%d\n", best_airport, sep, max_count);
         }
     } else {
-        output_empty(output);
+        output_empty(output); // Nenhum voo encontrado no intervalo
     }
 }

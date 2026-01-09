@@ -11,6 +11,7 @@
  *
  * @param d Dataset que contém todos os managers (airports, aircrafts, flights, passengers, reservations).
  * @param queries_path Caminho para o ficheiro de input contendo as queries.
+ * @return void
  */
 void process_queries(Dataset d, const char *queries_path);
 #endif

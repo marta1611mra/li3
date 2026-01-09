@@ -41,7 +41,7 @@ static void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, GDat
     *begin_out = *begin;
     *end_out = *end;
 
-    // 1. Ajusta data inicial para Domingo
+    // Ajusta data inicial para Domingo (recua até ao domingo anterior ou igual)
     GDateWeekday begin_wd = g_date_get_weekday(begin_out);
     // Se for Domingo (7), 7%7=0 (não mexe). Se for Segunda (1), recua 1.
     guint8 days_back = begin_wd % 7; 
@@ -49,11 +49,10 @@ static void adjust_to_sunday_saturday(const GDate *begin, const GDate *end, GDat
         g_date_subtract_days(begin_out, days_back);
     }
 
-    // 2. Ajusta data final para Sábado
+    // Ajustar data final para Sábado (avança até ao sábado posterior ou igual)
     GDateWeekday end_wd = g_date_get_weekday(end_out);
     
-    // Fórmula segura para avançar até ao próximo Sábado:
-    // (6 - dia_atual + 7) % 7
+    // Calcula dias até sábado (dia 6 da semana)
     int days_forward = (6 - (int)end_wd + 7) % 7;
     
     if (days_forward > 0) { 
@@ -80,12 +79,11 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
         GDate week_date;
         g_date_clear(&week_date, 1);
         
-        // Usar sscanf para garantir leitura correta
         int y, m, d;
-        if (sscanf(week_key, "%d-%d-%d", &y, &m, &d) == 3) {
+        if (sscanf(week_key, "%d-%d-%d", &y, &m, &d) == 3) {  // Usar sscanf para garantir leitura correta
              g_date_set_dmy(&week_date, d, m, y);
         } else {
-             return; // data inválida ou formato inesperado
+             return; // data inválida ou formato inválido
         }
         
         if (!g_date_valid(&week_date)) { return;} // data inválida
@@ -100,7 +98,7 @@ static void process_week(gpointer key, gpointer value, gpointer user_data) {
     
     if (g_hash_table_size(week_spending) == 0) return; // Verifica se há passageiros nesta semana
     
-    // Converte GHashTable em lista ordenada 
+    // Converte GHashTable em lista ordenada
     GList *passenger_list = NULL; 
     GHashTableIter iter;
     gpointer pkey, pvalue; 
@@ -175,7 +173,7 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
         g_date_clear(&temp_end, 1);
         
         int y, m, d;
-        int parsed_begin = 0, parsed_end = 0;
+        int parsed_begin = 0, parsed_end = 0; 
 
         if (sscanf(begin_date, "%d/%d/%d", &y, &m, &d) == 3 || sscanf(begin_date, "%d-%d-%d", &y, &m, &d) == 3) {
             g_date_set_dmy(&temp_begin, d, m, y);
@@ -187,15 +185,16 @@ void query4_execute(Dataset d, const char *begin_date, const char *end_date, FIL
             parsed_end = 1;
         }
 
+        // Validar e ajustar datas para semanas completas 
         if (parsed_begin && parsed_end && g_date_valid(&temp_begin) && g_date_valid(&temp_end)) { 
             g_date_clear(&ctx.filter_start, 1);
             g_date_clear(&ctx.filter_end, 1);
-            adjust_to_sunday_saturday(&temp_begin, &temp_end, &ctx.filter_start, &ctx.filter_end); // usa ajuste para domingo-sábado
+            adjust_to_sunday_saturday(&temp_begin, &temp_end, &ctx.filter_start, &ctx.filter_end); 
             if (g_date_valid(&ctx.filter_start) && g_date_valid(&ctx.filter_end)) {
                 ctx.use_filter = 1; // ativa uso de filtro
             }
         } else {
-             // Se as datas forem inválidas, o comportamento esperado é geralmente output vazio
+             // Se as datas forem inválidas devolve se output vazio
              g_hash_table_destroy(ctx.top10_counts);
              output_empty(out);
              return;
