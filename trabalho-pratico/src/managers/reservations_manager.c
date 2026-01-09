@@ -35,18 +35,3 @@ void reservations_manager_add(ReservationsManager rm, Reservation r) {
 
     g_hash_table_replace(rm->reservations,strdup(id), r);
 }
-
-
-// Obtém uma reserva pelo seu ID.
-Reservation reservations_manager_get(ReservationsManager m, const char *id) {
-    return g_hash_table_lookup(m->reservations, id);
-}
-
-// Obtém o número de reservas no gestor.
-int reservations_manager_count(ReservationsManager m) {
-    return g_hash_table_size(m->reservations);
-}
-// Obtém uma lista de todas as reservas no gestor.
-GList *reservations_manager_get_all(ReservationsManager m) {
-    return g_hash_table_get_values(m->reservations);
-}

@@ -90,29 +90,4 @@ const char *get_flight_id(Flight f);
  */
 const char *get_flight_dep(Flight f);
 
-/**
- * @brief Obtém a hora de partida real.
- *
- * @param f Flight.
- * @return String com a hora de partida real (YYYY-MM-DD HH:MM ou "N/A").
- */
-const char *get_flight_actual_dep(Flight f);
-
-
-/**
- * @brief Obtém o ID da aeronave utilizada no voo.
- *
- * @param f Flight.
- * @return String com o ID da aeronave.
- */
-const char *get_flight_aircraft_id(Flight f);
-
-/**
- * @brief Obtém a companhia aérea responsável pelo voo.
- *
- * @param f Flight.
- * @return String com o nome da companhia aérea.
- */
-const char *get_flight_airline(Flight f);
-
 #endif

@@ -34,28 +34,4 @@ void reservations_manager_destroy(ReservationsManager m);
  */
 void reservations_manager_add(ReservationsManager m, Reservation r);
 
-/**
- * @brief Obtém uma reserva pelo seu ID.
- *
- * @param m ReservationsManager.
- * @param id ID da reserva a procurar.
- * @return Ponteiro para a reserva encontrada ou NULL se não existir.
- */
-Reservation reservations_manager_get(ReservationsManager m, const char *id);
-
-/**
- * @brief Obtém o número total de reservas armazenadas.
- *
- * @param m ReservationsManager.
- * @return Número de reservas.
- */
-int reservations_manager_count(ReservationsManager m);
-/**
- * @brief Obtém uma lista de todas as reservas no gestor.
- *
- * @param m ReservationsManager.
- * @return GList* contendo todos os Reservation armazenados.
- */
-GList *reservations_manager_get_all(ReservationsManager m);
-
 #endif

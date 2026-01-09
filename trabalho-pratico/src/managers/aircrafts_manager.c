@@ -44,21 +44,8 @@ Aircraft aircrafts_manager_get(AircraftsManager m, const char *id) {
 }
 
 
-// Obtém o número de aeronaves no gestor.
-int aircrafts_manager_count(AircraftsManager m) {
-    return g_hash_table_size(m->aircrafts);
-}
-
-
 // Verifica se uma aeronave existe no gestor pelo seu ID.
 bool aircrafts_manager_exists(AircraftsManager am, const char *aircraft_id) {
     if (!am || !aircraft_id) return false;
     return g_hash_table_contains(am->aircrafts, aircraft_id);
-}
-
-
-// Obtém a tabela interna de aeronaves (GHashTable).
-GHashTable *aircrafts_manager_get_table(AircraftsManager m) {
-    if (!m) return NULL;
-    return m->aircrafts;
 }

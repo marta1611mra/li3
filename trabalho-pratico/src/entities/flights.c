@@ -64,20 +64,3 @@ const char *get_flight_id(Flight f) {
 const char *get_flight_dep(Flight f) { 
     return f->departure; 
 }
-
-//Obtém a hora de partida real do voo.
-const char *get_flight_actual_dep(Flight f) { 
-    return f->actual_departure; 
-}
-
-//Obtém o ID da aeronave associada ao voo.
-const char *get_flight_aircraft_id(Flight f) { 
-    return f->aircraft_id; 
-}
-
-//Obtém a companhia aérea do voo.
-const char *get_flight_airline(Flight f) { 
-    return f->airline; 
-}
-
-

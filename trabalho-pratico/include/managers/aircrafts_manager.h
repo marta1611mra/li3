@@ -45,14 +45,6 @@ void aircrafts_manager_add(AircraftsManager m, Aircraft a);
 Aircraft aircrafts_manager_get(AircraftsManager m, const char *id);
 
 /**
- * @brief Obtém o número total de aeronaves armazenadas.
- *
- * @param m AircraftsManager.
- * @return Número de aeronaves.
- */
-int aircrafts_manager_count(AircraftsManager m);
-
-/**
  * @brief Verifica se uma aeronave existe no manager.
  *
  * @param m AircraftsManager.
@@ -60,15 +52,5 @@ int aircrafts_manager_count(AircraftsManager m);
  * @return true se a aeronave existir, false caso contrário.
  */
 bool aircrafts_manager_exists(AircraftsManager m, const char *aircraft_id);
-
-/**
- * @brief Obtém a tabela hash interna do manager.
- *
- * Útil para iterações ou operações avançadas.
- *
- * @param m AircraftsManager.
- * @return Ponteiro para a GHashTable que contém todas as aeronaves.
- */
-GHashTable *aircrafts_manager_get_table(AircraftsManager m);
 
 #endif

@@ -44,24 +44,6 @@ void flights_manager_add(FlightsManager m, Flight f);
 Flight flights_manager_get(FlightsManager m, const char *id);
 
 /**
- * @brief Obtém o número total de voos armazenados.
- *
- * @param m FlightsManager.
- * @return Número de voos.
- */
-int flights_manager_count(FlightsManager m);
-
-/**
- * @brief Obtém a tabela hash interna do manager.
- *
- * Útil para iterações ou operações avançadas.
- *
- * @param m FlightsManager.
- * @return Ponteiro para a GHashTable que contém todos os voos.
- */
-GHashTable *flights_manager_get_table(FlightsManager m);
-
-/**
  * @brief Obtém o código do aeroporto de destino do voo.
  *
  * @param f Flight.

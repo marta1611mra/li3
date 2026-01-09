@@ -308,10 +308,6 @@ void dataset_update_q6(Dataset d,
     }
 }
 
-void dataset_build_q6_index(Dataset d) {
-    (void)d; 
-}
-
 // Query 5
 void dataset_update_q5(Dataset d, char *airline, char *sched_dep, char *real_dep) {
     int delay = fast_delay_calc(sched_dep, real_dep);

@@ -43,11 +43,6 @@ Airport airports_manager_get(AirportsManager m, const char *code) {
     return g_hash_table_lookup(m->airports, code);
 }
 
-// Obtém o número de aeroportos no gestor.
-int airports_manager_count(AirportsManager m) {
-    return g_hash_table_size(m->airports);
-}
-
 void airports_manager_arrival(AirportsManager m, const char *code, int passengers) {
 Airport a = airports_manager_get(m, code);
     if (a) airport_add_arrival_passengers(a, passengers);

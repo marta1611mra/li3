@@ -58,14 +58,4 @@ bool validate_status(flight_status status,
                      const char *actual_departure,
                      const char *actual_arrival);
 
-/**
- * @brief Valida se o número de documento de uma reserva corresponde a um passageiro existente.
- *
- * @param r Reservation a validar.
- * @param p Array de Passenger.
- * @param N Número de passageiros no array.
- * @return true se o documento existir, false caso contrário.
- */
-bool logical_validate_document_number(Reservation r, Passenger p[], int N);
-
 #endif

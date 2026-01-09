@@ -41,27 +41,3 @@ void destroy_reservation(Reservation r) {
 const char *get_reservation_id(Reservation r) { 
     return r->reservation_id; 
 }
-
-// Obtém o identificador do voo associado à reserva.
-const char *get_reservation_flight_id(Reservation r, int index) {
-    return (index >= 0 && index < 2) ? r->flight_id[index] : NULL;
-}
-
-// Obtém o número do documento do passageiro associado à reserva.
-const char *get_reservation_document_number(Reservation r) {
-    return r->document_number;
-}
-// Obtém o preço pago na reserva para um voo específico.
-double get_reservation_price(Reservation r, int index) {
-    return (index >= 0 && index < 2) ? r->price[index] : 0.0;
-}
-
-// Obtém o preço total pago na reserva.
-double get_reservation_total_price(Reservation r) {
-    double total = 0.0;
-    for (int i = 0; i < 2; i++) {
-        total += r->price[i];
-    }
-    return total;
-}
-

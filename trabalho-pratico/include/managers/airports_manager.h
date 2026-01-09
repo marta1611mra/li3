@@ -44,14 +44,6 @@ void airports_manager_add(AirportsManager m, Airport a);
 Airport airports_manager_get(AirportsManager m, const char *code);
 
 /**
- * @brief Obtém o número total de aeroportos armazenados.
- *
- * @param m AirportsManager.
- * @return Número de aeroportos.
- */
-int airports_manager_count(AirportsManager m);
-
-/**
  * @brief Regista uma partida no aeroporto em questão.
  * 
  * Incrementa o contador de partidas do aeroporto identificado pelo código.

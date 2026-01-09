@@ -42,38 +42,4 @@ void destroy_reservation(Reservation r);
  */
 const char *get_reservation_id(Reservation r);
 
-/**
- * @brief Obtém o ID de um voo associado à reserva.
- *
- * @param r     Reservation.
- * @param index Índice do voo (0 ou 1).
- * @return String com o ID do voo correspondente.
- */
-const char *get_reservation_flight_id(Reservation r, int index);
-
-/**
- * @brief Obtém o número de documento do passageiro associado à reserva.
- *
- * @param r Reservation.
- * @return String com o número de documento.
- */
-const char *get_reservation_document_number(Reservation r);
-
-/**
- * @brief Obtém o preço pago na reserva para um voo específico.
- *
- * @param r     Reservation.
- * @param index Índice do voo (0 ou 1).
- * @return Preço pago para o voo correspondente.
- */
-double get_reservation_price(Reservation r, int index);
-
-/**
- * @brief Obtém o preço total pago na reserva (soma dos voos).
- *
- * @param r Reservation.
- * @return Preço total pago na reserva.
- */
-double get_reservation_total_price(Reservation r);
-
 #endif

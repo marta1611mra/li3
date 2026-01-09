@@ -162,16 +162,6 @@ void dataset_update_q6(Dataset d,
                        const char *airport);
 
 /**
- * @brief Constrói o índice da Query 6.
- *
- * O índice é construído incrementalmente durante o parsing,
- * pelo que esta função existe apenas para compatibilidade.
- *
- * @param d Dataset.
- */
-void dataset_build_q6_index(Dataset d);
-
-/**
  * @brief Obtém o índice da Query 6.
  *
  * @param d Dataset.

@@ -34,15 +34,3 @@ void flights_manager_add(FlightsManager m, Flight f) {
 Flight flights_manager_get(FlightsManager m, const char *id) {
     return g_hash_table_lookup(m->flights, id);
 }
-
-// Obtém o número de voos no gestor.
-int flights_manager_count(FlightsManager m) {
-    return g_hash_table_size(m->flights);
-}
-
-// Obtém a tabela interna de voos (GHashTable).
-GHashTable *flights_manager_get_table(FlightsManager m) {
-    if (!m) return NULL;
-    return m->flights;
-}
-
