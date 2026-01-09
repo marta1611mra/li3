@@ -17,7 +17,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-
+// Título do programa, subtítulo e separador e as respetivas cores 
 void draw_header(WINDOW *win) {
     wattron(win, COLOR_PAIR(1) | A_BOLD);
     mvwprintw(win, 2, (COLS - 30) / 2, "SISTEMA DE GESTAO DE VOOS");
@@ -34,6 +34,7 @@ void draw_header(WINDOW *win) {
     wattroff(win, COLOR_PAIR(1));
 }
 
+// Desenha o menu de queries disponíveis
 void draw_menu(WINDOW *win, int selected) {
     const char *queries[] = {
         "1. Resumo de Aeroporto",
@@ -44,19 +45,22 @@ void draw_menu(WINDOW *win, int selected) {
         "6. Aeroporto de Destino Mais Comum"
     };
     
-    // Título da secção
+     // Título da secção de queries
     wattron(win, COLOR_PAIR(1) | A_BOLD);
     mvwprintw(win, 5, 4, "QUERIES DISPONIVEIS:");
     wattroff(win, COLOR_PAIR(1) | A_BOLD);
     
-    int start_y = 7;
+    int start_y = 7; // Posição Y inicial para as opções do menu
     
+    // Desenha cada opção do menu
     for (int i = 0; i < 6; i++) {
         if (i == selected) {
+            // Destacar opção atualmente selecionada com cor verde, negrito e reverse
             wattron(win, COLOR_PAIR(4) | A_BOLD | A_REVERSE);
             mvwprintw(win, start_y + i, 4, "  %s  ", queries[i]);
             wattroff(win, COLOR_PAIR(4) | A_BOLD | A_REVERSE);
-        } else {
+        } else { 
+            // Mostrar opções não selecionadas com cor normal
             wattron(win, COLOR_PAIR(5));
             mvwprintw(win, start_y + i, 4, "  %s  ", queries[i]);
             wattroff(win, COLOR_PAIR(5));
@@ -64,29 +68,34 @@ void draw_menu(WINDOW *win, int selected) {
     }
 }
 
+ // Mostrar separador atual e instruções para alternar entre ';' e '='
 void draw_separator_option(WINDOW *win, int y, char current_sep) {
     wattron(win, COLOR_PAIR(2));
     mvwprintw(win, y, 4, "Separador de output: [%c]  (pressione 's' para alternar)", current_sep);
     wattroff(win, COLOR_PAIR(2));
 }
 
+// Função para obter input do utilizador
 void get_input(WINDOW *win, int y, const char *label, char *buffer, int max_len) {
-    echo();
-    curs_set(1);
+    echo(); // Ativar echo para mostrar o que o utilizador digita
+    curs_set(1); // Mostrar cursor durante input
     
-    // Limpar área
+    // Limpar área de input para evitar restos de texto anterior
     for (int i = 0; i < 3; i++) {
         wmove(win, y + i, 1);
         wclrtoeol(win);
     }
     
+    // Mostrar label do campo com cor ciano e negrito
     wattron(win, COLOR_PAIR(6) | A_BOLD);
     mvwprintw(win, y, 4, "%s:", label);
     wattroff(win, COLOR_PAIR(6) | A_BOLD);
     
+    // Mostrar prompt de input (">") na linha seguinte
     mvwprintw(win, y + 1, 4, "> ");
     wrefresh(win);
     
+    // Ler input do utilizador
     char temp[QUERY_INPUT_SIZE] = {0};
     wgetnstr(win, temp, max_len - 1);
     strncpy(buffer, temp, max_len - 1);
@@ -96,8 +105,8 @@ void get_input(WINDOW *win, int y, const char *label, char *buffer, int max_len)
 }
 
 void show_results(WINDOW *win, const char *result) {
-    int start_y = 16;
-    int max_lines = LINES - start_y - 4;
+    int start_y = 16; // Posição Y onde começam os resultados
+    int max_lines = LINES - start_y - 4; // Calcular número máximo de linhas disponíveis para resultados
     
     // Limpar área de resultados
     for (int i = start_y; i < LINES - 2; i++) {
@@ -105,6 +114,7 @@ void show_results(WINDOW *win, const char *result) {
         wclrtoeol(win);
     }
     
+    // Desenhar cabeçalho de resultados
     wattron(win, COLOR_PAIR(1));
     for (int i = 1; i < COLS - 1; i++) {
         mvwaddch(win, start_y, i, '=');
@@ -112,7 +122,7 @@ void show_results(WINDOW *win, const char *result) {
     mvwprintw(win, start_y, COLS/2 - 5, " RESULTADO ");
     wattroff(win, COLOR_PAIR(1));
     
-    // Verificar se é mensagem de erro
+    // Verificar se é mensagem de erro, escrevendo ERRO em amarelo
     if (strncmp(result, "ERRO:", 5) == 0) {
         wattron(win, COLOR_PAIR(3));
         mvwprintw(win, start_y + 2, 4, "%s", result);
@@ -140,6 +150,7 @@ void show_results(WINDOW *win, const char *result) {
         
         free(result_copy);
         
+        // Indicar se há mais resultados para além do que foi mostrado
         if (line != NULL) {
             wattron(win, COLOR_PAIR(2) | A_BLINK);
             mvwprintw(win, LINES - 2, 4, "[Mais resultados... pressione qualquer tecla para continuar]");
@@ -155,7 +166,7 @@ bool directory_exists(const char *path) {
     return (info.st_mode & S_IFDIR) != 0;
 }
 
-// Valida se uma string contém apenas dígitos
+// Valida se uma string contém apenas dígitos (0-9)
 bool is_numeric(const char *str) {
     if (!str || strlen(str) == 0) return false;
     for (int i = 0; str[i]; i++) {
@@ -175,6 +186,7 @@ bool is_valid_date_format(const char *date) {
     return true;
 }
 
+// Executa a query selecionada e mostra os resultados
 void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inputs, char separator) {
     set_output_separator(separator);
     
@@ -190,6 +202,7 @@ void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inp
         wclrtoeol(win);
     }
     
+    // Mostrar mensagem de processamento em verde
     wattron(win, COLOR_PAIR(4) | A_BOLD);
     mvwprintw(win, 17, 4, "A executar query...");
     wattroff(win, COLOR_PAIR(4) | A_BOLD);
@@ -309,6 +322,7 @@ void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inp
     }
 }
 
+// Desenha o rodapé com instruções
 void draw_footer(WINDOW *win) {
     wattron(win, COLOR_PAIR(1));
     for (int i = 1; i < COLS - 1; i++) {
@@ -391,13 +405,14 @@ int main(int argc, char **argv) {
         return 1;
     }
     
+    // Anunciar carregamento do dataset
     printf("\nA carregar dataset de: %s\n", dataset_path);
     parse_all(dataset, dataset_path);
     printf("Dataset carregado...\n");
     printf("A iniciar interface...\n");
     sleep(1);
     
-    // Inicializar ncurses
+    // Iniciar ncurses
     initscr();
     start_color();
     cbreak();
@@ -413,6 +428,7 @@ int main(int argc, char **argv) {
     init_pair(6, COLOR_CYAN, COLOR_BLACK);      // Labels
     init_pair(7, COLOR_GREEN, COLOR_BLACK);     // Resultados
     
+    // Criar janela principal
     WINDOW *main_win = newwin(LINES, COLS, 0, 0);
     keypad(main_win, TRUE);  
     box(main_win, 0, 0);
@@ -421,6 +437,7 @@ int main(int argc, char **argv) {
     char separator = ';';
     QueryInputs inputs = {0};
     
+    // Loop principal
     while (1) {
         wclear(main_win);
         box(main_win, 0, 0);
