@@ -13,7 +13,6 @@
  * @param d Dataset que contém os dados necessários.
  * @param N Número de companhias a listar.
  * @param out Ficheiro de output onde os resultados serão escritos.
- * @return void
  */
 void query5(Dataset d, int N, FILE *out);
 

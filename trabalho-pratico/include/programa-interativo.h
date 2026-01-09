@@ -23,7 +23,6 @@ typedef struct {
 /**
  * @brief Desenha o cabeçalho da interface
  * @param win Janela ncurses onde desenhar
- * @return void
  */
 void draw_header(WINDOW *win);
 
@@ -31,7 +30,6 @@ void draw_header(WINDOW *win);
  * @brief Desenha o menu com as queries disponíveis
  * @param win Janela ncurses onde desenhar
  * @param selected Índice da query selecionada (0-5)
- * @return void
  */
 void draw_menu(WINDOW *win, int selected);
 
@@ -40,7 +38,6 @@ void draw_menu(WINDOW *win, int selected);
  * @param win Janela ncurses onde desenhar
  * @param y Posição Y onde desenhar
  * @param current_sep Separador atual
- * @return void
  */
 void draw_separator_option(WINDOW *win, int y, char current_sep);
 
@@ -51,7 +48,6 @@ void draw_separator_option(WINDOW *win, int y, char current_sep);
  * @param label Label a mostrar
  * @param buffer Buffer onde guardar o input
  * @param max_len Tamanho máximo do input
- * @return void
  */
 void get_input(WINDOW *win, int y, const char *label, char *buffer, int max_len);
 
@@ -59,7 +55,6 @@ void get_input(WINDOW *win, int y, const char *label, char *buffer, int max_len)
  * @brief Mostra os resultados de uma query
  * @param win Janela ncurses onde mostrar
  * @param result String com os resultados
- * @return void
  */
 void show_results(WINDOW *win, const char *result);
 
@@ -91,14 +86,12 @@ bool is_valid_date_format(const char *date);
  * @param query_num Número da query (0-5)
  * @param inputs Estrutura com os inputs
  * @param separator Separador a usar no output
- * @return void
  */
 void execute_query(WINDOW *win, Dataset dataset, int query_num, QueryInputs *inputs, char separator);
 
 /**
  * @brief Desenha o rodapé com instruções
  * @param win Janela ncurses onde desenhar
- * @return void
  */
 void draw_footer(WINDOW *win);
 

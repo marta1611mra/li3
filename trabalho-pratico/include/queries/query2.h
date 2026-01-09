@@ -13,12 +13,11 @@
  * ordena as aeronaves por número de voos (descendente) e escreve as N
  * primeiras no ficheiro de output. Pode opcionalmente filtrar por fabricante.
  *
- * @param fm                FlightsManager contendo todos os voos.
- * @param am                AircraftsManager contendo todas as aeronaves.
- * @param N                 Número máximo de aeronaves a listar.
+ * @param fm                  FlightsManager contendo todos os voos.
+ * @param am                  AircraftsManager contendo todas as aeronaves.
+ * @param N                   Número máximo de aeronaves a listar.
  * @param filter_manufacturer Se fornecido, apenas aeronaves do fabricante indicado são consideradas. Pode ser NULL.
- * @param out               Ficheiro de output onde escrever o resultado.
- * @return void
+ * @param out                 Ficheiro de output onde escrever o resultado.
  */
 void q2(Dataset d, int N, const char *manufacturer, FILE *out);
 

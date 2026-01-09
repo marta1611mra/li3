@@ -19,7 +19,6 @@
  * @param d O dataset contendo os dados de voos e aeroportos.
  * @param args Array de strings contendo as datas de início e fim do intervalo (YYYY-MM
  * @param output Ficheiro onde o resultado será escrito.
- * @return void
  */
 void q3(Dataset d, char *args[], FILE *output);
 

@@ -15,8 +15,6 @@
  * @param begin_date Data de início do período (inclusiva), como GDate*.
  * @param end_date Data de fim do período (inclusiva), como GDate*.
  * @param out   Ficheiro de output onde escrever o resultado 
- * @return void
- * 
  */
 void query4_execute(Dataset d, const char *begin_date, const char *end_date, FILE *out);
 #endif

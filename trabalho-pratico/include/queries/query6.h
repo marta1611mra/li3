@@ -17,7 +17,6 @@
  * @param d Dataset que contém os dados necessários.
  * @param nationality Nacionalidade dos passageiros.
  * @param out Ficheiro de output onde o resultado será escrito.
- * @return void
  */
 void q6(Dataset d,
         const char *nationality,
