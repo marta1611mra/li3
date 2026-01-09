@@ -6,62 +6,16 @@
 #include "dataset.h"
 #include "airports_manager.h"
 #include "airports.h"
-#include "flights_manager.h"
-#include "flights.h"
 #include "query3.h"
 #include "output_format.h"
 
-// Callback para processar cada voo e contar partidas
+// Estrutura para contar partidas por aeroporto
 typedef struct {
-    const char *start_date;
-    const char *end_date;
-    GHashTable *airport_counts;  // airport_code -> count
-} Q3Context;
+    char airport_code[4];
+    int total_count;
+} AirportCount;
 
-// Conta as partidas de voos não cancelados por aeroporto dentro do intervalo de datas
-static void count_flight_departures(gpointer key, gpointer value, gpointer user_data) {
-    (void)key; 
-    Flight f = (Flight)value;
-    Q3Context *ctx = (Q3Context *)user_data;
-    
-    if (get_flight_status(f) == Cancelled) { // Ignora voos cancelados
-        return;
-    }
-    
-    const char *actual_dep = get_flight_actual_dep(f);  // Obtem data real de partida
-    if (!actual_dep || strlen(actual_dep) < 10) {
-        return;
-    }
-    
-    // Extrai apenas a data (YYYY-MM-DD) ignorando hora
-    char date_only[11];
-    memcpy(date_only, actual_dep, 10);
-    date_only[10] = '\0';
-
-    if (strcmp(date_only, ctx->start_date) < 0 || 
-    strcmp(date_only, ctx->end_date) > 0) {  // Verifica se está no intervalo
-        return;    
-    }
-    
-    const char *orig = get_flight_orig(f);   // Obtem aeroporto de origem
-    if (!orig || strlen(orig) == 0) {
-        return;
-    }
-
-    // Incrementa contador do aeroporto ou cria novo se não existir
-    int *count = g_hash_table_lookup(ctx->airport_counts, orig);   
-    if (count) {
-        (*count)++; 
-    } else {
-        int *new_count = malloc(sizeof(int)); // Primeiro voo deste aeroporto, criar novo contador
-        if (new_count) {
-            *new_count = 1;
-            g_hash_table_insert(ctx->airport_counts, g_strdup(orig), new_count);
-        }
-    }
-}
-
-// Executa a Query 3: encontrar o aeroporto com mais partidas num intervalo de datas
+// Executa a Query 3 
 void q3(Dataset d, char *args[], FILE *output) {
     if (!d || !args || !args[0] || !args[1] || !output) {
         output_empty(output);
@@ -71,38 +25,65 @@ void q3(Dataset d, char *args[], FILE *output) {
     const char *start_date = args[0];
     const char *end_date = args[1];
 
-    FlightsManager fm = dataset_get_flights(d);  // Obtem manager de voos
-    if (!fm) {
+    // Obtém o índice pré-computado: airport -> (date -> count)
+    GHashTable *q3_index = dataset_get_q3_index(d);
+    if (!q3_index) {
         output_empty(output);
         return;
     }
 
-    // Cria contexto e tabela de contagem de aeroportos
-    Q3Context ctx;
-    ctx.start_date = start_date;
-    ctx.end_date = end_date;
-    ctx.airport_counts = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
+    // Tabela para acumular contagens por aeroporto
+    GHashTable *airport_totals = g_hash_table_new_full(
+        g_str_hash, g_str_equal, g_free, g_free
+    );
 
-    // Processa todos os voos
-    GHashTable *flights_table = flights_manager_get_table(fm);
-    if (flights_table) {
-        g_hash_table_foreach(flights_table, count_flight_departures, &ctx);
+    // Itera sobre todos os aeroportos no índice
+    GHashTableIter airport_iter;
+    gpointer airport_key, date_table_value;
+    
+    g_hash_table_iter_init(&airport_iter, q3_index);
+    while (g_hash_table_iter_next(&airport_iter, &airport_key, &date_table_value)) {
+        const char *airport_code = (const char *)airport_key;
+        GHashTable *date_table = (GHashTable *)date_table_value;
+        
+        int airport_total = 0;
+        
+        // Itera sobre todas as datas deste aeroporto
+        GHashTableIter date_iter;
+        gpointer date_key, count_value;
+        
+        g_hash_table_iter_init(&date_iter, date_table);
+        while (g_hash_table_iter_next(&date_iter, &date_key, &count_value)) {
+            const char *date = (const char *)date_key;
+            int count = GPOINTER_TO_INT(count_value);
+            
+            // Verifica se a data está no intervalo
+            if (strcmp(date, start_date) >= 0 && strcmp(date, end_date) <= 0) {
+                airport_total += count;
+            }
+        }
+        
+        // Se este aeroporto teve partidas no intervalo, adiciona ao total
+        if (airport_total > 0) {
+            int *total_ptr = g_malloc(sizeof(int));
+            *total_ptr = airport_total;
+            g_hash_table_insert(airport_totals, g_strdup(airport_code), total_ptr);
+        }
     }
 
-    // Encontra aeroporto com mais partidas
+    // Encontra o aeroporto com mais partidas
     char best_airport[4] = {0};
     int max_count = 0;
 
-    // Itera sobre a tabela de contagem
-    GHashTableIter iter;
+    GHashTableIter totals_iter;
     gpointer key, value;
-    g_hash_table_iter_init(&iter, ctx.airport_counts);
+    g_hash_table_iter_init(&totals_iter, airport_totals);
 
-    while (g_hash_table_iter_next(&iter, &key, &value)) {
+    while (g_hash_table_iter_next(&totals_iter, &key, &value)) {
         const char *airport_code = (const char *)key;
         int count = *(int *)value;
 
-        // Atualiza se: tiver mais partidas OU o mesmo número E código menor lexicograficamente
+        // Atualiza se: tiver mais partidas OU mesmo número e código menor
         if (count > max_count ||
             (count == max_count && (best_airport[0] == 0 || strcmp(airport_code, best_airport) < 0))) {
             strncpy(best_airport, airport_code, 3);
@@ -111,8 +92,8 @@ void q3(Dataset d, char *args[], FILE *output) {
         }
     }
 
-    // Limpa tabela de contagem
-    g_hash_table_destroy(ctx.airport_counts);
+    // Limpa tabela de totais
+    g_hash_table_destroy(airport_totals);
 
     // Output do resultado
     if (best_airport[0] != 0 && max_count > 0) {
@@ -129,10 +110,10 @@ void q3(Dataset d, char *args[], FILE *output) {
                     get_airport_country(a), sep,
                     max_count);
         } else {
-            // Aeroporto não encontrado 
+            // Aeroporto não encontrado no manager
             fprintf(output, "%s%c%d\n", best_airport, sep, max_count);
         }
     } else {
-        output_empty(output); // Nenhum voo encontrado no intervalo
+        output_empty(output); // Nenhum voo no intervalo
     }
 }

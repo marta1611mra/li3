@@ -17,7 +17,7 @@
  * Em caso de empate, o aeroporto com o código lexicograficamente menor é escolhido.
  *
  * @param d O dataset contendo os dados de voos e aeroportos.
- * @param args Array de strings contendo as datas de início e fim do intervalo (YYYY-MM
+ * @param args Array de strings contendo as datas de início e fim do intervalo (YYYY-MM-DD).
  * @param output Ficheiro onde o resultado será escrito.
  */
 void q3(Dataset d, char *args[], FILE *output);

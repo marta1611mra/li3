@@ -128,6 +128,15 @@ void parse_flights(Dataset d, const char *data_path) {
             if (status == Delayed) {
                 dataset_update_q5(d, airline, departure, actual_departure);
             }
+            
+            // Q3: Atualiza índice de partidas por aeroporto e data
+            // Extrai apenas a data (YYYY-MM-DD) do actual_departure
+            if (strlen(actual_departure) >= 10) {
+                char date_only[11];
+                memcpy(date_only, actual_departure, 10);
+                date_only[10] = '\0';
+                dataset_update_q3(d, origin, date_only);
+            }
         }
     }
 

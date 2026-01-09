@@ -233,18 +233,8 @@ void parse_reservations(Dataset d, const char *data_path) {
 
             if (orig1) airports_manager_departure(am, orig1, 1);
             if (dest1) airports_manager_arrival(am, dest1, 1);
-
-            // Q3: Atualizar índice de partidas por data
-            const char *actual_dep = get_flight_actual_dep(f_first);
-            if (actual_dep && strlen(actual_dep) >= 10 && orig1) {
-                char date_only[11];
-                memcpy(date_only, actual_dep, 10);
-                date_only[10] = '\0';
-                dataset_update_q3(d, orig1, date_only);
-            }
         }
 
-        // 2º voo, se existir e for diferente
         if (num_ids == 2 && last_valid && f_last != f_first) {
             const char *orig2 = get_flight_orig(f_last);
             const char *dest2 = get_flight_dest(f_last);
