@@ -13,7 +13,6 @@ struct airport {
     //double longitude;   // Longitude do aeroporto. 
     //char icao[5];       // Código ICAO (4 letras). 
     char type[30];      // Tipo do aeroporto.
-    // NOVOS CAMPOS PARA OTIMIZAÇÃO:
     int total_passengers_arrival;
     int total_passengers_departure; 
 };
