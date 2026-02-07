@@ -1,5 +1,5 @@
 # Laboratórios de Informática III (2025/2026)
 
-* Marta Alexandra Rodrigues Araújo - A110317 - marta1611mra
-* Sara Vieira Marques - A111182 - svmarques
-* Teresa Carolina Oliveira Teixeira - A111415 - t3r3s-a
+* Marta Alexandra Rodrigues Araújo- marta1611mra
+* Sara Vieira Marques- svmarques
+* Teresa Carolina Oliveira Teixeira- t3r3s-a
