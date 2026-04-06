@@ -10,12 +10,12 @@
 >  *A interface suporta navegação por setas e inputs validados em tempo real.*
 
 ## 📌 Descrição
- Este sistema foi desenvolvido no âmbito da unidade curricular **Laboratórios de Informática III (LEI - UMinho)**.  O objetivo é processar grandes volumes de dados de tráfego aéreo (Aeroportos, Voos, Passageiros e Reservas) provenientes de ficheiros CSV, submetendo-os a uma validação rigorosa e consultas complexas com tempos de resposta na ordem dos microsegundos[cite: 14, 15, 171].
+ Este sistema foi desenvolvido no âmbito da unidade curricular **Laboratórios de Informática III (LEI - UMinho)**.  O objetivo é processar grandes volumes de dados de tráfego aéreo (Aeroportos, Voos, Passageiros e Reservas) provenientes de ficheiros CSV, submetendo-os a uma validação rigorosa e consultas complexas com tempos de resposta na ordem dos microsegundos.
 
 ---
 
 ## 🏗️ Arquitetura e Estruturas de Dados
- A estratégia principal do projeto evoluiu de uma correção funcional na Fase 1 para uma **otimização de alta performance** baseada em pré-processamento na Fase 2[cite: 21, 176].
+ A estratégia principal do projeto evoluiu de uma correção funcional na Fase 1 para uma **otimização de alta performance** baseada em pré-processamento na Fase 2.
 
 *  **Encapsulamento**: Uso rigoroso de **Ponteiros Opacos (TADs)**, garantindo que a implementação interna está protegida.
 *  **Validação de Dados**: Módulos de validação sintática e lógica asseguram a integridade dos dados antes do armazenamento.
