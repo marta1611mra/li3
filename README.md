@@ -11,7 +11,7 @@
 
 ## 📌 Descrição
  Este sistema foi desenvolvido no âmbito da unidade curricular **Laboratórios de Informática III (LEI - UMinho)**.  O objetivo é processar grandes volumes de dados de tráfego aéreo (Aeroportos, Voos, Passageiros e Reservas) provenientes de ficheiros CSV, submetendo-os a uma validação rigorosa e consultas complexas com tempos de resposta na ordem dos microsegundos. 
- Foi desenvolvido em parceria com [@t3r3s-a](https://github.com/t3r3s-a) e [@svmarques](https://github.com/svmarques).
+ Foi realizado em grupo com [@t3r3s-a](https://github.com/t3r3s-a) e [@svmarques](https://github.com/svmarques).
 
 ---
 
